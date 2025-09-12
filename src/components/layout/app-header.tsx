@@ -8,11 +8,11 @@ import { Facebook, Instagram, Menu, Search, X } from 'lucide-react';
 import { TikTokIcon } from '@/components/icons/tiktok-icon';
 
 const navLinks = [
-  { name: 'Moda', href: '#' },
-  { name: 'Estilo de vida', href: '#' },
-  { name: 'Tips', href: '#' },
-  { name: 'Accesorios', href: '#' },
-  { name: 'Temporadas', href: '#' },
+  { name: 'Moda', href: '/moda' },
+  { name: 'Estilo de vida', href: '/estilo-de-vida' },
+  { name: 'Tips', href: '/tips' },
+  { name: 'Accesorios', href: '/accesorios' },
+  { name: 'Temporadas', href: '/temporadas' },
 ];
 
 export const AppHeader = () => {
