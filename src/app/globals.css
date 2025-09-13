@@ -88,6 +88,12 @@
     background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--accent)));
     border-top-right-radius: 16px;
     border-bottom-right-radius: 16px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .neumorphic-card:hover::after {
+    opacity: 1;
   }
 
   .neumorphic-card-bg {
