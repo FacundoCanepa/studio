@@ -13,13 +13,11 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   if (!article) return null;
 
   const publishedDate = article.publishedAt ? new Date(article.publishedAt) : null;
-  const readingTime = article.contentHtml ? Math.ceil(article.contentHtml.split(/\s+/).length / 200) : 4;
-
 
   return (
     <Link 
       href={`/articulos/${article.slug}`} 
-      className="w-full max-w-sm hover:scale-105 transition-transform duration-300 group p-4 bg-card/80 dark:bg-zinc-900 rounded-xl"
+      className="w-full h-full flex flex-col hover:scale-105 transition-transform duration-300 group p-4 bg-card/80 dark:bg-zinc-900 rounded-xl"
     >
       <figure className="overflow-hidden rounded-lg relative mb-2">
         {article.coverUrl ? (
@@ -42,23 +40,23 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
         )}
       </figure>
       
-      {publishedDate && (
-        <time dateTime={publishedDate.toISOString()} className="text-xs text-foreground/50">
-          {format(publishedDate, "dd MMM yyyy", { locale: es })}
-          <span className="mx-2">⦁</span>
-          {readingTime} min read
-        </time>
-      )}
+      <div className="flex-grow">
+        {publishedDate && (
+          <time dateTime={publishedDate.toISOString()} className="text-xs text-foreground/50">
+            {format(publishedDate, "dd MMM yyyy", { locale: es })}
+          </time>
+        )}
 
-      <p className="text-lg font-headline text-pretty mt-2 text-foreground">
-        {article.title}
-      </p>
+        <p className="text-lg font-headline text-pretty mt-2 text-foreground">
+          {article.title}
+        </p>
 
-      {article.excerpt && (
-         <p className="line-clamp-2 text-sm text-foreground/60 mt-1 group-hover:text-foreground/90 transition-opacity duration-300">
-           {article.excerpt}
-         </p>
-      )}
+        {article.excerpt && (
+           <p className="line-clamp-2 text-sm text-foreground/60 mt-1 group-hover:text-foreground/90 transition-opacity duration-300">
+             {article.excerpt}
+           </p>
+        )}
+      </div>
       
       <div className="flex items-center justify-between gap-3 mt-4">
         <div className="flex items-center gap-3">
