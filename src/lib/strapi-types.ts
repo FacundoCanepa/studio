@@ -44,6 +44,16 @@ export interface StrapiCollection<T> {
     data: T[];
 }
 
+// --- SEO Component ---
+export type StrapiSeoComponent = { 
+    id: number;
+    metaTitle: string;
+    metaDescription?: string;
+    canonicalUrl?: string;
+    ogImage?: StrapiMedia;
+};
+
+
 // --- Content Types ---
 
 export type StrapiArticle = StrapiEntity & {
@@ -63,12 +73,7 @@ export type StrapiArticle = StrapiEntity & {
         tags: StrapiCollection<StrapiTag>;
 
         // Component - THIS IS THE ACTUAL SEO component name from your schema
-        seo?: { 
-            metaTitle?: string;
-            metaDescription?: string;
-            canonicalUrl?: string;
-            ogImage?: StrapiMedia;
-        };
+        Name?: StrapiSeoComponent;
     };
 };
 
