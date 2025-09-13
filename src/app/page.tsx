@@ -8,7 +8,6 @@ import type { ArticleDoc } from '@/lib/firestore-types';
 import { RecommendedArticles } from '@/components/shared/recommended-articles';
 import { FloatingIconsHero } from '@/components/shared/floating-icons-hero';
 import { SectionTitle } from '@/components/shared/section-title';
-import { AnimatedTitle } from '@/components/shared/animated-title';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
@@ -23,9 +22,7 @@ export default async function HomePage() {
 
       {/* a. Sección "Lo Último" */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <AnimatedTitle>Lo Último</AnimatedTitle>
-        </div>
+        <SectionTitle className="animated-gradient-text">Lo Último</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
           {latestArticles.map((article) => (
             <ArticleCard key={article.documentId} article={article} />
