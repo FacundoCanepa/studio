@@ -68,36 +68,41 @@
 }
 
 @layer components {
-  /* Stacked Card Style */
-  .stacked-card {
-    @apply w-full h-full p-1.5 rounded-2xl overflow-visible relative z-10;
-    background: transparent;
-  }
-  
-  .stacked-card::before,
-  .stacked-card::after {
-    content: "";
-    @apply absolute top-0 left-0 w-full h-full rounded-2xl -z-10 transition-opacity duration-500;
-  }
-  
-  .stacked-card::before {
-    background: linear-gradient(to bottom right, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
-    transform: rotate(2deg);
-  }
-  
-  .stacked-card::after {
-    background: linear-gradient(to top right, hsl(var(--secondary)) 0%, hsl(var(--accent)) 100%);
-    transform: rotate(-2deg);
-  }
-  
-  .stacked-card .stacked-card-info {
-    @apply bg-card text-card-foreground w-full h-full rounded-xl p-3 flex flex-col;
-    z-index: 2;
+  /* Neumorphic Card Style */
+  .neumorphic-card {
+    @apply relative w-full max-w-sm rounded-2xl z-10 overflow-hidden flex flex-col items-center justify-center;
+    box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+    height: 320px;
   }
 
-  .stacked-card:hover::before,
-  .stacked-card:hover::after {
-    opacity: 0;
+  .dark .neumorphic-card {
+    box-shadow: 20px 20px 60px #1a1a1a, -20px -20px 60px #2a2a2a;
+  }
+
+  .neumorphic-card-bg {
+    @apply absolute top-1 left-1 right-1 bottom-1 z-20 rounded-xl overflow-hidden;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    outline: 2px solid white;
+  }
+
+  .dark .neumorphic-card-bg {
+    background: rgba(30, 30, 30, 0.5);
+    outline: 2px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .neumorphic-card-blob {
+    @apply absolute z-10;
+    top: 50%;
+    left: 50%;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: hsl(var(--primary));
+    opacity: 0.7;
+    filter: blur(24px);
+    animation: blob-bounce 8s infinite ease;
   }
 
   /* Custom checkbox style */
@@ -203,6 +208,29 @@
     @apply text-muted-foreground;
   }
 }
+
+@keyframes blob-bounce {
+  0% {
+    transform: translate(-100%, -100%) translate3d(0, 0, 0);
+  }
+
+  25% {
+    transform: translate(-100%, -100%) translate3d(100%, 0, 0);
+  }
+
+  50% {
+    transform: translate(-100%, -100%) translate3d(100%, 100%, 0);
+  }
+
+  75% {
+    transform: translate(-100%, -100%) translate3d(0, 100%, 0);
+  }
+
+  100% {
+    transform: translate(-100%, -100%) translate3d(0, 0, 0);
+  }
+}
+
 
 @keyframes pulse {
   0%,
