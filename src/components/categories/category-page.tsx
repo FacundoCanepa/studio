@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { articles } from '@/lib/data';
-import type { Category } from '@/lib/types';
+import type { ArticleDoc } from '@/lib/firestore-types';
 import { ArticleCard } from '@/components/articles/article-card';
 import { FadeIn } from '@/components/shared/fade-in';
 import { Input } from '@/components/ui/input';
@@ -10,24 +9,23 @@ import { Search } from 'lucide-react';
 import { AdSlot } from '@/components/marketing/ad-slot';
 
 interface CategoryPageProps {
-  category: Category;
+  categoryName: string;
+  articles: ArticleDoc[];
 }
 
-export const CategoryPage = ({ category }: CategoryPageProps) => {
+export const CategoryPage = ({ categoryName, articles }: CategoryPageProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   
-  const categoryArticles = articles.filter(article => article.category === category);
-
-  const filteredArticles = categoryArticles.filter(article =>
+  const filteredArticles = articles.filter(article =>
     article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+    (article.excerpt && article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <section className="py-20 text-center">
         <h1 className="text-6xl md:text-8xl font-headline font-medium tracking-tighter uppercase">
-          {category}
+          {categoryName}
         </h1>
       </section>
 
@@ -46,7 +44,7 @@ export const CategoryPage = ({ category }: CategoryPageProps) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
             {filteredArticles.map((article, index) => (
-              <FadeIn key={article.id} delay={index * 100}>
+              <FadeIn key={article.documentId} delay={index * 100}>
                 <ArticleCard article={article} />
               </FadeIn>
             ))}

@@ -1,13 +1,16 @@
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-
-const galleryImageIds = [
-  'gallery-1', 'gallery-2', 'gallery-3', 
-  'gallery-4', 'gallery-5', 'gallery-6'
-];
 
 export const ImageGallery = () => {
-  const galleryImages = PlaceHolderImages.filter(p => galleryImageIds.includes(p.id));
+  // Dummy data, will be replaced by Strapi data
+  const galleryImages: any[] = [];
+
+  if (galleryImages.length === 0) {
+    return (
+        <div className="text-center text-muted-foreground">
+            <p>La galería de imágenes se mostrará aquí una vez conectado el CMS.</p>
+        </div>
+    );
+  }
 
   return (
     <div className="columns-2 md:columns-3 gap-4 space-y-4">

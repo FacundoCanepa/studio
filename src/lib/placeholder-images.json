@@ -1,22 +1,3 @@
 {
-  "placeholderImages": [
-    { "id": "article-1", "description": "Woman in an oversized coat for autumn", "imageUrl": "https://picsum.photos/seed/a1/600/400", "imageHint": "autumn fashion" },
-    { "id": "article-2", "description": "Close-up of large, bold earrings", "imageUrl": "https://picsum.photos/seed/a2/600/400", "imageHint": "fashion accessories" },
-    { "id": "article-3", "description": "Neatly organized capsule wardrobe", "imageUrl": "https://picsum.photos/seed/a3/600/400", "imageHint": "minimalist wardrobe" },
-    { "id": "article-4", "description": "Person in a minimalist, modern outfit", "imageUrl": "https://picsum.photos/seed/a4/600/400", "imageHint": "minimalist fashion" },
-    { "id": "article-5", "description": "Person meditating peacefully at home", "imageUrl": "https://picsum.photos/seed/a5/600/400", "imageHint": "wellness lifestyle" },
-    { "id": "article-6", "description": "Bright pastel colors representing spring fashion", "imageUrl": "https://picsum.photos/seed/a6/600/400", "imageHint": "spring fashion" },
-    { "id": "article-7", "description": "Collection of classic, iconic handbags", "imageUrl": "https://picsum.photos/seed/a7/600/400", "imageHint": "designer handbags" },
-    { "id": "article-8", "description": "Linen clothes hanging to dry", "imageUrl": "https://picsum.photos/seed/a8/600/400", "imageHint": "linen clothes" },
-    { "id": "article-9", "description": "Woman wearing a full monochromatic beige outfit", "imageUrl": "https://picsum.photos/seed/a9/600/400", "imageHint": "monochrome fashion" },
-    { "id": "article-10", "description": "Stylish person at a beautiful travel destination", "imageUrl": "https://picsum.photos/seed/a10/600/400", "imageHint": "travel style" },
-    { "id": "article-11", "description": "Woman wearing a perfectly fitted blazer", "imageUrl": "https://picsum.photos/seed/a11/600/400", "imageHint": "fashion blazer" },
-    { "id": "article-12", "description": "Calm and serene home interior decor", "imageUrl": "https://picsum.photos/seed/a12/600/400", "imageHint": "home decor" },
-    { "id": "gallery-1", "description": "Stylish outfit detail shot", "imageUrl": "https://picsum.photos/seed/g1/500/750", "imageHint": "fashion detail" },
-    { "id": "gallery-2", "description": "Aesthetic flat lay of accessories", "imageUrl": "https://picsum.photos/seed/g2/500/600", "imageHint": "fashion flatlay" },
-    { "id": "gallery-3", "description": "Model posing in a city street", "imageUrl": "https://picsum.photos/seed/g3/500/750", "imageHint": "street style" },
-    { "id": "gallery-4", "description": "Close up of a luxury watch on a wrist", "imageUrl": "https://picsum.photos/seed/g4/500/600", "imageHint": "luxury watch" },
-    { "id": "gallery-5", "description": "Woman walking in a beautiful natural landscape", "imageUrl": "https://picsum.photos/seed/g5/500/750", "imageHint": "lifestyle fashion" },
-    { "id": "gallery-6", "description": "Minimalist home office setup", "imageUrl": "https://picsum.photos/seed/g6/500/600", "imageHint": "minimalist interior" }
-  ]
+  "placeholderImages": []
 }

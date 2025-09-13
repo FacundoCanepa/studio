@@ -1,27 +1,24 @@
 'use client';
 
-import { categories } from '@/lib/data';
-import type { Category } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 
 interface CategoryFilterProps {
-  selectedCategory: Category | 'Todos';
-  setSelectedCategory: (category: Category | 'Todos') => void;
+  categories: string[];
+  selectedCategory: string;
+  setSelectedCategory: (category: string) => void;
 }
 
-const allCategories = [{ name: 'Todos' as const }, ...categories];
-
-export const CategoryFilter = ({ selectedCategory, setSelectedCategory }: CategoryFilterProps) => {
+export const CategoryFilter = ({ categories, selectedCategory, setSelectedCategory }: CategoryFilterProps) => {
   return (
     <div className="flex flex-wrap gap-2">
-      {allCategories.map(category => (
+      {categories.map(categoryName => (
         <Button
-          key={category.name}
-          variant={selectedCategory === category.name ? 'default' : 'ghost'}
-          onClick={() => setSelectedCategory(category.name)}
+          key={categoryName}
+          variant={selectedCategory === categoryName ? 'default' : 'ghost'}
+          onClick={() => setSelectedCategory(categoryName)}
           className="rounded-full"
         >
-          {category.name}
+          {categoryName}
         </Button>
       ))}
     </div>

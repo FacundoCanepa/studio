@@ -1,20 +1,18 @@
 import Image from 'next/image';
-import type { Article } from '@/lib/types';
+import type { ArticleDoc } from '@/lib/firestore-types';
 import { Badge } from '@/components/ui/badge';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { CalendarDays } from 'lucide-react';
 
 interface ArticleCardProps {
-  article: Article;
+  article: ArticleDoc;
   className?: string;
   imageClassName?: string;
 }
 
 export const ArticleCard = ({ article, className, imageClassName }: ArticleCardProps) => {
-  const placeholder = PlaceHolderImages.find(p => p.id === article.imageId);
-  const imageUrl = placeholder?.imageUrl ?? 'https://picsum.photos/seed/default/600/400';
-  const imageHint = placeholder?.imageHint ?? 'fashion style';
+  const imageUrl = article.coverUrl ?? 'https://picsum.photos/seed/default/600/400';
+  const imageHint = article.seo?.metaDescription ?? 'fashion style';
 
   return (
     <article className={cn("group flex flex-col overflow-hidden", className)}>
@@ -30,7 +28,9 @@ export const ArticleCard = ({ article, className, imageClassName }: ArticleCardP
       </div>
       <div className="flex flex-col flex-1 py-4">
         <div className="flex-1">
-          <Badge variant="secondary" className="mb-2">{article.category}</Badge>
+          {article.category && (
+            <Badge variant="secondary" className="mb-2">{article.category.name}</Badge>
+          )}
           <h3 className="text-xl font-headline leading-snug group-hover:text-primary transition-colors">
             {article.title}
           </h3>
@@ -39,11 +39,11 @@ export const ArticleCard = ({ article, className, imageClassName }: ArticleCardP
         <div className="mt-4 flex items-center text-xs text-foreground/60">
           <CalendarDays className="mr-2 h-4 w-4" />
           <span>
-            {new Date(article.publishedDate).toLocaleDateString('es-ES', {
+            {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('es-ES', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
-            })}
+            }) : 'Fecha no disponible'}
           </span>
         </div>
       </div>

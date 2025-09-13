@@ -26,26 +26,6 @@ export default function Home() {
           </div>
         </aside>
       </div>
-
-      <FadeIn delay={500}>
-        <section className="my-20">
-          <AdSlot className="h-32 w-full max-w-4xl mx-auto" />
-        </section>
-      </FadeIn>
-
-      <FadeIn delay={200}>
-        <section className="my-20">
-          <h2 className="text-4xl font-headline text-center mb-12">Desde Nuestro Instagram</h2>
-          <ImageGallery />
-        </section>
-      </FadeIn>
-      
-      <FadeIn delay={200}>
-        <section className="my-20">
-          <h2 className="text-4xl font-headline text-center mb-12">Recomendado para Ti</h2>
-          <RecommendedArticles />
-        </section>
-      </FadeIn>
     </div>
   );
 }
