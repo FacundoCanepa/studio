@@ -318,6 +318,19 @@
 .card-3d .card-item:nth-child(7) { transform: translate(-50%, -50%) rotateY(270deg) translateZ(150px); animation-delay: -15s; }
 .card-3d .card-item:nth-child(8) { transform: translate(-50%, -50%) rotateY(315deg) translateZ(150px); animation-delay: -17.5s; }
 
+/* Floating Icons Hero */
+@keyframes float {
+  0% { transform: translateZ(var(--start-z)) translateY(0px); }
+  50% { transform: translateZ(var(--start-z)) translateY(-20px); }
+  100% { transform: translateZ(var(--start-z)) translateY(0px); }
+}
+
+.floating-icon {
+  animation-name: float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
 
 @keyframes pulse {
   0%,
