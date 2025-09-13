@@ -70,13 +70,24 @@
 @layer components {
   /* Neumorphic Card Style */
   .neumorphic-card {
-    @apply relative w-full max-w-sm rounded-2xl z-10 overflow-hidden flex flex-col items-center justify-center;
-    box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+    @apply relative w-full rounded-2xl z-10 overflow-hidden flex flex-col items-center justify-center;
     height: 320px;
   }
 
   .dark .neumorphic-card {
-    box-shadow: 20px 20px 60px #1a1a1a, -20px -20px 60px #2a2a2a;
+    box-shadow: none;
+  }
+  
+  .neumorphic-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--accent)));
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
   }
 
   .neumorphic-card-bg {
@@ -84,7 +95,6 @@
     background: rgba(255, 255, 255, 0.5);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    outline: 2px solid white;
   }
 
   .dark .neumorphic-card-bg {
