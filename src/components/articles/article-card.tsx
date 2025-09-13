@@ -25,21 +25,21 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               className="object-cover"
             />
           )}
+          <div className="neo-card-overlay"></div>
+          <div className="neo-card-content">
+            {article.category && (
+              <p className="neo-card-category">
+                {article.category.name}
+              </p>
+            )}
+            <p className="neo-card-title">{article.title}</p>
+            {article.excerpt && (
+              <p className="neo-card-body">
+                {article.excerpt}
+              </p>
+            )}
+          </div>
         </div>
-        
-        {article.category && (
-          <p className="text-sm font-medium text-primary mt-4 px-2">
-            {article.category.name}
-          </p>
-        )}
-        
-        <p className="neo-card-title">{article.title}</p>
-        
-        {article.excerpt && (
-          <p className="neo-card-body">
-            {article.excerpt}
-          </p>
-        )}
         
         <div className="mt-auto flex items-end justify-between px-2 pt-4">
           <div className="neo-footer">

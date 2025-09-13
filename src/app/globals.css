@@ -165,21 +165,32 @@
   }
 
   .neo-card-title {
-    font-size: 18px;
+    font-size: 1.25rem;
     font-weight: 600;
-    color: hsl(var(--primary));
-    margin: 15px 0 0 10px;
+    color: #fff;
   }
-
+  
+  .neo-card-category {
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: hsl(var(--primary-foreground));
+    opacity: 0.8;
+  }
+  
   .neo-card-image-wrapper {
     position: relative;
-    min-height: 170px;
+    min-height: 220px;
     width: 100%;
     background-color: hsl(var(--muted));
     border-radius: 15px;
     box-shadow: inset 8px 8px 10px hsla(var(--background), 0.8),
               inset -8px -8px 10px hsla(var(--foreground), 0.05);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
 
   .dark .neo-card-image-wrapper {
@@ -187,12 +198,26 @@
               inset -8px -8px 10px #292d33;
   }
 
+  .neo-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 60%);
+    z-index: 1;
+  }
+
+  .neo-card-content {
+    position: relative;
+    z-index: 2;
+    padding: 1rem;
+    color: #fff;
+  }
+
   .neo-card-body {
-    margin: 13px 0 0 10px;
-    color: hsl(var(--muted-foreground));
+    margin-top: 0.5rem;
+    color: hsl(var(--primary-foreground));
     font-size: 15px;
     line-height: 1.4;
-    flex-grow: 1;
+    opacity: 0.9;
   }
 
   .neo-footer {
