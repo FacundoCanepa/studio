@@ -38,6 +38,11 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               <h3 className="font-headline text-lg font-medium leading-tight text-foreground">
                 {article.title}
               </h3>
+              {article.excerpt && (
+                <p className="text-sm text-foreground/80 mt-1 line-clamp-2">
+                  {article.excerpt}
+                </p>
+              )}
               {publishedDate && (
                  <p className="text-xs text-muted-foreground mt-1">
                   {format(publishedDate, "d 'de' LLLL 'de' yyyy", { locale: es })}

@@ -77,24 +77,6 @@
   .dark .neumorphic-card {
     box-shadow: none;
   }
-  
-  .neumorphic-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--accent)));
-    border-top-right-radius: 16px;
-    border-bottom-right-radius: 16px;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-  }
-
-  .neumorphic-card:hover::after {
-    opacity: 1;
-  }
 
   .neumorphic-card-bg {
     @apply absolute top-1 left-1 right-1 bottom-1 z-20 rounded-xl overflow-hidden;
