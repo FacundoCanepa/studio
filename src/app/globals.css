@@ -290,16 +290,9 @@
 }
 .card-3d .card-item {
   position: absolute;
-  width: 100px;
-  height: 140px;
+  width: 120px;
+  height: 180px;
   background-color: transparent;
-  color: hsl(var(--foreground));
-  font-size: 5rem;
-  font-weight: bold;
-  font-family: 'EB Garamond', serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   top: 50%;
   left: 50%;
   transform-origin: center center;
@@ -307,11 +300,13 @@
   transition-duration: 200ms;
   will-change: transform, filter;
   border-radius: 0.5rem;
+  overflow: hidden;
+  border: 2px solid hsl(var(--foreground) / 0.2);
 }
 
 .dark .card-3d .card-item {
-  color: hsl(var(--foreground));
-  text-shadow: 0 0 10px hsl(var(--primary) / 0.8);
+  border: 2px solid hsl(var(--foreground) / 0.5);
+  box-shadow: 0 0 15px hsl(var(--primary) / 0.5);
 }
 
 .card-3d .card-item:nth-child(1) { transform: translate(-50%, -50%) rotateY(0deg) translateZ(150px); animation-delay: -0s; }
