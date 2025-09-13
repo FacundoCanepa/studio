@@ -55,13 +55,16 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     
     const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
     
-    // Only add pagination params if they are not already present
-    if (!url.searchParams.has('pagination[pageSize]') && !url.searchParams.has('pagination[limit]')) {
+    // Only add pagination params if they are not already present from the calling function
+    const usesPagination = url.searchParams.has('pagination[page]') || url.searchParams.has('pagination[pageSize]') || url.searchParams.has('pagination[limit]');
+    if (!usesPagination) {
       url.searchParams.set('pagination[pageSize]', '100');
     }
 
     do {
-        url.searchParams.set('pagination[page]', String(page));
+        if (!usesPagination) {
+            url.searchParams.set('pagination[page]', String(page));
+        }
 
         try {
           const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search);
@@ -70,10 +73,10 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
               allResults = allResults.concat(response.data);
           }
 
-          if (response.meta?.pagination) {
+          if (response.meta?.pagination && !usesPagination) {
               totalPages = response.meta.pagination.pageCount;
           } else {
-             // If there's no pagination, it's a single entry.
+             // If there's no pagination in the response, or if the original call used limit, it's a single page result.
              if (response.data && !Array.isArray(response.data)) {
                allResults.push(response.data as any);
              }
@@ -85,7 +88,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
           console.error(`[STRAPI][PAGINATION_ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
           break; // Exit loop on error
         }
-    } while (page <= totalPages);
+    } while (!usesPagination && page <= totalPages);
 
     return allResults;
 }

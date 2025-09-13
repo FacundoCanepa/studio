@@ -56,7 +56,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         updatedAt: item.updatedAt,
         views: item.views ?? 0,
         saves: item.saves ?? 0,
-        type: item.type,
+        type: item.type as any, // Strapi type might be different from firestore one, might need mapping
         category,
         author,
         tags,

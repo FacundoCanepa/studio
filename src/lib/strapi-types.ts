@@ -13,9 +13,20 @@ export interface StrapiResponse<T> {
 }
 
 export interface StrapiEntity {
-    documentId: string;
-    [key: string]: any; 
+    id: number; // Strapi ID
+    documentId: string; // Firebase documentId if available
+    attributes: {
+        [key: string]: any; 
+        createdAt: string;
+        updatedAt: string;
+        publishedAt?: string;
+    };
 }
+
+// Flattened type for easier use
+export type StrapiFlatEntity<T> = {
+    documentId: string;
+} & T;
 
 export interface StrapiMedia {
     id: number;
@@ -59,14 +70,13 @@ export type StrapiSeoComponent = {
 
 // --- Content Types ---
 
-export type StrapiArticle = StrapiEntity & {
+export type StrapiArticle = StrapiFlatEntity<{
     title: string;
     slug: string;
     excerpt?: string;
     Content?: any; // Rich text (blocks) or Markdown
     Cover?: StrapiMedia;
     featured?: boolean;
-    publishedAt?: string;
     
     home?: boolean | null;
     Informacion?: string | null;
@@ -80,26 +90,31 @@ export type StrapiArticle = StrapiEntity & {
     author?: StrapiAuthor;
     tags?: StrapiTag[];
     
-    // SEO Component, assuming it's named 'Name' in your Strapi schema
+    // SEO Component
     Name?: StrapiSeoComponent; 
     
     Carosel?: StrapiMedia[] | null;
-};
 
-export type StrapiAuthor = StrapiEntity & {
+    views?: number;
+    saves?: number;
+    type?: string;
+    subcategories?: string[];
+}>;
+
+export type StrapiAuthor = StrapiFlatEntity<{
     Name: string; 
     Avatar?: StrapiMedia;
     Bio?: any; // Blocks
-};
+}>;
 
-export type StrapiCategory = StrapiEntity & {
+export type StrapiCategory = StrapiFlatEntity<{
     name: string;
     slug: string;
     description?: string;
     color?: string;
-};
+}>;
 
-export type StrapiTag = StrapiEntity & {
+export type StrapiTag = StrapiFlatEntity<{
     name: string;
     slug: string; 
-};
+}>;
