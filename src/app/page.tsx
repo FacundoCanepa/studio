@@ -50,12 +50,6 @@ export default async function Home() {
         </p>
       </section>
 
-      {process.env.NODE_ENV !== 'production' && safeArticles[0] && (
-        <pre className="text-xs opacity-70 bg-slate-100 p-4 rounded-md my-4 overflow-x-auto">
-          {JSON.stringify({ firstArticle: { documentId: safeArticles[0].documentId, slug: safeArticles[0].slug, title: safeArticles[0].title } }, null, 2)}
-        </pre>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         <div className="lg:col-span-3">
           <ArticleList articles={safeArticles} categories={categories} />
