@@ -124,7 +124,7 @@ export function ArticleFilters({
         {/* Tags */}
         <div>
             <Label className="font-code text-sm uppercase tracking-wider">Etiquetas</Label>
-            <div className="mt-3 space-y-2 max-h-40 overflow-y-auto pr-2">
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
                 {allTags.map(tag => (
                     <label key={tag} className="checkbox-btn" htmlFor={`tag-${tag}`}>
                        <span className="label-text">{tag}</span>
