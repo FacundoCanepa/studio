@@ -1,7 +1,7 @@
 
 import * as React from 'react';
 
-export const Hero3DCarousel = ({ children }: { children?: React.ReactNode }) => {
+export const Hero3DCarousel = () => {
   return (
     <>
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-10" />
@@ -11,7 +11,7 @@ export const Hero3DCarousel = ({ children }: { children?: React.ReactNode }) => 
         ))}
       </div>
       <div className="relative z-20">
-        {children}
+        {/* Content can be placed here if needed in the future */}
       </div>
     </>
   );

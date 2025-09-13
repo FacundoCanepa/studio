@@ -16,38 +16,7 @@ export default async function HomePage() {
     <div className="bg-background">
       {/* Animated Headline Hero */}
       <section className="relative h-96 flex items-center justify-center text-center mb-20 overflow-hidden">
-        <Hero3DCarousel>
-          <div 
-            className="text-7xl md:text-9xl font-extrabold text-white tracking-widest uppercase relative select-none"
-            style={{ textShadow: '4px 4px 0px rgba(0,0,0,0.4)'}}
-          >
-            <h1 className="relative">
-              <span 
-                className="absolute -top-0.5 left-0 w-full h-full bg-transparent"
-                style={{
-                  animation: 'glitch 2s infinite linear'
-                }}
-                aria-hidden="true"
-              >
-                VESTIGIO
-              </span>
-              VESTIGIO
-              <span 
-                className="absolute -top-0.5 left-0 w-full h-full bg-transparent"
-                style={{
-                  animation: 'glitch 2.05s infinite linear'
-                }}
-                aria-hidden="true"
-              >
-                VESTIGIO
-              </span>
-            </h1>
-            <span className="absolute -bottom-4 right-0 text-3xl font-normal normal-case animate-bounce">
-              .et
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white animate-blink"></span>
-            </span>
-          </div>
-        </Hero3DCarousel>
+        <Hero3DCarousel />
       </section>
 
       {/* a. Sección "Lo Último" */}

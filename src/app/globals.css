@@ -366,31 +366,3 @@
   50% { transform: translateX(3px) rotate(1deg); }
   75% { transform: translateX(-3px) rotate(-1deg); }
 }
-
-@keyframes glitch {
-  0% { transform: none; opacity: 1; }
-  7% { transform: skew(-0.3deg, -0.6deg); opacity: 0.85; }
-  10% { transform: none; opacity: 1; }
-  27% { transform: none; opacity: 1; }
-  30% { transform: skew(0.5deg, -0.1deg); opacity: 0.85; }
-  35% { transform: none; opacity: 1; }
-  52% { transform: none; opacity: 1; }
-  55% { transform: skew(-0.7deg, 0.2deg); opacity: 0.85; }
-  50% { transform: none; opacity: 1; }
-  72% { transform: none; opacity: 1; }
-  75% { transform: skew(0.2deg, 0.7deg); opacity: 0.85; }
-  80% { transform: none; opacity: 1; }
-  100% { transform: none; opacity: 1; }
-}
-
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
-}
-
-@keyframes bounce {
-  50% {
-    transform: scale(0.9);
-  }
-}
