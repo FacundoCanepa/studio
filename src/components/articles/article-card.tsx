@@ -1,6 +1,7 @@
 import type { ArticleDoc } from '@/lib/firestore-types';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface ArticleCardProps {
   article: ArticleDoc;
@@ -16,6 +17,16 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   return (
     <div className="card-3d-parent">
       <div className="card-3d group">
+        {article.coverUrl && (
+            <Image
+                src={article.coverUrl}
+                alt={article.title}
+                width={400}
+                height={250}
+                className="w-full h-auto object-cover"
+                style={{ transform: 'translate3d(0, 0, 40px)' }}
+            />
+        )}
         <div className="card-3d-content">
           {article.category && (
             <Badge variant="secondary" className="mb-4" style={{ transform: 'translate3d(0, 0, 20px)' }}>

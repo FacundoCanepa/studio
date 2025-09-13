@@ -188,7 +188,7 @@
     width: 100%;
     box-shadow: rgba(142, 142, 142, 0.3) 0px 30px 30px -10px;
     transition: all 0.5s ease-in-out;
-    padding-top: 50px;
+    overflow: hidden;
   }
   .card-3d:hover {
     background-position: -100px 100px, -100px 100px;
