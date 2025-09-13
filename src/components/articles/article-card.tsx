@@ -29,13 +29,13 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               </div>
             )}
             
-            <div className="flex flex-col flex-grow justify-center gap-2 p-4">
+            <div className="flex flex-col flex-grow p-4">
               {article.category && (
                 <p className="font-code text-xs uppercase tracking-widest text-primary">
                   {article.category.name}
                 </p>
               )}
-              <h3 className="font-headline text-lg font-medium leading-tight text-foreground">
+              <h3 className="font-headline text-lg font-medium leading-tight text-foreground mt-2">
                 {article.title}
               </h3>
               {article.excerpt && (
@@ -44,10 +44,15 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                 </p>
               )}
               {publishedDate && (
-                 <p className="text-xs text-muted-foreground mt-1">
+                 <p className="text-xs text-muted-foreground mt-auto pt-2">
                   {format(publishedDate, "d 'de' LLLL 'de' yyyy", { locale: es })}
                 </p>
               )}
+               <div className="mt-4 text-center">
+                 <div className="learn-more-wrapper">
+                    <button className="learn-more">Ver más</button>
+                 </div>
+              </div>
             </div>
         </div>
       </div>
