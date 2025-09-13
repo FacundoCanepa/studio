@@ -17,7 +17,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   return (
     <Link 
       href={`/articulos/${article.slug}`} 
-      className="w-full h-full flex flex-col hover:scale-105 transition-transform duration-300 group p-4 bg-card/80 dark:bg-zinc-900 rounded-xl"
+      className="w-full h-full flex flex-col hover:scale-105 transition-transform duration-300 p-4 bg-card/80 dark:bg-zinc-900 rounded-xl"
     >
       <figure className="overflow-hidden rounded-lg relative mb-2">
         {article.coverUrl ? (
@@ -48,7 +48,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               </time>
             )}
 
-            <p className="text-lg font-headline text-pretty mt-2 text-foreground group-hover:text-primary transition-colors duration-300">
+            <p className="text-lg font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300">
               {article.title}
             </p>
 
