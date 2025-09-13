@@ -8,24 +8,24 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
 
     console.log("[ARTICLES][MAP][IN]", JSON.stringify(item, null, 2));
 
-    const coverUrl = await getStrapiMediaUrl(item.cover?.data?.attributes?.url);
+    const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
     
-    const categoryData = item.category?.data?.attributes;
+    const categoryData = item.category;
     const category = categoryData ? {
         documentId: categoryData.documentId,
         name: categoryData.name,
         slug: categoryData.slug,
     } : null;
 
-    const authorData = item.author?.data?.attributes;
+    const authorData = item.author;
     const author = authorData ? {
         documentId: authorData.documentId,
         name: authorData.Name,
-        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes?.url),
+        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
     } : null;
     
-    const tags = (item.tags?.data || [])
-        .map(t => t.attributes)
+    const tags = (item.tags || [])
+        .map(t => t)
         .filter(t => t && t.documentId && t.name && t.slug)
         .map(t => ({
             documentId: t.documentId,
@@ -37,7 +37,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,
-        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.data?.attributes?.url),
+        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.url),
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
