@@ -1,14 +1,14 @@
 import { CategoryPage } from '@/components/categories/category-page';
 import type { Metadata } from 'next';
-import { ArticleDoc } from '@/lib/firestore-types';
+import { getArticles } from '@/lib/strapi-client';
 
 export const metadata: Metadata = {
   title: 'Tips - Vestigio Magazine',
   description: 'Consejos rápidos, hacks de vestimenta y estilo.',
 };
 
-const articles: ArticleDoc[] = []; // Dummy data
-
-export default function TipsPage() {
+export default async function TipsPage() {
+  const allArticles = await getArticles();
+  const articles = allArticles.filter(a => a.category?.slug === 'tips');
   return <CategoryPage categoryName="Tips" articles={articles} />;
 }

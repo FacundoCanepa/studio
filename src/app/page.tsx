@@ -1,11 +1,12 @@
 import { AnimatedHeadline } from '@/components/shared/animated-headline';
 import { ArticleList } from '@/components/articles/article-list';
-import { ImageGallery } from '@/components/shared/image-gallery';
-import { RecommendedArticles } from '@/components/shared/recommended-articles';
 import { AdSlot } from '@/components/marketing/ad-slot';
-import { FadeIn } from '@/components/shared/fade-in';
+import { getArticles, getCategories } from '@/lib/strapi-client';
 
-export default function Home() {
+export default async function Home() {
+  const articles = await getArticles();
+  const categories = await getCategories();
+
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <section className="py-24 text-center">
@@ -17,7 +18,7 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         <div className="lg:col-span-3">
-          <ArticleList />
+          <ArticleList articles={articles} categories={categories} />
         </div>
         <aside className="hidden lg:block lg:col-span-1">
           <div className="sticky top-24 space-y-6">

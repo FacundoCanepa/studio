@@ -1,14 +1,14 @@
 import { CategoryPage } from '@/components/categories/category-page';
 import type { Metadata } from 'next';
-import { ArticleDoc } from '@/lib/firestore-types';
+import { getArticles } from '@/lib/strapi-client';
 
 export const metadata: Metadata = {
   title: 'Moda - Vestigio Magazine',
   description: 'Artículos sobre moda masculina: outfits, tendencias y combinaciones.',
 };
 
-const articles: ArticleDoc[] = []; // Dummy data
-
-export default function ModaPage() {
+export default async function ModaPage() {
+  const allArticles = await getArticles();
+  const articles = allArticles.filter(a => a.category?.slug === 'moda');
   return <CategoryPage categoryName="Moda" articles={articles} />;
 }

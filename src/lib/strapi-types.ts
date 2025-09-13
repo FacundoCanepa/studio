@@ -12,7 +12,7 @@ export interface StrapiResponse<T> {
     };
 }
 
-interface StrapiEntity {
+export interface StrapiEntity {
     id: number;
     attributes: {
         createdAt: string;
@@ -22,7 +22,7 @@ interface StrapiEntity {
     };
 }
 
-interface StrapiMedia {
+export interface StrapiMedia {
     data: {
         id: number;
         attributes: {
@@ -36,11 +36,11 @@ interface StrapiMedia {
     } | null;
 }
 
-interface StrapiRelation<T> {
+export interface StrapiRelation<T> {
     data: T | null;
 }
 
-interface StrapiCollection<T> {
+export interface StrapiCollection<T> {
     data: T[];
 }
 
@@ -63,7 +63,7 @@ export type StrapiArticle = StrapiEntity & {
         tags: StrapiCollection<StrapiTag>;
 
         // Component
-        Name?: { // This is our SEO Component
+        seo?: { // Component name is 'seo' in Strapi
             metaTitle?: string;
             metaDescription?: string;
             canonicalUrl?: string;
@@ -75,7 +75,7 @@ export type StrapiArticle = StrapiEntity & {
 export type StrapiAuthor = StrapiEntity & {
     attributes: {
         documentId: string;
-        Name: string; // "Name" field in Strapi
+        Name: string; 
         Avatar: StrapiMedia;
         Bio?: any; // Blocks
     };
@@ -93,6 +93,6 @@ export type StrapiTag = StrapiEntity & {
     attributes: {
         documentId: string;
         name: string;
-        slug: string; // The user mentioned it might be "tag" but we'll use "slug" as requested in the model
+        slug: string; 
     };
 };

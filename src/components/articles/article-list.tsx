@@ -1,33 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import type { Category } from '@/lib/types';
 import { CategoryFilter } from './category-filter';
 import { ArticleCard } from './article-card';
 import { FadeIn } from '../shared/fade-in';
-import { ArticleDoc } from '@/lib/firestore-types';
+import { ArticleDoc, CategoryDoc } from '@/lib/firestore-types';
 
-// Dummy data until Firestore is connected
-const articles: ArticleDoc[] = []; 
-const categories = [
-    { name: 'Moda' },
-    { name: 'Estilo de vida' },
-    { name: 'Tips' },
-    { name: 'Accesorios' },
-    { name: 'Temporadas' },
-];
+interface ArticleListProps {
+  articles: ArticleDoc[];
+  categories: CategoryDoc[];
+}
 
-export const ArticleList = () => {
+export const ArticleList = ({ articles, categories }: ArticleListProps) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
 
   const filteredArticles = articles.filter(article => 
     selectedCategory === 'Todos' || article.category?.name === selectedCategory
   );
 
+  const categoryNames = [{ name: 'Todos' }, ...categories].map(c => c.name);
+
   return (
     <div>
       <CategoryFilter
-        categories={[{ name: 'Todos' }, ...categories].map(c => c.name)}
+        categories={categoryNames}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
       />
@@ -41,7 +37,7 @@ export const ArticleList = () => {
         </div>
       ) : (
         <div className="mt-8 text-center text-muted-foreground">
-          <p>No hay artículos para mostrar. Conecta tu CMS para empezar.</p>
+          <p>No hay artículos para mostrar en esta categoría.</p>
         </div>
       )}
     </div>
