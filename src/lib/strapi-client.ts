@@ -54,11 +54,13 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     
     if (Array.isArray(json?.data) && json.data[0]) {
       const firstItem = json.data[0]?.attributes;
-      console.log("[STRAPI][JSON][FIRST]", {
-        documentId: firstItem.documentId,
-        slug: firstItem.slug ?? firstItem.name,
-        hasSEO: Boolean(firstItem.Name),
-      });
+      if (firstItem) {
+        console.log("[STRAPI][JSON][FIRST]", {
+          documentId: firstItem.documentId,
+          slug: firstItem.slug ?? firstItem.name,
+          hasSEO: Boolean(firstItem.Name),
+        });
+      }
     }
 
     return json as T;
