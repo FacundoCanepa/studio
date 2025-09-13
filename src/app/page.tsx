@@ -151,7 +151,7 @@ export default function HomePage() {
         {loading ? (
             <LoadingSkeleton />
         ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+            <div className="flex flex-col lg:flex-row lg:gap-12">
                 <ArticleFilters 
                     articles={articles}
                     categories={categories}
@@ -160,7 +160,7 @@ export default function HomePage() {
                     onFilterChange={handleFilterChange}
                     onClearFilters={handleClearFilters}
                 />
-                <main className="lg:col-span-3">
+                <main className="flex-1 mt-12 lg:mt-0">
                     <ArticleList articles={filteredArticles} />
                 </main>
             </div>
