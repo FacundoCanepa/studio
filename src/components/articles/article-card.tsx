@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ArrowRight } from 'lucide-react';
 
 interface ArticleCardProps {
   article: ArticleDoc;
@@ -14,48 +15,45 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   const publishedDate = article.publishedAt ? new Date(article.publishedAt) : null;
 
   return (
-    <Link href={`/articulos/${article.slug}`} className="neumorphic-card group">
-      <div className="neumorphic-card-blob"></div>
-      <div className="neumorphic-card-bg">
-        <div className="flex flex-col h-full">
-            {article.coverUrl && (
-              <div className="relative w-full h-40 rounded-t-md overflow-hidden">
-                <Image
-                  src={article.coverUrl}
-                  alt={article.title}
-                  fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
+    <div className="overflow-hidden rounded-lg bg-card shadow-sm border border-border/20 transition-shadow duration-300 hover:shadow-md">
+      <Link href={`/articulos/${article.slug}`} className="block">
+        {article.coverUrl && (
+          <div className="relative w-full h-48">
+            <Image
+              src={article.coverUrl}
+              alt={article.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+        )}
+        <div className="p-5">
+          {article.category && (
+            <p className="text-sm font-medium text-primary mb-1">
+              {article.category.name}
+            </p>
+          )}
+          <h3 className="text-xl font-bold font-headline text-foreground leading-tight">
+            {article.title}
+          </h3>
+          {article.excerpt && (
+            <p className="mt-2 text-sm text-muted-foreground line-clamp-3">
+              {article.excerpt}
+            </p>
+          )}
+          <div className="flex items-center justify-between mt-4">
+            {publishedDate && (
+              <p className="text-xs text-muted-foreground">
+                {format(publishedDate, "d 'de' LLLL 'de' yyyy", { locale: es })}
+              </p>
             )}
-            
-            <div className="flex flex-col flex-grow p-4">
-              {article.category && (
-                <p className="font-code text-xs uppercase tracking-widest text-primary">
-                  {article.category.name}
-                </p>
-              )}
-              <h3 className="font-headline text-lg font-medium leading-tight text-foreground mt-2">
-                {article.title}
-              </h3>
-              {article.excerpt && (
-                <p className="text-sm text-foreground/80 mt-1 line-clamp-2">
-                  {article.excerpt}
-                </p>
-              )}
-              {publishedDate && (
-                 <p className="text-xs text-muted-foreground mt-auto pt-2">
-                  {format(publishedDate, "d 'de' LLLL 'de' yyyy", { locale: es })}
-                </p>
-              )}
-               <div className="mt-4 text-center">
-                 <div className="learn-more-wrapper">
-                    <button className="learn-more">Ver más</button>
-                 </div>
-              </div>
+            <div className="group inline-flex items-center gap-1 text-sm font-medium text-primary">
+              Ver más
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
             </div>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 };
