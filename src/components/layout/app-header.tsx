@@ -15,7 +15,10 @@ interface AppHeaderProps {
 export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
   const [isSheetOpen, setSheetOpen] = useState(false);
 
-  const navLinks = categories.map(c => ({ name: c.name, href: `/categoria/${c.slug}` }));
+  const navLinks = [
+    ...categories.map(c => ({ name: c.name, href: `/categoria/${c.slug}` })),
+    { name: 'Quiénes Somos', href: '/quienes-somos' },
+  ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

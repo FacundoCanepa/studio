@@ -80,3 +80,18 @@ export const articles: ArticleDoc[] = [
     tags: [{ documentId: 'tag-6', name: 'Viajes', slug: 'viajes' }],
   },
 ];
+
+
+export const aboutPageContent = {
+  title: "Quiénes somos",
+  subtitle: "Minimalismo, moda y mentalidad. Vestigio es una guía práctica para vestir mejor con menos.",
+  heroImage: "https://picsum.photos/seed/about/1920/1080",
+  content: `**Vestigio** nace con una idea simple: ayudarte a construir un estilo propio, sobrio y funcional. 
+Curamos looks, enseñamos combinaciones y diseñamos prendas atemporales que se adaptan a tu día a día.
+
+- Apuesta por lo esencial: menos ruido, más intención.
+- Paleta neutra y cortes limpios.
+- Educación primero: tips, guías y comparativas reales.
+
+Esto es una comunidad. Si te suma, quedate: hay mucho por construir juntos.`,
+};
