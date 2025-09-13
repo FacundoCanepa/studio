@@ -13,7 +13,7 @@ export const ColorPalette = ({ colors, title, description }: ColorPaletteProps) 
         {colors.map((color, index) => (
           <div
             key={index}
-            className="color"
+            className="palette-color"
             style={{ backgroundColor: `#${color}` }}
           >
             <span>#{color.toUpperCase()}</span>
