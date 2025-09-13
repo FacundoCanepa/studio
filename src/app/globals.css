@@ -98,7 +98,7 @@
 }
 
 @layer components {
-  /* Customize the label (the checkbox-btn) */
+  /* Custom checkbox style */
   .checkbox-btn {
     display: block;
     position: relative;
@@ -169,6 +169,105 @@
   .checkbox-btn input:checked ~ .checkmark {
     transform: rotate(45deg);
     border: none;
+  }
+
+  /* 3D Card Style */
+  .card-3d-parent {
+    width: 100%;
+    padding: 20px;
+    perspective: 1000px;
+  }
+  .card-3d {
+    border: 3px solid hsl(var(--foreground) / 0.8);
+    transform-style: preserve-3d;
+    background: linear-gradient(135deg,transparent 18.75%, hsl(var(--muted)) 0 31.25%, transparent 0),
+        repeating-linear-gradient(45deg,hsl(var(--muted)) -6.25% 6.25%, hsl(var(--background)) 0 18.75%);
+    background-size: 60px 60px;
+    background-position: 0 0, 0 0;
+    background-color: hsl(var(--card));
+    width: 100%;
+    box-shadow: rgba(142, 142, 142, 0.3) 0px 30px 30px -10px;
+    transition: all 0.5s ease-in-out;
+    padding-top: 50px;
+  }
+  .card-3d:hover {
+    background-position: -100px 100px, -100px 100px;
+    transform: rotate3d(0.5, 1, 0, 30deg);
+  }
+  .card-3d-content {
+    background: hsl(var(--primary) / 0.8);
+    backdrop-filter: blur(4px);
+    transition: all 0.5s ease-in-out;
+    padding: 60px 25px 25px 25px;
+    transform-style: preserve-3d;
+  }
+  .card-3d .card-title {
+    display: inline-block;
+    color: hsl(var(--primary-foreground));
+    font-size: 22px;
+    font-weight: 700;
+    transition: all 0.5s ease-in-out;
+    transform: translate3d(0px, 0px, 40px);
+  }
+  .card-3d .card-title:hover {
+    transform: translate3d(0px, 0px, 50px);
+  }
+  .card-3d .card-text {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--primary-foreground) / 0.9);
+    transition: all 0.5s ease-in-out;
+    transform: translate3d(0px, 0px, 30px);
+  }
+  .card-3d .card-text:hover {
+    transform: translate3d(0px, 0px, 40px);
+  }
+  .card-3d .see-more {
+    cursor: pointer;
+    margin-top: 1rem;
+    display: inline-block;
+    font-weight: 900;
+    font-size: 9px;
+    text-transform: uppercase;
+    color: hsl(var(--primary));
+    background: hsl(var(--primary-foreground));
+    padding: 0.5rem 0.7rem;
+    transition: all 0.5s ease-in-out;
+    transform: translate3d(0px, 0px, 20px);
+  }
+  .card-3d .see-more:hover {
+    transform: translate3d(0px, 0px, 50px);
+  }
+  .card-3d-date-box {
+    position: absolute;
+    top: 30px;
+    right: 30px;
+    height: 60px;
+    width: 60px;
+    background: hsl(var(--background));
+    border: 2px solid hsl(var(--primary));
+    padding: 10px;
+    transform: translate3d(0px, 0px, 60px);
+    box-shadow: rgba(100, 100, 111, 0.3) 0px 17px 10px -10px;
+  }
+  .dark .card-3d-date-box {
+    background: hsl(var(--secondary));
+  }
+  .card-3d-date-box span {
+    display: block;
+    text-align: center;
+  }
+  .card-3d-date-box .month {
+    color: hsl(var(--primary));
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .card-3d-date-box .date {
+    font-size: 22px;
+    font-weight: 900;
+    color: hsl(var(--primary));
   }
 }
 
