@@ -3,6 +3,7 @@ import { ArticleList } from '@/components/articles/article-list';
 import { AdSlot } from '@/components/marketing/ad-slot';
 import { getArticles, getCategories } from '@/lib/strapi-client';
 import type { ArticleDoc, CategoryDoc } from '@/lib/firestore-types';
+import { CategoryFilter } from '@/components/articles/category-filter';
 
 export default async function Home() {
   const BYPASS_FIRESTORE = process.env.NODE_ENV === 'development';
@@ -50,16 +51,19 @@ export default async function Home() {
         </p>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        <div className="lg:col-span-3">
-          <ArticleList articles={safeArticles} categories={categories} />
-        </div>
-        <aside className="hidden lg:block lg:col-span-1">
-          <div className="sticky top-24 space-y-6">
-            <h3 className="font-headline text-xl tracking-wider text-foreground/70">Publicidad</h3>
-            <AdSlot className="h-96" />
+      <div className="space-y-12">
+        <CategoryFilter categories={categories} />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+          <div className="lg:col-span-3">
+            <ArticleList articles={safeArticles} />
           </div>
-        </aside>
+          <aside className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              <h3 className="font-headline text-xl tracking-wider text-foreground/70">Publicidad</h3>
+              <AdSlot className="h-96" />
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );

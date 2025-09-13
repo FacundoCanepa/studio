@@ -1,32 +1,37 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import type { CategoryDoc } from '@/lib/firestore-types';
+import { cn } from '@/lib/utils';
 
 interface CategoryFilterProps {
-  categories: string[];
-  selectedCategory: string;
-  setSelectedCategory: (category: string) => void;
+  categories: CategoryDoc[];
+  activeCategorySlug?: string;
 }
 
-export const CategoryFilter = ({ categories, selectedCategory, setSelectedCategory }: CategoryFilterProps) => {
+export const CategoryFilter = ({ categories, activeCategorySlug }: CategoryFilterProps) => {
+  const baseClasses = "inline-flex items-center rounded-full px-4 py-2 text-sm border transition-colors duration-200";
+  const activeClasses = "bg-primary text-primary-foreground border-primary";
+  const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
   
-  const handleSelect = (categoryName: string) => {
-    console.log('[UI][CategoryTabs][CLICK]', { selected: categoryName });
-    setSelectedCategory(categoryName);
-  }
-
   return (
-    <div className="flex flex-wrap gap-2">
-      {categories.map(categoryName => (
-        <Button
-          key={categoryName}
-          variant={selectedCategory === categoryName ? 'default' : 'ghost'}
-          onClick={() => handleSelect(categoryName)}
-          className="rounded-full"
+    <nav aria-label="Categorías" className="flex gap-3 flex-wrap">
+       <Link href="/" className={cn(baseClasses, !activeCategorySlug ? activeClasses : idleClasses)}>
+        Todos
+      </Link>
+      {categories.map((category) => (
+        <Link
+          key={category.documentId}
+          href={`/categoria/${category.slug}`}
+          className={cn(
+            baseClasses,
+            activeCategorySlug === category.slug ? activeClasses : idleClasses
+          )}
         >
-          {categoryName}
-        </Button>
+          {category.name}
+        </Link>
       ))}
-    </div>
+    </nav>
   );
 };

@@ -150,24 +150,50 @@ async function strapiAuthorToAuthorDoc(item: StrapiAuthor): Promise<AuthorDoc> {
 
 // --- API Methods ---
 
-export async function getArticles(): Promise<ArticleDoc[]> {
-    const strapiArticles = await fetchPaginated<StrapiArticle>('/api/articles?populate=*&sort=publishedAt:desc');
+export async function getArticles({
+  page = 1,
+  pageSize = 12,
+  categorySlug,
+}: {
+  page?: number;
+  pageSize?: number;
+  categorySlug?: string;
+} = {}): Promise<ArticleDoc[]> {
+    const params = new URLSearchParams();
+    params.set('populate', '*');
+    params.set('sort', 'publishedAt:desc');
+    params.set('pagination[page]', String(page));
+    params.set('pagination[pageSize]', String(pageSize));
+
+    const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`);
     console.log("[ARTICLES][RAW_LEN]", strapiArticles.length);
 
     const mappedArticles = (await Promise.all(strapiArticles.map(mapStrapiArticleToArticleDoc))).filter(Boolean) as ArticleDoc[];
     
-    console.log("[ARTICLES][MAPPED_LEN]", mappedArticles.length);
-    if (mappedArticles.length > 0) {
+    const filtered = categorySlug
+      ? mappedArticles.filter(a => a?.category?.slug === categorySlug)
+      : mappedArticles;
+
+    if (process.env.DEBUG_STRAPI === "true") {
+      console.log("[ARTICLES][BYPASS][FILTER]", {
+        categorySlug,
+        before: mappedArticles.length,
+        after: filtered.length,
+      });
+    }
+
+    console.log("[ARTICLES][MAPPED_LEN]", filtered.length);
+    if (filtered.length > 0) {
         console.log("[ARTICLES][MAPPED_FIRST]", {
-            documentId: mappedArticles[0].documentId,
-            slug: mappedArticles[0].slug,
-            title: mappedArticles[0].title
+            documentId: filtered[0].documentId,
+            slug: filtered[0].slug,
+            title: filtered[0].title
         });
     } else {
         console.warn("[ARTICLES][MAPPED_EMPTY] after mapping/filter");
     }
 
-    return mappedArticles;
+    return filtered;
 }
 
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
@@ -182,8 +208,20 @@ export async function getAuthors(): Promise<AuthorDoc[]> {
 }
 
 export async function getCategories(): Promise<CategoryDoc[]> {
-    const categories = await fetchPaginated<StrapiCategory>('/api/categories?populate=*');
-    return Promise.all(categories.map(strapiCategoryToCategoryDoc));
+    const json = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?populate=*&pagination[page]=1&pagination[pageSize]=100&sort=name:asc`);
+    const raw = Array.isArray(json?.data) ? json.data : [];
+    const mapped: CategoryDoc[] = raw
+      .map((c: any) => c?.documentId && c?.name && c?.slug ? ({
+        documentId: c.documentId,
+        name: c.name,
+        slug: c.slug
+      }) : null)
+      .filter(Boolean) as CategoryDoc[];
+
+    if (process.env.DEBUG_STRAPI === "true") {
+      console.log("[NAV][CATEGORIES][BYPASS]", { count: mapped.length, sample: mapped[0] });
+    }
+    return mapped;
 }
 
 export async function getTags(): Promise<CategoryDoc[]> {
