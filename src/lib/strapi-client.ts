@@ -39,7 +39,8 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     if (model === 'articles') {
         console.log("[ARTICLES][FETCH][RESPONSE_STATUS]", response.status);
         try {
-            console.log("[ARTICLES][FETCH][RAW_BODY]", await response.clone().text());
+            const rawBody = await response.clone().text();
+            console.log("[ARTICLES][FETCH][RAW_BODY]", rawBody);
         } catch (e) {
             console.error('[ARTICLES][FETCH][RAW_BODY_ERROR]', e);
         }
