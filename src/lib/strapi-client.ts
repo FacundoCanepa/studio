@@ -12,19 +12,19 @@ if (!STRAPI_TOKEN) {
 
 async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> {
   const url = `${STRAPI_BASE_URL}${endpoint}`;
-  const model = endpoint.split('/')[2].split('?')[0];
-  
-  console.log('[STRAPI][REQUEST][BUILD]', { model, endpoint, url });
-  
-  const headers: Record<string, string> = {
-    'Accept': 'application/json',
-    ...(init?.headers as Record<string,string>),
-    ...(STRAPI_TOKEN ? { Authorization: `Bearer ${STRAPI_TOKEN}` } : {}),
-  };
-  console.log('[STRAPI][REQUEST][HEADERS]', { hasAuth: Boolean(STRAPI_TOKEN), accept: headers.Accept });
-
+  const model = endpoint.split('/api/')[1]?.split('?')[0]?.split('/')[0] || 'unknown';
 
   try {
+    console.log('[STRAPI][REQUEST][BUILD]', { model, endpoint, url });
+    
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      ...(init?.headers as Record<string,string>),
+      ...(STRAPI_TOKEN ? { Authorization: `Bearer ${STRAPI_TOKEN}` } : {}),
+    };
+    console.log('[STRAPI][REQUEST][HEADERS]', { hasAuth: Boolean(STRAPI_TOKEN), accept: headers.Accept });
+
+
     const response = await fetch(url, { 
       ...init,
       method: init?.method ?? 'GET',
