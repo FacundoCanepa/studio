@@ -9,6 +9,7 @@ import { RecommendedArticles } from '@/components/shared/recommended-articles';
 import { FloatingIconsHero } from '@/components/shared/floating-icons-hero';
 import { SectionTitle } from '@/components/shared/section-title';
 import { ImageGallery } from '@/components/shared/image-gallery';
+import { ColorPaletteSection } from '@/components/shared/color-palette-section';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
@@ -56,6 +57,14 @@ export default async function HomePage() {
         <SectionTitle>Galería</SectionTitle>
         <div className="mt-16 gallery-container">
           <ImageGallery />
+        </div>
+      </section>
+
+      {/* Color Palettes */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <SectionTitle>Paletas de Colores</SectionTitle>
+        <div className="mt-16">
+          <ColorPaletteSection />
         </div>
       </section>
     </div>

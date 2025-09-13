@@ -275,6 +275,72 @@
     height: 100%;
   }
 
+  /* Color Palette Card */
+  .color-palette-container {
+    height: 200px;
+    width: 100%;
+    max-width: 350px;
+    border-radius: 1em;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    font-family: sans-serif;
+    border: 1px solid hsl(var(--border));
+    margin: 0 auto;
+  }
+  .dark .color-palette-container {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  }
+
+  .palette {
+    display: flex;
+    height: 86%;
+    width: 100%;
+  }
+
+  .palette .color {
+    height: 100%;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    letter-spacing: 1px;
+    transition: flex 0.1s linear;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .palette .color span {
+    opacity: 0;
+    transition: opacity 0.1s linear;
+  }
+
+  .palette .color:hover {
+    flex: 2;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+  }
+
+  .palette .color:hover span {
+    opacity: 1;
+  }
+
+  .stats {
+    height: 14%;
+    width: 100%;
+    background: hsl(var(--card));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5em;
+    box-sizing: border-box;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.8rem;
+  }
+
+  .stats svg {
+    fill: hsl(var(--muted-foreground));
+    transform: scale(1.2);
+  }
 }
 
 @layer utilities {
