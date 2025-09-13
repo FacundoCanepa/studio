@@ -5,13 +5,22 @@ import { getArticles, getCategories } from '@/lib/strapi-client';
 import type { ArticleDoc, CategoryDoc } from '@/lib/firestore-types';
 
 export default async function Home() {
+  const BYPASS_FIRESTORE = process.env.NODE_ENV === 'development';
   let articles: ArticleDoc[] = [];
   let categories: CategoryDoc[] = [];
   let emptyReason = 'no-items-from-strapi';
 
+  if (BYPASS_FIRESTORE) {
+    console.log('[TEST][BYPASS_FIRESTORE] enabled');
+  }
+
   try {
+    // Reading directly from Strapi for now. Firestore helpers will be used later.
     articles = await getArticles();
     categories = await getCategories();
+    if (BYPASS_FIRESTORE) {
+      console.log('[TEST][BYPASS][STRAPI][COUNT]', articles.length);
+    }
   } catch (error: any) {
     console.log('[UI][Home][ERROR]', { message: error?.message, stack: error?.stack });
     emptyReason = error.message;
@@ -25,7 +34,6 @@ export default async function Home() {
   } else {
      console.log('[UI][Home][RENDER_STATE]', 'rendering-list');
   }
-
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">

@@ -63,7 +63,7 @@ export type StrapiArticle = StrapiEntity & {
         slug: string;
         excerpt?: string;
         Content?: any; // Rich text (blocks)
-        cover: StrapiMedia;
+        cover?: StrapiMedia;
         featured?: boolean;
         publishedAt?: string;
 
