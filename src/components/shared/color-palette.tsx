@@ -1,28 +1,28 @@
 import * as React from 'react';
-import { MoreHorizontal } from 'lucide-react';
 
 interface ColorPaletteProps {
   colors: string[];
-  saves: number;
+  title: string;
+  description: string;
 }
 
-export const ColorPalette = ({ colors, saves }: ColorPaletteProps) => {
+export const ColorPalette = ({ colors, title, description }: ColorPaletteProps) => {
   return (
     <div className="color-palette-container">
-      <div className="palette">
+      <div className="color-palette">
         {colors.map((color, index) => (
           <div
             key={index}
             className="color"
             style={{ backgroundColor: `#${color}` }}
           >
-            <span>{color.toUpperCase()}</span>
+            <span>#{color.toUpperCase()}</span>
           </div>
         ))}
       </div>
-      <div className="stats">
-        <span>{saves.toLocaleString()} saves</span>
-        <MoreHorizontal size={18} />
+      <div className="text-center">
+        <h4 className="text-xl font-headline mt-4">{title}</h4>
+        <p className="text-sm text-muted-foreground mt-1 px-4">{description}</p>
       </div>
     </div>
   );

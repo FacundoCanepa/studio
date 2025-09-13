@@ -35,7 +35,7 @@ export default async function HomePage() {
       {/* b. Sección "Destacados" */}
       <section className="bg-primary/90 py-20 text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle className="text-white before:bg-white/20">Destacados</SectionTitle>
+          <SectionTitle className="text-white">Destacados</SectionTitle>
           <div className="grid grid-cols-1 gap-12 mt-16">
             {featuredArticles.map((article) => (
               <HorizontalArticleCard key={article.documentId} article={article} />
@@ -62,7 +62,7 @@ export default async function HomePage() {
 
       {/* Color Palettes */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <SectionTitle>Paletas de Colores</SectionTitle>
+        <SectionTitle>Combina y Acertarás</SectionTitle>
         <div className="mt-16">
           <ColorPaletteSection />
         </div>
