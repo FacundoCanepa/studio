@@ -2,6 +2,7 @@ import type { ArticleDoc } from '@/lib/firestore-types';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ArrowRight } from 'lucide-react';
 
 interface ArticleCardProps {
   article: ArticleDoc;
@@ -10,45 +11,28 @@ interface ArticleCardProps {
 export const ArticleCard = ({ article }: ArticleCardProps) => {
   if (!article) return null;
 
-  const publishedDate = article.publishedAt ? new Date(article.publishedAt) : null;
-  const month = publishedDate ? publishedDate.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '') : '';
-  const day = publishedDate ? publishedDate.getDate() : '';
-
   return (
-    <div className="card-3d-parent">
-      <div className="card-3d group">
+    <Link href={`/articulos/${article.slug}`} className="glow-card group">
         {article.coverUrl && (
             <Image
                 src={article.coverUrl}
                 alt={article.title}
-                width={400}
-                height={250}
-                className="w-full h-auto object-cover"
-                style={{ transform: 'translate3d(0, 0, 40px)' }}
+                fill
+                className="glow-card-image"
             />
         )}
-        <div className="card-3d-content">
-          {article.category && (
-            <Badge variant="secondary" className="mb-4" style={{ transform: 'translate3d(0, 0, 20px)' }}>
-              {article.category.name}
-            </Badge>
-          )}
-
-          <h3 className="card-title font-headline">{article.title}</h3>
-          <p className="card-text">{article.excerpt}</p>
-          
-          <Link href={`/articulos/${article.slug}`} className="see-more">
-            Ver más
-          </Link>
+        <div className="glow-card-content">
+            {article.category && (
+                <Badge variant="secondary" className="self-start z-[2]">
+                {article.category.name}
+                </Badge>
+            )}
+            <h3 className="glow-card-heading font-headline">{article.title}</h3>
+            <p>{article.excerpt}</p>
+            <p className="glow-card-footer flex items-center gap-2">
+                Ver más <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </p>
         </div>
-        
-        {publishedDate && (
-          <div className="card-3d-date-box">
-            <span className="month">{month}</span>
-            <span className="date">{day}</span>
-          </div>
-        )}
-      </div>
-    </div>
+    </Link>
   );
 };
