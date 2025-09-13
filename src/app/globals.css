@@ -197,25 +197,6 @@
     transition: 0.3s;
   }
 
-  .retro-switch .slider:before {
-    content: "off";
-    box-sizing: border-box;
-    height: 30px;
-    width: 30px;
-    position: absolute;
-    left: 2px;
-    bottom: 1px;
-    border: 2px solid var(--main-color);
-    border-radius: 100px;
-    background-color: var(--bg-color);
-    color: var(--main-color);
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-    line-height: 25px;
-    transition: 0.3s;
-  }
-
   .retro-switch .toggle:checked + .slider {
     background-color: var(--input-focus);
     transform: translateX(-32px);
@@ -273,8 +254,8 @@
     background: linear-gradient(
       -45deg,
       hsl(var(--primary)),
+      hsl(var(--foreground)),
       hsl(var(--accent)),
-      hsl(var(--secondary)),
       hsl(var(--primary))
     );
     background-size: 300% 300%;
