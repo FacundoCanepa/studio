@@ -91,8 +91,15 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     let totalPages = 1;
     const model = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
 
+    const baseEndpoint = endpoint.includes('?') ? endpoint.split('?')[0] : endpoint;
+    const searchParams = new URLSearchParams(endpoint.includes('?') ? endpoint.split('?')[1] : '');
+
     do {
-        const fullEndpoint = `${endpoint}${endpoint.includes('?') ? '&' : '?'}pagination[page]=${page}&pagination[pageSize]=50`;
+        searchParams.set('pagination[page]', String(page));
+        searchParams.set('pagination[pageSize]', '50');
+        
+        const fullEndpoint = `${baseEndpoint}?${searchParams.toString()}`;
+
         try {
           const response: StrapiResponse<T[]> = await fetchStrapi(fullEndpoint);
           
@@ -125,28 +132,6 @@ export async function getStrapiMediaUrl(relativePath?: string | null): Promise<s
     if (relativePath.startsWith('http')) return relativePath;
     const baseUrl = STRAPI_BASE_URL.replace('/api', '');
     return `${baseUrl}${relativePath}`;
-}
-
-
-async function strapiCategoryToCategoryDoc(item: StrapiCategory): Promise<CategoryDoc> {
-    return {
-        documentId: item.documentId,
-        name: item.name,
-        slug: item.slug,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-    };
-}
-
-async function strapiAuthorToAuthorDoc(item: StrapiAuthor): Promise<AuthorDoc> {
-    return {
-        documentId: item.documentId,
-        name: item.Name,
-        avatarUrl: await getStrapiMediaUrl(item.Avatar?.url),
-        bioBlocks: item.Bio,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-    };
 }
 
 // --- API Methods ---
@@ -199,7 +184,14 @@ export async function getArticle(documentId: string): Promise<ArticleDoc | null>
 
 export async function getAuthors(): Promise<AuthorDoc[]> {
     const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*');
-    return Promise.all(authors.map(strapiAuthorToAuthorDoc));
+    return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
+        documentId: item.documentId,
+        name: item.Name,
+        avatarUrl: await getStrapiMediaUrl(item.Avatar?.url),
+        bioBlocks: item.Bio,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+    })));
 }
 
 export async function getCategories(): Promise<CategoryDoc[]> {

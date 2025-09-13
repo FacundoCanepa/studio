@@ -4,6 +4,7 @@ import { getArticles, getCategories } from "@/lib/strapi-client";
 import type { Metadata } from "next";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
+import { CategoryFilter } from "@/components/articles/category-filter";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { slug } = params;
@@ -24,31 +25,6 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   const categories = await getCategories();
   const category = categories.find(c => c.slug === slug);
 
-  const NavButtons = () => {
-    const baseClasses = "inline-flex items-center rounded-full px-4 py-2 text-sm border transition-colors duration-200";
-    const activeClasses = "bg-primary text-primary-foreground border-primary";
-    const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
-    return (
-      <nav aria-label="Categorías" className="flex gap-3 flex-wrap">
-        <Link href="/" className={cn(baseClasses, idleClasses)}>
-          Todos
-        </Link>
-        {categories.map((c) => (
-          <Link
-            key={c.documentId}
-            href={`/categoria/${c.slug}`}
-            className={cn(
-              baseClasses,
-              slug === c.slug ? activeClasses : idleClasses
-            )}
-          >
-            {c.name}
-          </Link>
-        ))}
-      </nav>
-    )
-  }
-
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
        <section className="py-12 text-center">
@@ -58,7 +34,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
       </section>
 
       <div className="space-y-12">
-        <NavButtons />
+        <CategoryFilter categories={categories} activeCategorySlug={slug} />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           <div className="lg:col-span-3">

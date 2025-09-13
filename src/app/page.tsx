@@ -1,69 +1,170 @@
-import { AnimatedHeadline } from '@/components/shared/animated-headline';
+'use client';
+
+import * as React from 'react';
 import { ArticleList } from '@/components/articles/article-list';
-import { AdSlot } from '@/components/marketing/ad-slot';
-import type { ArticleDoc, CategoryDoc } from '@/lib/firestore-types';
-import { CategoryFilter } from '@/components/articles/category-filter';
-import { getArticles, getCategories } from '@/lib/strapi-client';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { getArticles, getCategories, getAuthors } from '@/lib/strapi-client';
+import type { ArticleDoc, CategoryDoc, AuthorDoc } from '@/lib/firestore-types';
+import { ArticleFilters, Filters } from '@/components/articles/article-filters';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default async function HomePage() {
-  const articles = await getArticles();
-  const categories = await getCategories();
+const INITIAL_FILTERS: Filters = {
+  query: '',
+  category: 'all',
+  author: 'all',
+  tags: [],
+  featured: false,
+  sort: 'publishedAt:desc',
+};
 
-  const NavButtons = () => {
-    const baseClasses = "inline-flex items-center rounded-full px-4 py-2 text-sm border transition-colors duration-200";
-    const activeClasses = "bg-primary text-primary-foreground border-primary";
-    const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
-    return (
-      <nav aria-label="Categorías" className="flex gap-3 flex-wrap">
-        <Link href="/" className={cn(baseClasses, activeClasses)}>
-          Todos
-        </Link>
-        {categories.map((c) => (
-          <Link
-            key={c.documentId}
-            href={`/categoria/${c.slug}`}
-            className={cn(baseClasses, idleClasses)}
-          >
-            {c.name}
-          </Link>
-        ))}
-      </nav>
-    )
-  }
+export default function HomePage() {
+  const [articles, setArticles] = React.useState<ArticleDoc[]>([]);
+  const [categories, setCategories] = React.useState<CategoryDoc[]>([]);
+  const [authors, setAuthors] = React.useState<AuthorDoc[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  const [filters, setFilters] = React.useState<Filters>(INITIAL_FILTERS);
+
+  React.useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const [fetchedArticles, fetchedCategories, fetchedAuthors] = await Promise.all([
+          getArticles(),
+          getCategories(),
+          getAuthors(),
+        ]);
+        setArticles(fetchedArticles);
+        setCategories(fetchedCategories);
+        setAuthors(fetchedAuthors);
+      } catch (error) {
+        console.error("Failed to fetch initial data", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleFilterChange = (newFilters: Partial<Filters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters(INITIAL_FILTERS);
+  };
+  
+  const filteredArticles = React.useMemo(() => {
+    let filtered = articles;
+
+    // Filter by query
+    if (filters.query) {
+      const lowerCaseQuery = filters.query.toLowerCase();
+      filtered = filtered.filter(
+        article =>
+          article.title.toLowerCase().includes(lowerCaseQuery) ||
+          article.excerpt?.toLowerCase().includes(lowerCaseQuery)
+      );
+    }
+
+    // Filter by category
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(article => article.category?.slug === filters.category);
+    }
+    
+    // Filter by author
+    if (filters.author !== 'all') {
+      filtered = filtered.filter(article => article.author?.name === filters.author);
+    }
+    
+    // Filter by tags
+    if (filters.tags.length > 0) {
+        filtered = filtered.filter(article => 
+            filters.tags.every(filterTag => 
+                article.tags.some(articleTag => articleTag.name === filterTag)
+            )
+        );
+    }
+
+    // Filter by featured
+    if (filters.featured) {
+        filtered = filtered.filter(article => article.featured);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+        const [key, direction] = filters.sort.split(':');
+        const aValue = (a as any)[key] || '';
+        const bValue = (b as any)[key] || '';
+
+        if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
+    return filtered;
+  }, [articles, filters]);
+
+  const LoadingSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="w-full lg:w-80 lg:shrink-0">
+            <div className="space-y-6 p-6">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                 <div className="space-y-2">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-6 w-1/3" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+                 <Skeleton className="h-10 w-full" />
+            </div>
+        </div>
+        <div className="md:col-span-3">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="space-y-3">
+                        <Skeleton className="h-48 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                         <Skeleton className="h-4 w-1/4" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+  );
+
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <section className="py-12 text-center">
-        <AnimatedHeadline />
-        <p className="mt-4 max-w-2xl mx-auto text-lg text-foreground/80">
-          La revista de moda, estilo de vida y tendencias para la mujer moderna.
-        </p>
-      </section>
-
-      <div className="space-y-12">
-        <NavButtons />
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-          <div className="lg:col-span-3">
-            <ArticleList articles={articles} />
-            {articles.length === 0 && (
-              <div className="text-center py-16 text-muted-foreground">
-                <p>No se encontraron artículos.</p>
-              </div>
-            )}
-          </div>
-          <aside className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-24 space-y-6">
-              <h3 className="font-headline text-xl tracking-wider text-foreground/70">Publicidad</h3>
-              <AdSlot className="h-96" />
+        <section className="text-center mb-12">
+            <h1 className="text-5xl md:text-7xl font-headline font-medium tracking-tighter uppercase">
+            Archivo
+            </h1>
+            <p className="mt-3 max-w-xl mx-auto text-lg text-foreground/80">
+            Explora nuestros artículos. Usa los filtros para encontrar exactamente lo que buscas.
+            </p>
+        </section>
+        
+        {loading ? (
+            <LoadingSkeleton />
+        ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+                <ArticleFilters 
+                    articles={articles}
+                    categories={categories}
+                    authors={authors}
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onClearFilters={handleClearFilters}
+                />
+                <main className="lg:col-span-3">
+                    <ArticleList articles={filteredArticles} />
+                </main>
             </div>
-          </aside>
-        </div>
-      </div>
+        )}
     </div>
   );
 }
