@@ -427,16 +427,17 @@
 
 /* 3D Image Gallery */
 .gallery-container {
-  perspective: 1000px;
+  perspective: 500px;
 }
 
 .gallery-card {
   transform-style: preserve-3d;
   transition: transform 0.5s;
+  will-change: transform;
 }
 
 .gallery-card:hover {
-  transform: translateZ(20px) rotateX(15deg) rotateY(15deg);
+  transform: translateZ(10px) rotateX(20deg) rotateY(20deg);
 }
 
 .gallery-card img {
