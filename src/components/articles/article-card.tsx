@@ -11,6 +11,8 @@ interface ArticleCardProps {
 }
 
 export const ArticleCard = ({ article, className, imageClassName }: ArticleCardProps) => {
+  if (!article) return null;
+
   const imageUrl = article.coverUrl ?? 'https://picsum.photos/seed/default/600/400';
   const imageHint = article.seo?.metaDescription ?? 'fashion style';
 

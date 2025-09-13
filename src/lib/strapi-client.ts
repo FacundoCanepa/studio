@@ -2,6 +2,7 @@
 
 import { ArticleDoc, AuthorDoc, CategoryDoc } from './firestore-types';
 import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiResponse, StrapiTag, StrapiEntity } from '@/lib/strapi-types';
+import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
 const STRAPI_BASE_URL = "https://graceful-bear-073b8037ba.strapiapp.com";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
@@ -22,6 +23,10 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     };
     console.log('[STRAPI][REQUEST][BUILD]', { model, endpoint, url, hasAuth: Boolean(STRAPI_TOKEN) });
 
+    if (model === 'articles') {
+        console.log("[ARTICLES][FETCH][URL]", url);
+        console.log("[ARTICLES][FETCH][HAS_AUTH]", Boolean(STRAPI_TOKEN));
+    }
 
     const response = await fetch(url, { 
       ...init,
@@ -32,8 +37,6 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     }); 
     
     if (model === 'articles') {
-        console.log("[ARTICLES][FETCH][URL]", url);
-        console.log("[ARTICLES][FETCH][HAS_AUTH]", Boolean(STRAPI_TOKEN));
         console.log("[ARTICLES][FETCH][RESPONSE_STATUS]", response.status);
         try {
             console.log("[ARTICLES][FETCH][RAW_BODY]", await response.clone().text());
@@ -62,12 +65,12 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     console.log('[STRAPI][JSON][DATA_LEN]', dataLen);
     
     if (Array.isArray(json?.data) && json.data.length > 0) {
-      const firstItemAttrs = json.data[0]?.attributes;
-      if (firstItemAttrs) {
+      const firstItem = json.data[0];
+      if (firstItem) {
         console.log("[STRAPI][JSON][FIRST]", {
-          documentId: firstItemAttrs.documentId,
-          slug: firstItemAttrs.slug ?? firstItemAttrs.name,
-          hasSEO: Boolean(firstItemAttrs.Name),
+          documentId: firstItem.documentId,
+          slug: firstItem.slug ?? firstItem.name,
+          hasSEO: Boolean(firstItem.Name),
         });
       }
     }
@@ -75,7 +78,8 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     return json as T;
 
   } catch (error: any) {
-    console.error('[STRAPI][ERROR]', { model, url, message: error?.message, stack: error?.stack });
+    const errorModel = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
+    console.error('[STRAPI][ERROR]', { model: errorModel, url, message: error?.message, stack: error?.stack });
     throw error;
   }
 }
@@ -122,103 +126,54 @@ export async function getStrapiMediaUrl(relativePath?: string | null): Promise<s
     return `${baseUrl}${relativePath}`;
 }
 
-// --- Mappers ---
-
-async function strapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc> {
-    console.log("[ARTICLES][MAP][IN]", JSON.stringify(item, null, 2));
-    const docId = item.attributes.documentId;
-    const coverUrl = await getStrapiMediaUrl(item.attributes.cover?.data?.attributes.url);
-    const categorySlug = item.attributes.category?.data?.attributes.slug;
-    const tagSlugs = item.attributes.tags.data.map(t => t.attributes.slug);
-    const authorName = item.attributes.author?.data?.attributes.Name;
-    const publishedAt = item.attributes.publishedAt;
-    
-    const seoComponent = item.attributes.Name;
-
-    const seo = seoComponent ? {
-        metaTitle: seoComponent.metaTitle,
-        metaDescription: seoComponent.metaDescription,
-        ogImageUrl: await getStrapiMediaUrl(seoComponent.ogImage?.data?.attributes.url),
-        canonicalUrl: seoComponent.canonicalUrl,
-    } : undefined;
-
-    const articleDoc: ArticleDoc = {
-        documentId: docId,
-        title: item.attributes.title,
-        slug: item.attributes.slug,
-        excerpt: item.attributes.excerpt,
-        contentHtml: item.attributes.Content,
-        coverUrl: coverUrl,
-        featured: item.attributes.featured ?? false,
-        publishedAt: publishedAt,
-        createdAt: item.attributes.createdAt,
-        updatedAt: item.attributes.updatedAt,
-        category: item.attributes.category?.data ? {
-            documentId: item.attributes.category.data.attributes.documentId,
-            name: item.attributes.category.data.attributes.name,
-            slug: item.attributes.category.data.attributes.slug,
-        } : null,
-        author: item.attributes.author?.data ? {
-            documentId: item.attributes.author.data.attributes.documentId,
-            name: item.attributes.author.data.attributes.Name,
-            avatarUrl: await getStrapiMediaUrl(item.attributes.author.data.attributes.Avatar?.data?.attributes.url)
-        } : null,
-        tags: item.attributes.tags.data.map(t => ({
-            documentId: t.attributes.documentId,
-            name: t.attributes.name,
-            slug: t.attributes.slug,
-        })),
-        categorySlug: categorySlug,
-        tagSlugs: tagSlugs,
-        authorName: authorName,
-        seo: seo
-    };
-    
-    console.log("[ARTICLES][MAP][OUT]", {
-        documentId: articleDoc.documentId,
-        title: articleDoc.title,
-        slug: articleDoc.slug,
-        hasCover: Boolean(articleDoc.coverUrl),
-        hasCategory: Boolean(articleDoc.category),
-        hasAuthor: Boolean(articleDoc.author),
-        tagCount: articleDoc.tags?.length ?? 0,
-        hasSEO: Boolean(articleDoc.seo),
-    });
-
-    return articleDoc;
-}
 
 async function strapiCategoryToCategoryDoc(item: StrapiCategory): Promise<CategoryDoc> {
     return {
-        documentId: item.attributes.documentId,
-        name: item.attributes.name,
-        slug: item.attributes.slug,
-        createdAt: item.attributes.createdAt,
-        updatedAt: item.attributes.updatedAt,
+        documentId: item.documentId,
+        name: item.name,
+        slug: item.slug,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
     };
 }
 
 async function strapiAuthorToAuthorDoc(item: StrapiAuthor): Promise<AuthorDoc> {
     return {
-        documentId: item.attributes.documentId,
-        name: item.attributes.Name,
-        avatarUrl: await getStrapiMediaUrl(item.attributes.Avatar?.data?.attributes.url),
-        bioBlocks: item.attributes.Bio,
-        createdAt: item.attributes.createdAt,
-        updatedAt: item.attributes.updatedAt,
+        documentId: item.documentId,
+        name: item.Name,
+        avatarUrl: await getStrapiMediaUrl(item.Avatar?.data?.attributes.url),
+        bioBlocks: item.Bio,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
     };
 }
 
 // --- API Methods ---
 
 export async function getArticles(): Promise<ArticleDoc[]> {
-    const articles = await fetchPaginated<StrapiArticle>('/api/articles?populate=*&sort=publishedAt:desc');
-    return Promise.all(articles.map(strapiArticleToArticleDoc));
+    const strapiArticles = await fetchPaginated<StrapiArticle>('/api/articles?populate=*&sort=publishedAt:desc');
+    console.log("[ARTICLES][RAW_LEN]", strapiArticles.length);
+
+    const mappedArticles = (await Promise.all(strapiArticles.map(mapStrapiArticleToArticleDoc))).filter(Boolean) as ArticleDoc[];
+    
+    console.log("[ARTICLES][MAPPED_LEN]", mappedArticles.length);
+    if (mappedArticles.length > 0) {
+        console.log("[ARTICLES][MAPPED_FIRST]", {
+            documentId: mappedArticles[0].documentId,
+            slug: mappedArticles[0].slug,
+            title: mappedArticles[0].title
+        });
+    } else {
+        console.warn("[ARTICLES][MAPPED_EMPTY] after mapping/filter");
+    }
+
+    return mappedArticles;
 }
 
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
     const response = await fetchStrapi<StrapiResponse<StrapiArticle>>(`/api/articles/${documentId}?populate=*`);
-    return response.data ? strapiArticleToArticleDoc(response.data) : null;
+    if (!response.data) return null;
+    return await mapStrapiArticleToArticleDoc(response.data);
 }
 
 export async function getAuthors(): Promise<AuthorDoc[]> {
@@ -234,10 +189,10 @@ export async function getCategories(): Promise<CategoryDoc[]> {
 export async function getTags(): Promise<CategoryDoc[]> {
     const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*');
     return tags.map(tag => ({
-        documentId: tag.attributes.documentId,
-        name: tag.attributes.name,
-        slug: tag.attributes.slug,
-        createdAt: tag.attributes.createdAt,
-        updatedAt: tag.attributes.updatedAt,
+        documentId: tag.documentId,
+        name: tag.name,
+        slug: tag.slug,
+        createdAt: tag.createdAt,
+        updatedAt: tag.updatedAt,
     }));
 }

@@ -15,7 +15,6 @@ export default async function Home() {
   }
 
   try {
-    // Reading directly from Strapi for now. Firestore helpers will be used later.
     articles = await getArticles();
     categories = await getCategories();
     if (BYPASS_FIRESTORE) {
@@ -33,7 +32,9 @@ export default async function Home() {
     console.log("[ARTICLES][UI][ITEM]", i, { slug: a.slug, documentId: a.documentId, title: a.title });
   });
 
-  if (articles?.length === 0) {
+  const safeArticles = Array.isArray(articles) ? articles.filter(Boolean) : [];
+
+  if (safeArticles.length === 0) {
      console.log('[UI][Home][RENDER_STATE]', 'EMPTY_LIST');
      console.log('[UI][Home][EMPTY_REASON]', emptyReason);
   } else {
@@ -49,9 +50,15 @@ export default async function Home() {
         </p>
       </section>
 
+      {process.env.NODE_ENV !== 'production' && safeArticles[0] && (
+        <pre className="text-xs opacity-70 bg-slate-100 p-4 rounded-md my-4 overflow-x-auto">
+          {JSON.stringify({ firstArticle: { documentId: safeArticles[0].documentId, slug: safeArticles[0].slug, title: safeArticles[0].title } }, null, 2)}
+        </pre>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
         <div className="lg:col-span-3">
-          <ArticleList articles={articles} categories={categories} />
+          <ArticleList articles={safeArticles} categories={categories} />
         </div>
         <aside className="hidden lg:block lg:col-span-1">
           <div className="sticky top-24 space-y-6">

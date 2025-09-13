@@ -19,6 +19,7 @@ export interface StrapiEntity {
         updatedAt: string;
         publishedAt?: string;
         documentId: string;
+        [key: string]: any; // Allow other properties
     };
 }
 
