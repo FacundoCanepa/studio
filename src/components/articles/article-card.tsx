@@ -40,43 +40,45 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
         )}
       </figure>
       
-      <div className="flex-grow">
-        {publishedDate && (
-          <time dateTime={publishedDate.toISOString()} className="text-xs text-foreground/50">
-            {format(publishedDate, "dd MMM yyyy", { locale: es })}
-          </time>
-        )}
+      <div className="flex-grow flex flex-col">
+        <div className="flex-grow">
+            {publishedDate && (
+              <time dateTime={publishedDate.toISOString()} className="text-xs text-foreground/50">
+                {format(publishedDate, "dd MMM yyyy", { locale: es })}
+              </time>
+            )}
 
-        <p className="text-lg font-headline text-pretty mt-2 text-foreground">
-          {article.title}
-        </p>
+            <p className="text-lg font-headline text-pretty mt-2 text-foreground group-hover:text-primary transition-colors duration-300">
+              {article.title}
+            </p>
 
-        {article.excerpt && (
-           <p className="line-clamp-2 text-sm text-foreground/60 mt-1 group-hover:text-foreground/90 transition-opacity duration-300">
-             {article.excerpt}
-           </p>
-        )}
-      </div>
-      
-      <div className="flex items-center justify-between gap-3 mt-4">
-        <div className="flex items-center gap-3">
-          {article.author?.avatarUrl && (
-            <Image 
-              src={article.author.avatarUrl}
-              alt={article.author.name || 'Author'}
-              width={32}
-              height={32}
-              className="rounded-full size-8 object-cover"
-            />
-          )}
-          <div>
-            <p className="text-sm font-medium text-foreground">{article.author?.name}</p>
-          </div>
+            {article.excerpt && (
+              <p className="line-clamp-2 text-sm text-foreground/60 mt-1 group-hover:text-foreground/90 transition-opacity duration-300">
+                {article.excerpt}
+              </p>
+            )}
         </div>
         
-        <div className="simple-arrow-button">
-          <span>Ver más</span>
-          <ArrowRight className="size-4" />
+        <div className="flex items-center justify-between gap-3 mt-4">
+          <div className="flex items-center gap-3">
+            {article.author?.avatarUrl && (
+              <Image 
+                src={article.author.avatarUrl}
+                alt={article.author.name || 'Author'}
+                width={32}
+                height={32}
+                className="rounded-full size-8 object-cover"
+              />
+            )}
+            <div>
+              <p className="text-sm font-medium text-foreground">{article.author?.name}</p>
+            </div>
+          </div>
+          
+          <div className="simple-arrow-button">
+            <span>Ver más</span>
+            <ArrowRight className="size-4" />
+          </div>
         </div>
       </div>
     </Link>

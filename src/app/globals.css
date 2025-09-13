@@ -146,7 +146,7 @@
   }
 
   .group:hover .simple-arrow-button {
-    @apply text-foreground;
+    @apply text-primary;
   }
   
   .simple-arrow-button > svg {
