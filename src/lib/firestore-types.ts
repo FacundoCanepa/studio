@@ -11,10 +11,14 @@ export type ArticleDoc = {
   publishedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  views?: number;
+  saves?: number;
+  type?: 'guia' | 'lista' | 'comparativa';
 
-  category: { documentId: string; name: string; slug: string } | null;
+  category: { documentId: string; name: string; slug: string, description?: string, color?: string } | null;
   author:   { documentId: string; name: string; avatarUrl?: string } | null;
   tags:     Array<{ documentId: string; name: string; slug: string }>;
+  subcategories?: string[];
 
   // Denormalized fields for queries
   categorySlug?: string;
@@ -43,6 +47,8 @@ export type CategoryDoc = {
   documentId: string;
   name: string;
   slug: string;
+  description?: string;
+  color?: string;
   createdAt?: string;
   updatedAt?: string;
 }

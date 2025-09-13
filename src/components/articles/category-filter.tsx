@@ -10,27 +10,44 @@ interface CategoryFilterProps {
 }
 
 export const CategoryFilter = ({ categories = [], activeCategorySlug }: CategoryFilterProps) => {
-  const baseClasses = "inline-flex items-center rounded-full px-4 py-2 text-sm border transition-colors duration-200";
-  const activeClasses = "bg-primary text-primary-foreground border-primary";
-  const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
 
   return (
-    <nav aria-label="Categorías" className="flex gap-3 flex-wrap items-center">
-      <Link href="/" className={cn(baseClasses, !activeCategorySlug ? activeClasses : idleClasses)}>
-        Todos
-      </Link>
-      {categories.map((category) => (
-        <Link
-          key={category.documentId}
-          href={`/categoria/${category.slug}`}
-          className={cn(
-            baseClasses,
-            activeCategorySlug === category.slug ? activeClasses : idleClasses
-          )}
-        >
-          {category.name}
-        </Link>
-      ))}
-    </nav>
+    <div className="space-y-6">
+        <div>
+            <h4 className="font-headline text-lg mb-3">Categorías</h4>
+            <nav aria-label="Categorías" className="flex flex-col gap-2 items-start">
+            <Link href="/page" className={cn(
+                'text-foreground/80 hover:text-primary transition-colors',
+                !activeCategorySlug && 'text-primary font-semibold'
+            )}>
+                Todos
+            </Link>
+            {categories.map((category) => (
+                <Link
+                key={category.documentId}
+                href={`/categoria/${category.slug}`}
+                className={cn(
+                    'text-foreground/80 hover:text-primary transition-colors',
+                    activeCategorySlug === category.slug && 'text-primary font-semibold'
+                )}
+                >
+                {category.name}
+                </Link>
+            ))}
+            </nav>
+        </div>
+        <div className="pt-6 border-t border-border/50">
+            <h4 className="font-headline text-lg mb-3">Ordenar Por</h4>
+             {/* Placeholder for Sort controls */}
+        </div>
+        <div className="pt-6 border-t border-border/50">
+            <h4 className="font-headline text-lg mb-3">Tags Frecuentes</h4>
+            {/* Placeholder for Tag controls */}
+        </div>
+         <div className="pt-6 border-t border-border/50">
+            <h4 className="font-headline text-lg mb-3">Tipo de Contenido</h4>
+            {/* Placeholder for Type toggle */}
+        </div>
+    </div>
   );
 };

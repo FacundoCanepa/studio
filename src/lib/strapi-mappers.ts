@@ -15,6 +15,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         documentId: categoryData.documentId,
         name: categoryData.name,
         slug: categoryData.slug,
+        description: categoryData.description,
+        color: categoryData.color,
     } : null;
 
     const authorData = item.author;
@@ -54,9 +56,13 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         publishedAt: item.publishedAt,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
+        views: item.views ?? 0,
+        saves: item.saves ?? 0,
+        type: item.type,
         category,
         author,
         tags,
+        subcategories: item.subcategories,
         seo,
         categorySlug: category?.slug,
         tagSlugs: tags.map(t => t.slug),

@@ -13,36 +13,17 @@ export interface StrapiResponse<T> {
 }
 
 export interface StrapiEntity {
-    id: number;
-    attributes: {
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-        documentId: string;
-        [key: string]: any; // Allow other properties
-    };
+    documentId: string;
+    [key: string]: any; 
 }
 
 export interface StrapiMedia {
-    data: {
-        id: number;
-        attributes: {
-            url: string;
-            name: string;
-            alternativeText?: string;
-            caption?: string;
-            width: number;
-            height: number;
-        };
-    } | null;
-}
-
-export interface StrapiRelation<T> {
-    data: T | null;
-}
-
-export interface StrapiCollection<T> {
-    data: T[];
+    url: string;
+    name: string;
+    alternativeText?: string;
+    caption?: string;
+    width: number;
+    height: number;
 }
 
 // --- SEO Component ---
@@ -58,47 +39,41 @@ export type StrapiSeoComponent = {
 // --- Content Types ---
 
 export type StrapiArticle = StrapiEntity & {
-    attributes: {
-        documentId: string;
-        title: string;
-        slug: string;
-        excerpt?: string;
-        Content?: any; // Rich text (blocks)
-        cover?: StrapiMedia;
-        featured?: boolean;
-        publishedAt?: string;
+    title: string;
+    slug: string;
+    excerpt?: string;
+    Content?: any; // Rich text (blocks)
+    Cover?: StrapiMedia;
+    featured?: boolean;
+    publishedAt?: string;
+    views?: number;
+    saves?: number;
+    type?: 'guia' | 'lista' | 'comparativa';
 
-        // Relations
-        category: StrapiRelation<StrapiCategory>;
-        author: StrapiRelation<StrapiAuthor>;
-        tags: StrapiCollection<StrapiTag>;
+    // Relations
+    category?: StrapiCategory;
+    author?: StrapiAuthor;
+    tags?: StrapiTag[];
+    subcategories?: string[];
 
-        // Component - THIS IS THE ACTUAL SEO component name from your schema
-        Name?: StrapiSeoComponent;
-    };
+    // Component - THIS IS THE ACTUAL SEO component name from your schema
+    Name?: StrapiSeoComponent;
 };
 
 export type StrapiAuthor = StrapiEntity & {
-    attributes: {
-        documentId: string;
-        Name: string; 
-        Avatar: StrapiMedia;
-        Bio?: any; // Blocks
-    };
+    Name: string; 
+    Avatar: StrapiMedia;
+    Bio?: any; // Blocks
 };
 
 export type StrapiCategory = StrapiEntity & {
-    attributes: {
-        documentId: string;
-        name: string;
-        slug: string;
-    };
+    name: string;
+    slug: string;
+    description?: string;
+    color?: string;
 };
 
 export type StrapiTag = StrapiEntity & {
-    attributes: {
-        documentId: string;
-        name: string;
-        slug: string; 
-    };
+    name: string;
+    slug: string; 
 };

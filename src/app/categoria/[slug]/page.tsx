@@ -22,8 +22,8 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   const { slug } = params;
   
   const articles = await getArticles({ categorySlug: slug });
-  const categories = await getCategories();
-  const category = categories.find(c => c.slug === slug);
+  const allCategories = await getCategories();
+  const category = allCategories.find(c => c.slug === slug);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -31,28 +31,29 @@ export default async function CategoryPage({ params }: { params: { slug: string 
         <h1 className="text-6xl md:text-8xl font-headline font-medium tracking-tighter uppercase">
           {category?.name || slug}
         </h1>
+        {category?.description && (
+          <p className="mt-4 max-w-2xl mx-auto text-lg text-foreground/80">{category.description}</p>
+        )}
       </section>
 
-      <div className="space-y-12">
-        <CategoryFilter categories={categories} activeCategorySlug={slug} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-          <div className="lg:col-span-3">
-            <ArticleList articles={articles} />
-            {articles.length === 0 && (
-              <div className="text-center py-16 text-muted-foreground">
-                <p>No hay artículos en esta categoría por el momento.</p>
-              </div>
-            )}
-          </div>
-          <aside className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-24 space-y-6">
-              <h3 className="font-headline text-xl tracking-wider text-foreground/70">Publicidad</h3>
-              <AdSlot className="h-96" />
-              <AdSlot className="h-64 mt-8" />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <div className="lg:col-span-3">
+          <ArticleList articles={articles} />
+          {articles.length === 0 && (
+            <div className="text-center py-16 text-muted-foreground">
+              <p>No hay artículos en esta categoría por el momento.</p>
             </div>
-          </aside>
+          )}
         </div>
+        <aside className="hidden lg:block lg:col-span-1">
+          <div className="sticky top-24 space-y-8">
+            <CategoryFilter categories={allCategories} activeCategorySlug={slug} />
+            <div>
+              <h3 className="font-headline text-xl tracking-wider text-foreground/70">Publicidad</h3>
+              <AdSlot className="h-96 mt-4" />
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
