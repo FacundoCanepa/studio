@@ -60,18 +60,33 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
          </p>
       )}
       
-      <div className="flex items-center gap-3 mt-4">
-        {article.author?.avatarUrl && (
-          <Image 
-            src={article.author.avatarUrl}
-            alt={article.author.name || 'Author'}
-            width={32}
-            height={32}
-            className="rounded-full size-8 object-cover"
-          />
-        )}
-        <div>
-          <p className="text-sm font-medium text-foreground">{article.author?.name}</p>
+      <div className="flex items-center justify-between gap-3 mt-4">
+        <div className="flex items-center gap-3">
+          {article.author?.avatarUrl && (
+            <Image 
+              src={article.author.avatarUrl}
+              alt={article.author.name || 'Author'}
+              width={32}
+              height={32}
+              className="rounded-full size-8 object-cover"
+            />
+          )}
+          <div>
+            <p className="text-sm font-medium text-foreground">{article.author?.name}</p>
+          </div>
+        </div>
+        
+        <div className="cube-btn cube" role="button">
+            <div className="bg-top">
+                <div className="bg-inner"></div>
+            </div>
+            <div className="bg-right">
+                <div className="bg-inner"></div>
+            </div>
+            <div className="bg">
+                <div className="bg-inner"></div>
+            </div>
+            <div className="text">Ver más</div>
         </div>
       </div>
     </Link>
