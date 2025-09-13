@@ -171,122 +171,51 @@
     border: none;
   }
 
-  /* Glass Card */
-  .glass-card-box {
-    position: relative;
-    width: 220px;
-    height: 300px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: 0.5s;
-    z-index: 1;
+  /* Wave Card */
+  .wave-card {
+    @apply bg-transparent shadow-lg relative w-full h-96 rounded-2xl overflow-hidden;
+  }
+  
+  .wave-card-wave {
+    @apply absolute w-[540px] h-[700px] opacity-60 left-0 top-0;
+    margin-left: -50%;
+    margin-top: -70%;
+    background: linear-gradient(744deg, hsl(var(--primary)), hsl(var(--accent)) 60%, hsl(var(--secondary)));
+    border-radius: 40%;
+    animation: wave 55s infinite linear;
   }
 
-  .glass-card-box::before {
-    content: ' ';
-    position: absolute;
-    top: 0;
-    left: 50px;
-    width: 50%;
-    height: 100%;
-    text-decoration: none;
-    background: #fff;
-    border-radius: 8px;
-    transform: skewX(15deg);
-    transition: 0.5s;
+  .wave-card-wave:nth-child(2) {
+    top: 210px;
+    animation-duration: 50s;
+  }
+  
+  .wave-card-wave:nth-child(3) {
+    top: 210px;
+    animation-duration: 45s;
+  }
+  
+  .wave-card:hover .wave-card-wave {
+    animation-name: wave-fast;
   }
 
-  .glass-card-box::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50;
-    width: 50%;
-    height: 100%;
-    background: #fff;
-    border-radius: 8px;
-    transform: skewX(15deg);
-    transition: 0.5s;
-    filter: blur(30px);
+  @keyframes wave-fast {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
-  .glass-card-box:hover:before,
-  .glass-card-box:hover:after {
-    transform: skewX(0deg) scaleX(1.3);
-  }
+  .wave-card:hover .wave-card-wave:nth-child(1) { animation-duration: 3s; }
+  .wave-card:hover .wave-card-wave:nth-child(2) { animation-duration: 4s; }
+  .wave-card:hover .wave-card-wave:nth-child(3) { animation-duration: 5s; }
 
-  .glass-card-box:before,
-  .glass-card-box:after {
-    background: linear-gradient(315deg, hsl(var(--primary)), hsl(var(--accent)))
-  }
-
-  .glass-card-box span {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 5;
-    pointer-events: none;
-  }
-
-  .glass-card-box span::before {
-    content: '';
-    position: absolute;
-    top: -40px;
-    left: 40px;
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    opacity: 1;
-    transition: 0.1s;
-    animation: animate-glass 2s ease-in-out infinite;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08)
-  }
-
-  .glass-card-box span::after {
-    content: '';
-    position: absolute;
-    bottom: -40px;
-    right: 40px;
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    opacity: 1;
-    transition: 0.5s;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-    animation: animate-glass 2s ease-in-out infinite;
-    animation-delay: -1s;
-  }
-
-  .glass-card-box .glass-card-content {
-    position: relative;
-    width: 190px;
-    height: 254px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    z-index: 1;
-    transition: 0.5s;
-    color: #fff;
-    overflow: hidden;
+  .wave-card-content {
+    @apply absolute inset-0 z-10 flex flex-col items-center justify-between text-center p-6 text-white;
   }
 }
 
-@keyframes animate-glass {
-  0%, 100% {
-    transform: translateY(10px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes pulse {

@@ -10,26 +10,37 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   if (!article) return null;
 
   return (
-    <Link href={`/articulos/${article.slug}`} className="glass-card-box group">
-        <span></span>
-        <div className="glass-card-content">
-            {article.coverUrl && (
-                <Image
-                    src={article.coverUrl}
-                    alt={article.title}
-                    fill
-                    className="object-cover rounded-lg opacity-30 group-hover:opacity-50 transition-opacity duration-500"
-                />
+    <Link href={`/articulos/${article.slug}`} className="wave-card group">
+      <div className="wave-card-wave"></div>
+      <div className="wave-card-wave"></div>
+      <div className="wave-card-wave"></div>
+      
+      <div className="wave-card-content">
+        {article.coverUrl && (
+          <div className="relative w-full h-32 rounded-lg overflow-hidden">
+            <Image
+              src={article.coverUrl}
+              alt={article.title}
+              fill
+              className="object-cover"
+            />
+             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          </div>
+        )}
+        
+        <div className="flex flex-col items-center">
+            {article.category && (
+                <p className="font-bold text-sm uppercase text-white/70 tracking-widest">{article.category.name}</p>
             )}
-            <div className="relative z-10 flex flex-col justify-end h-full p-4">
-                {article.category && (
-                     <p className="font-bold text-sm uppercase text-primary-foreground/70 tracking-widest">{article.category.name}</p>
-                )}
-                <h3 className="font-headline text-2xl text-white mt-2">
-                    {article.title}
-                </h3>
-            </div>
+            <h3 className="font-headline text-2xl text-white mt-2 leading-tight">
+                {article.title}
+            </h3>
         </div>
+
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+             <p className="text-sm font-semibold">Ver más &rarr;</p>
+        </div>
+      </div>
     </Link>
   );
 };
