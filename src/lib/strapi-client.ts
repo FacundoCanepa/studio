@@ -55,14 +55,15 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     
     const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
     
-    // Only add pagination params if they are not already present from the calling function
-    const usesPagination = url.searchParams.has('pagination[page]') || url.searchParams.has('pagination[pageSize]') || url.searchParams.has('pagination[limit]');
-    if (!usesPagination) {
+    const usesPagination = url.searchParams.has('pagination[page]') || url.searchParams.has('pagination[pageSize]');
+    const usesLimit = url.searchParams.has('pagination[limit]');
+
+    if (!usesPagination && !usesLimit) {
       url.searchParams.set('pagination[pageSize]', '100');
     }
 
     do {
-        if (!usesPagination) {
+        if (!usesPagination && !usesLimit) {
             url.searchParams.set('pagination[page]', String(page));
         }
 
@@ -73,10 +74,9 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
               allResults = allResults.concat(response.data);
           }
 
-          if (response.meta?.pagination && !usesPagination) {
+          if (response.meta?.pagination && !usesPagination && !usesLimit) {
               totalPages = response.meta.pagination.pageCount;
           } else {
-             // If there's no pagination in the response, or if the original call used limit, it's a single page result.
              if (response.data && !Array.isArray(response.data)) {
                allResults.push(response.data as any);
              }
@@ -88,7 +88,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
           console.error(`[STRAPI][PAGINATION_ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
           break; // Exit loop on error
         }
-    } while (!usesPagination && page <= totalPages);
+    } while (!usesPagination && !usesLimit && page <= totalPages);
 
     return allResults;
 }
@@ -164,18 +164,21 @@ export async function getAuthors(): Promise<AuthorDoc[]> {
 }
 
 export async function getCategories(): Promise<CategoryDoc[]> {
-    const json = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?populate=*&pagination[page]=1&pagination[pageSize]=100&sort=name:asc`);
-    const raw = Array.isArray(json?.data) ? json.data : [];
+    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?populate=*&pagination[page]=1&pagination[pageSize]=100&sort=name:asc`);
+    if (!response.data) {
+        return [];
+    }
+    const raw = Array.isArray(response.data) ? response.data : [];
     const mapped: CategoryDoc[] = raw
-      .map((c: any) => {
-        if (!c || !c.id || !c.attributes?.name || !c.attributes?.slug) {
+      .map((c: StrapiCategory) => {
+        if (!c || !c.documentId || !c.name || !c.slug) {
           return null;
         }
         return {
-          documentId: String(c.id),
-          name: c.attributes.name,
-          slug: c.attributes.slug,
-          description: c.attributes.description,
+          documentId: c.documentId,
+          name: c.name,
+          slug: c.slug,
+          description: c.description,
         };
       })
       .filter(Boolean) as CategoryDoc[];

@@ -1,12 +1,13 @@
 
-import { articles } from '@/lib/data';
+import { getArticles } from '@/lib/strapi-client';
 import { ArticleCard } from '../articles/article-card';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Terminal } from 'lucide-react';
 import { ArticleDoc } from '@/lib/firestore-types';
 
 export const RecommendedArticles = async () => {
-  const recommended: ArticleDoc[] = []; // Dummy data
+  // Fetch a few articles to show as recommendations for now
+  const recommended: ArticleDoc[] = await getArticles({ limit: 3 });
 
   if (recommended.length === 0) {
     return (

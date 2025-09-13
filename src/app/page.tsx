@@ -5,6 +5,7 @@ import { HorizontalArticleCard } from '@/components/articles/horizontal-article-
 import { getArticles } from '@/lib/strapi-client';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import type { ArticleDoc } from '@/lib/firestore-types';
+import { RecommendedArticles } from '@/components/shared/recommended-articles';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
@@ -37,6 +38,12 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Recomendados */}
+      <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <h2 className="text-4xl font-headline text-center mb-12">Recomendados para ti</h2>
+        <RecommendedArticles />
       </section>
 
     </div>
