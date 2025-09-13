@@ -18,16 +18,16 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
   return (
     <Link 
       href={`/articulos/${article.slug}`} 
-      className="w-full h-full flex flex-col p-4 bg-card/80 dark:bg-zinc-900 rounded-xl"
+      className="w-full h-full flex flex-col p-6 bg-card/80 dark:bg-zinc-900 rounded-xl"
     >
       <div className="flex-grow flex flex-col">
-        <figure className="overflow-hidden rounded-lg relative mb-2">
+        <figure className="overflow-hidden rounded-lg relative mb-4">
           {article.coverUrl ? (
             <Image
               src={article.coverUrl}
               alt={article.title}
-              width={400}
-              height={225}
+              width={500}
+              height={281}
               className="object-cover object-center aspect-video"
             />
           ) : (
@@ -35,7 +35,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
           )}
           {article.category && (
             <span
-              className="absolute top-2 left-2 px-3 py-1 bg-black/30 backdrop-blur-sm text-xs rounded-full text-white"
+              className="absolute top-2 left-2 px-3 py-1 bg-black/30 backdrop-blur-sm text-sm rounded-full text-white"
             >
               {article.category.name}
             </span>
@@ -43,42 +43,42 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
         </figure>
         
         <div className="flex-grow">
-            <h3 className="text-lg font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300">
+            <h3 className="text-xl font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300">
               {article.title}
             </h3>
 
             {article.excerpt && (
-              <p className="line-clamp-2 text-sm text-foreground/60 mt-1 transition-opacity duration-300">
+              <p className="line-clamp-3 text-base text-foreground/60 mt-2 transition-opacity duration-300">
                 {article.excerpt}
               </p>
             )}
         </div>
       </div>
       
-      <div className="flex items-end justify-between gap-3 mt-4 pt-4 border-t border-dashed border-black/10 dark:border-white/10">
+      <div className="flex items-end justify-between gap-3 mt-6 pt-4 border-t border-dashed border-black/10 dark:border-white/10">
         <div className="flex items-center gap-3">
           {article.author?.avatarUrl && (
             <Image 
               src={article.author.avatarUrl}
               alt={article.author.name || 'Author'}
-              width={32}
-              height={32}
-              className="rounded-full size-8 object-cover"
+              width={40}
+              height={40}
+              className="rounded-full size-10 object-cover"
             />
           )}
           <div>
-            <p className="text-sm font-medium text-foreground">{article.author?.name}</p>
+            <p className="text-base font-medium text-foreground">{article.author?.name}</p>
              {publishedDate && (
-              <time dateTime={publishedDate.toISOString()} className="text-xs text-foreground/50">
+              <time dateTime={publishedDate.toISOString()} className="text-sm text-foreground/50">
                 {format(publishedDate, "dd MMM yyyy", { locale: es })}
               </time>
             )}
           </div>
         </div>
         
-        <div className="simple-arrow-button">
+        <div className="simple-arrow-button text-base">
           <span>Ver más</span>
-          <ArrowRight className="size-4" />
+          <ArrowRight className="size-5" />
         </div>
       </div>
     </Link>
