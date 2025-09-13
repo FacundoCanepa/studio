@@ -1,7 +1,7 @@
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc } from './firestore-types';
-import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiResponse, StrapiTag, StrapiEntity } from '@/lib/strapi-types';
+import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
 const STRAPI_BASE_URL = "https://graceful-bear-073b8037ba.strapiapp.com";
@@ -163,9 +163,8 @@ export async function getArticles({
     const params = new URLSearchParams();
     params.set('populate', '*');
     params.set('sort', 'publishedAt:desc');
-    params.set('pagination[page]', String(page));
-    params.set('pagination[pageSize]', String(pageSize));
-
+    // The pagination params will be added by fetchPaginated
+    
     const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`);
     console.log("[ARTICLES][RAW_LEN]", strapiArticles.length);
 
@@ -183,12 +182,12 @@ export async function getArticles({
       });
     }
 
-    console.log("[ARTICLES][MAPPED_LEN]", filtered.length);
-    if (filtered.length > 0) {
+    console.log("[ARTICLES][MAPPED_LEN]", mappedArticles.length);
+    if (mappedArticles.length > 0) {
         console.log("[ARTICLES][MAPPED_FIRST]", {
-            documentId: filtered[0].documentId,
-            slug: filtered[0].slug,
-            title: filtered[0].title
+            documentId: mappedArticles[0].documentId,
+            slug: mappedArticles[0].slug,
+            title: mappedArticles[0].title
         });
     } else {
         console.warn("[ARTICLES][MAPPED_EMPTY] after mapping/filter");
