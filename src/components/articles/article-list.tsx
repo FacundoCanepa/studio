@@ -9,25 +9,10 @@ interface ArticleListProps {
 }
 
 export const ArticleList = ({ articles = [] }: ArticleListProps) => {
-  console.log('[UI][ArticleList][ITEMS]', { count: articles?.length });
-  if (articles.length > 0 && articles[0]) {
-    console.log('[UI][ArticleList][FIRST_ITEM]', { slug: articles[0].slug, documentId: articles[0].documentId });
-  } else {
-    console.log('[UI][ArticleList][FIRST_ITEM]', 'no-first');
-  }
-
-  console.log('[ARTICLES][UI][PROPS]', { len: articles?.length });
-  articles?.forEach((a,i) => {
-    if(a) {
-      console.log("[ARTICLES][UI][ITEM]", i, { slug: a.slug, documentId: a.documentId, title: a.title });
-    }
-  });
-
-
   if (articles.length === 0) {
     return (
-      <div className="text-center text-muted-foreground">
-        <p>No hay artículos para mostrar por ahora.</p>
+      <div className="text-center text-muted-foreground py-16">
+        <p>No hay artículos para mostrar con los filtros seleccionados.</p>
       </div>
     );
   }

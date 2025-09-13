@@ -170,51 +170,6 @@
     transform: rotate(45deg);
     border: none;
   }
-
-  .wave-card {
-    @apply bg-transparent shadow-lg relative w-full h-96 rounded-2xl overflow-hidden;
-  }
-  
-  .wave-card-wave {
-    @apply absolute w-[540px] h-[700px] opacity-60 left-0 top-0;
-    margin-left: -50%;
-    margin-top: -70%;
-    background: linear-gradient(744deg, hsl(var(--primary)), hsl(var(--accent)) 60%, hsl(var(--secondary)));
-    border-radius: 40%;
-    animation: wave 55s infinite linear;
-  }
-
-  .wave-card-wave:nth-child(2) {
-    top: 210px;
-    animation-duration: 50s;
-  }
-  
-  .wave-card-wave:nth-child(3) {
-    top: 210px;
-    animation-duration: 45s;
-  }
-  
-  .wave-card:hover .wave-card-wave {
-    animation-name: wave-fast;
-  }
-
-  @keyframes wave-fast {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .wave-card:hover .wave-card-wave:nth-child(1) { animation-duration: 3s; }
-  .wave-card:hover .wave-card-wave:nth-child(2) { animation-duration: 4s; }
-  .wave-card:hover .wave-card-wave:nth-child(3) { animation-duration: 5s; }
-
-  .wave-card-content {
-    @apply absolute inset-0 z-10 flex flex-col items-center justify-between text-center p-6 text-white;
-  }
-}
-
-@keyframes wave {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 @keyframes pulse {

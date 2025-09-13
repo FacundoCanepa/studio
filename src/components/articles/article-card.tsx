@@ -1,6 +1,8 @@
 import type { ArticleDoc } from '@/lib/firestore-types';
 import Link from 'next/link';
 import Image from 'next/image';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ArticleCardProps {
   article: ArticleDoc;
@@ -9,37 +11,36 @@ interface ArticleCardProps {
 export const ArticleCard = ({ article }: ArticleCardProps) => {
   if (!article) return null;
 
-  return (
-    <Link href={`/articulos/${article.slug}`} className="wave-card group">
-      <div className="wave-card-wave"></div>
-      <div className="wave-card-wave"></div>
-      <div className="wave-card-wave"></div>
-      
-      <div className="wave-card-content">
-        {article.coverUrl && (
-          <div className="relative w-full h-32 rounded-lg overflow-hidden">
-            <Image
-              src={article.coverUrl}
-              alt={article.title}
-              fill
-              className="object-cover"
-            />
-             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-          </div>
-        )}
-        
-        <div className="flex flex-col items-center">
-            {article.category && (
-                <p className="font-bold text-sm uppercase text-white/70 tracking-widest">{article.category.name}</p>
-            )}
-            <h3 className="font-headline text-2xl text-white mt-2 leading-tight">
-                {article.title}
-            </h3>
-        </div>
+  const publishedDate = article.publishedAt ? new Date(article.publishedAt) : null;
 
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-             <p className="text-sm font-semibold">Ver más &rarr;</p>
+  return (
+    <Link href={`/articulos/${article.slug}`} className="group flex flex-col gap-4">
+      {article.coverUrl && (
+        <div className="overflow-hidden rounded-lg">
+          <Image
+            src={article.coverUrl}
+            alt={article.title}
+            width={600}
+            height={400}
+            className="aspect-[3/2] w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
         </div>
+      )}
+      
+      <div className="flex flex-col gap-1">
+        {article.category && (
+          <p className="font-code text-sm uppercase tracking-widest text-primary">
+            {article.category.name}
+          </p>
+        )}
+        <h3 className="font-headline text-2xl font-medium leading-tight text-foreground group-hover:text-primary transition-colors">
+          {article.title}
+        </h3>
+        {publishedDate && (
+           <p className="text-sm text-muted-foreground mt-1">
+            {format(publishedDate, "d 'de' LLLL 'de' yyyy", { locale: es })}
+          </p>
+        )}
       </div>
     </Link>
   );
