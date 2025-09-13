@@ -424,3 +424,26 @@
 .icon-float {
   animation: float linear infinite;
 }
+
+/* 3D Image Gallery */
+.gallery-container {
+  perspective: 1000px;
+}
+
+.gallery-card {
+  transform-style: preserve-3d;
+  transition: transform 0.5s;
+}
+
+.gallery-card:hover {
+  transform: translateZ(20px) rotateX(15deg) rotateY(15deg);
+}
+
+.gallery-card img {
+  box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid hsl(var(--border));
+}
+
+.dark .gallery-card img {
+  box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.5);
+}
