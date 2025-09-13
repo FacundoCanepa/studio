@@ -31,10 +31,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* b. Sección "No Te Pierdas" */}
-      <section className="bg-[#556B2F] py-20 text-[#FDFBF5]">
+      {/* b. Sección "Destacados" */}
+      <section className="bg-primary/90 py-20 text-primary-foreground">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionTitle className="text-white before:bg-white/20">No Te Pierdas</SectionTitle>
+          <SectionTitle className="text-white before:bg-white/20">Destacados</SectionTitle>
           <div className="grid grid-cols-1 gap-12 mt-16">
             {featuredArticles.map((article) => (
               <HorizontalArticleCard key={article.documentId} article={article} />

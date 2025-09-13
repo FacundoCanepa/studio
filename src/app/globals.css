@@ -207,6 +207,74 @@
     transform: translateX(32px);
   }
 
+  /* 3D layered card effect */
+  .layered-card {
+    position: relative;
+    transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .layered-card-content {
+    border-radius: 1.5rem; /* 24px */
+    overflow: hidden;
+    background: hsl(var(--primary));
+    transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .layered-card-content::before {
+    position: absolute;
+    content: "";
+    top: -4%;
+    left: 50%;
+    width: 90%;
+    height: 90%;
+    transform: translate(-50%);
+    background: hsl(var(--background) / 0.8);
+    z-index: -1;
+    transform-origin: bottom;
+    border-radius: inherit;
+    transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .layered-card-content::after {
+    position: absolute;
+    content: "";
+    top: -8%;
+    left: 50%;
+    width: 80%;
+    height: 80%;
+    transform: translate(-50%);
+    background: hsl(var(--background) / 0.5);
+    z-index: -2;
+    transform-origin: bottom;
+    border-radius: inherit;
+    transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  
+  .dark .layered-card-content::before {
+    background: hsl(var(--muted) / 0.8);
+  }
+  .dark .layered-card-content::after {
+    background: hsl(var(--muted) / 0.5);
+  }
+
+  .layered-card:hover {
+    transform: translateY(-16px);
+  }
+
+  .layered-card:hover .layered-card-content::before {
+    transform: translate(-50%) rotate(-8deg);
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .layered-card:hover .layered-card-content::after {
+    transform: translate(-50%) rotate(8deg);
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+
 }
 
 @layer utilities {
