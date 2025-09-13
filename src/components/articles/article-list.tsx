@@ -26,14 +26,14 @@ export const ArticleList = ({ articles = [] }: ArticleListProps) => {
 
   if (articles.length === 0) {
     return (
-      <div className="mt-8 text-center text-muted-foreground">
+      <div className="text-center text-muted-foreground">
         <p>No hay artículos para mostrar por ahora.</p>
       </div>
     );
   }
 
   return (
-    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
       {articles.map((article, index) => (
         article ? (
           <FadeIn key={article.documentId} delay={index * 100}>
