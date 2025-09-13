@@ -15,7 +15,7 @@ export default async function HomePage() {
   return (
     <div className="bg-background">
       {/* Animated Icons Hero */}
-      <section className="relative h-96 flex items-center justify-center text-center mb-20 overflow-hidden">
+      <section className="relative h-96 flex items-center justify-center text-center mb-8 overflow-hidden">
         <FloatingIconsHero />
       </section>
 
