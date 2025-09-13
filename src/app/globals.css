@@ -67,37 +67,39 @@
   }
 }
 
-@layer utilities {
-  .retro-input {
-    @apply font-code bg-white text-black border-2 border-black rounded-none transition-all duration-300;
-    box-shadow: 5px 5px 0 #000;
-  }
-
-  .dark .retro-input {
-    @apply bg-gray-900 text-white border-gray-400;
-    box-shadow: 5px 5px 0 #2d3748;
-  }
-
-  .retro-input:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0 #000;
-  }
-  
-  .dark .retro-input:hover {
-    box-shadow: 7px 7px 0 #2d3748;
-  }
-  
-  .retro-input:focus {
-    @apply outline-none ring-0;
-    animation: shake 0.3s ease-in-out;
-  }
-  
-  .retro-input::placeholder {
-    @apply text-muted-foreground;
-  }
-}
-
 @layer components {
+  /* Stacked Card Style */
+  .stacked-card {
+    @apply w-full h-full p-1.5 rounded-2xl overflow-visible relative z-10;
+    background: transparent;
+  }
+  
+  .stacked-card::before,
+  .stacked-card::after {
+    content: "";
+    @apply absolute top-0 left-0 w-full h-full rounded-2xl -z-10 transition-opacity duration-500;
+  }
+  
+  .stacked-card::before {
+    background: linear-gradient(to bottom right, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    transform: rotate(2deg);
+  }
+  
+  .stacked-card::after {
+    background: linear-gradient(to top right, hsl(var(--secondary)) 0%, hsl(var(--accent)) 100%);
+    transform: rotate(-2deg);
+  }
+  
+  .stacked-card .stacked-card-info {
+    @apply bg-card text-card-foreground w-full h-full rounded-xl p-3 flex flex-col;
+    z-index: 2;
+  }
+
+  .stacked-card:hover::before,
+  .stacked-card:hover::after {
+    opacity: 0;
+  }
+
   /* Custom checkbox style */
   .checkbox-btn {
     display: block;
@@ -169,6 +171,36 @@
   .checkbox-btn input:checked ~ .checkmark {
     transform: rotate(45deg);
     border: none;
+  }
+}
+
+@layer utilities {
+  .retro-input {
+    @apply font-code bg-white text-black border-2 border-black rounded-none transition-all duration-300;
+    box-shadow: 5px 5px 0 #000;
+  }
+
+  .dark .retro-input {
+    @apply bg-gray-900 text-white border-gray-400;
+    box-shadow: 5px 5px 0 #2d3748;
+  }
+
+  .retro-input:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 #000;
+  }
+  
+  .dark .retro-input:hover {
+    box-shadow: 7px 7px 0 #2d3748;
+  }
+  
+  .retro-input:focus {
+    @apply outline-none ring-0;
+    animation: shake 0.3s ease-in-out;
+  }
+  
+  .retro-input::placeholder {
+    @apply text-muted-foreground;
   }
 }
 
