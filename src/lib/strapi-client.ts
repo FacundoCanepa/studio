@@ -9,8 +9,7 @@ const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
 async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> {
   const url = `${STRAPI_BASE_URL}${endpoint}`;
-  const model = endpoint.split('/api/')[1]?.split('?')[0]?.split('/')[0] || 'unknown';
-
+  
   try {
     if (!STRAPI_TOKEN) {
       console.warn("[STRAPI] No API token. Proceeding as PUBLIC request.");
@@ -21,33 +20,13 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       ...(init?.headers as Record<string,string>),
       ...(STRAPI_TOKEN ? { Authorization: `Bearer ${STRAPI_TOKEN}` } : {}),
     };
-    console.log('[STRAPI][REQUEST][BUILD]', { model, endpoint, url, hasAuth: Boolean(STRAPI_TOKEN) });
-
-    if (model === 'articles') {
-        console.log("[ARTICLES][FETCH][URL]", url);
-        console.log("[ARTICLES][FETCH][HAS_AUTH]", Boolean(STRAPI_TOKEN));
-    }
 
     const response = await fetch(url, { 
       ...init,
       method: init?.method ?? 'GET',
       headers, 
-      cache: 'no-store',
-      next: { revalidate: 0 } 
+      cache: 'no-store', // Revalidate on every request
     }); 
-    
-    if (model === 'articles') {
-        console.log("[ARTICLES][FETCH][RESPONSE_STATUS]", response.status);
-        try {
-            const rawBody = await response.clone().text();
-            console.log("[ARTICLES][FETCH][RAW_BODY]", rawBody);
-        } catch (e) {
-            console.error('[ARTICLES][FETCH][RAW_BODY_ERROR]', e);
-        }
-    }
-    
-    console.log('[STRAPI][RESPONSE]', { model, status: response?.status, ok: response?.ok, contentType: response.headers.get('content-type') });
-    console.log('[STRAPI][RESPONSE][RATE_LIMIT?]', { remaining: response?.headers?.get?.('x-ratelimit-remaining'), limit: response?.headers?.get?.('x-ratelimit-limit') });
     
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
@@ -60,27 +39,11 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       throw e;
     });
 
-    const meta = (json as any)?.meta;
-    console.log('[STRAPI][JSON][META]', meta?.pagination || null);
-    const dataLen = Array.isArray(json?.data) ? json.data.length : (json?.data ? 1 : 0);
-    console.log('[STRAPI][JSON][DATA_LEN]', dataLen);
-    
-    if (Array.isArray(json?.data) && json.data.length > 0) {
-      const firstItem = json.data[0];
-      if (firstItem) {
-        console.log("[STRAPI][JSON][FIRST]", {
-          documentId: firstItem.documentId,
-          slug: firstItem.slug ?? firstItem.name,
-          hasSEO: Boolean(firstItem.Name),
-        });
-      }
-    }
-
     return json as T;
 
   } catch (error: any) {
     const errorModel = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
-    console.error('[STRAPI][ERROR]', { model: errorModel, url, message: error?.message, stack: error?.stack });
+    console.error('[STRAPI][ERROR]', { model: errorModel, url, message: error?.message });
     throw error;
   }
 }
@@ -89,19 +52,19 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     let allResults: T[] = [];
     let page = 1;
     let totalPages = 1;
-    const model = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
-
-    const baseEndpoint = endpoint.includes('?') ? endpoint.split('?')[0] : endpoint;
-    const searchParams = new URLSearchParams(endpoint.includes('?') ? endpoint.split('?')[1] : '');
+    
+    const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
+    
+    // Only add pagination params if they are not already present
+    if (!url.searchParams.has('pagination[pageSize]') && !url.searchParams.has('pagination[limit]')) {
+      url.searchParams.set('pagination[pageSize]', '100');
+    }
 
     do {
-        searchParams.set('pagination[page]', String(page));
-        searchParams.set('pagination[pageSize]', '50');
-        
-        const fullEndpoint = `${baseEndpoint}?${searchParams.toString()}`;
+        url.searchParams.set('pagination[page]', String(page));
 
         try {
-          const response: StrapiResponse<T[]> = await fetchStrapi(fullEndpoint);
+          const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search);
           
           if (response.data && Array.isArray(response.data)) {
               allResults = allResults.concat(response.data);
@@ -110,6 +73,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
           if (response.meta?.pagination) {
               totalPages = response.meta.pagination.pageCount;
           } else {
+             // If there's no pagination, it's a single entry.
              if (response.data && !Array.isArray(response.data)) {
                allResults.push(response.data as any);
              }
@@ -118,7 +82,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
 
           page++;
         } catch (error) {
-          console.error(`[STRAPI][PAGINATION_ERROR] Failed to fetch page ${page} for ${model}`, error);
+          console.error(`[STRAPI][PAGINATION_ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
           break; // Exit loop on error
         }
     } while (page <= totalPages);
@@ -130,50 +94,52 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
 export async function getStrapiMediaUrl(relativePath?: string | null): Promise<string | undefined> {
     if (!relativePath) return undefined;
     if (relativePath.startsWith('http')) return relativePath;
-    const baseUrl = STRAPI_BASE_URL.replace('/api', '');
-    return `${baseUrl}${relativePath}`;
+    return `${STRAPI_BASE_URL.replace('/api', '')}${relativePath}`;
 }
 
 // --- API Methods ---
 
+type GetArticlesParams = {
+  categorySlug?: string;
+  limit?: number;
+  filters?: {
+    featured?: boolean;
+    home?: boolean;
+    isNew?: boolean;
+  };
+};
+
 export async function getArticles({
   categorySlug,
-}: {
-  categorySlug?: string;
-} = {}): Promise<ArticleDoc[]> {
+  limit,
+  filters = {},
+}: GetArticlesParams = {}): Promise<ArticleDoc[]> {
     const params = new URLSearchParams();
     params.set('populate', '*');
     params.set('sort', 'publishedAt:desc');
+
+    if (limit) {
+      params.set('pagination[limit]', String(limit));
+    }
+    
+    if (categorySlug) {
+      params.set('filters[category][slug][$eq]', categorySlug);
+    }
+    if (filters.featured !== undefined) {
+      params.set('filters[featured][$eq]', String(filters.featured));
+    }
+    if (filters.home !== undefined) {
+      params.set('filters[home][$eq]', String(filters.home));
+    }
+    if (filters.isNew !== undefined) {
+      params.set('filters[New][$eq]', String(filters.isNew));
+    }
     
     const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`);
-    console.log("[ARTICLES][RAW_LEN]", strapiArticles.length);
 
     const mappedArticles = (await Promise.all(strapiArticles.map(mapStrapiArticleToArticleDoc))).filter(Boolean) as ArticleDoc[];
     
-    const filtered = categorySlug
-      ? mappedArticles.filter(a => a?.category?.slug === categorySlug)
-      : mappedArticles;
-
-    if (process.env.DEBUG_STRAPI === "true") {
-      console.log("[ARTICLES][BYPASS][FILTER]", {
-        categorySlug,
-        before: mappedArticles.length,
-        after: filtered.length,
-      });
-    }
-
-    console.log("[ARTICLES][MAPPED_LEN]", mappedArticles.length);
-    if (mappedArticles.length > 0) {
-        console.log("[ARTICLES][MAPPED_FIRST]", {
-            documentId: mappedArticles[0].documentId,
-            slug: mappedArticles[0].slug,
-            title: mappedArticles[0].title
-        });
-    } else {
-        console.warn("[ARTICLES][MAPPED_EMPTY] after mapping/filter");
-    }
-
-    return filtered;
+    return mappedArticles;
 }
 
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
@@ -199,34 +165,31 @@ export async function getCategories(): Promise<CategoryDoc[]> {
     const raw = Array.isArray(json?.data) ? json.data : [];
     const mapped: CategoryDoc[] = raw
       .map((c: any) => {
-        if (!c || !c.documentId || !c.name || !c.slug) {
+        if (!c || !c.id || !c.attributes?.name || !c.attributes?.slug) {
           return null;
         }
         return {
-          documentId: c.documentId,
-          name: c.name,
-          slug: c.slug,
-          description: c.description,
+          documentId: String(c.id),
+          name: c.attributes.name,
+          slug: c.attributes.slug,
+          description: c.attributes.description,
         };
       })
       .filter(Boolean) as CategoryDoc[];
 
-    if (process.env.DEBUG_STRAPI === "true") {
-      console.log("[NAV][CATEGORIES][BYPASS]", { count: mapped.length, sample: mapped[0] });
-    }
     return mapped;
 }
 
 export async function getCategory(slug: string): Promise<CategoryDoc | null> {
-    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?filters[slug][$eq]=${slug}`);
+    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?filters[slug][$eq]=${slug}&populate=*`);
     if (!response.data || response.data.length === 0) return null;
-    const category = response.data[0];
+    const categoryData = response.data[0];
     return {
-        documentId: category.documentId,
-        name: category.name,
-        slug: category.slug,
-        description: category.description,
-        color: category.color
+        documentId: categoryData.documentId,
+        name: categoryData.name,
+        slug: categoryData.slug,
+        description: categoryData.description,
+        color: categoryData.color
     };
 }
 

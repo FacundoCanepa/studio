@@ -6,8 +6,6 @@ import { getStrapiMediaUrl } from './strapi-client';
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc | null> {
     if (!item || !item.documentId) return null;
 
-    console.log("[ARTICLES][MAP][IN]", JSON.stringify(item, null, 2));
-
     const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
     
     const categoryData = item.category;
@@ -68,17 +66,6 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         tagSlugs: tags.map(t => t.slug),
         authorName: author?.name,
     };
-
-    console.log("[ARTICLES][MAP][OUT]", {
-        documentId: out.documentId,
-        title: out.title,
-        slug: out.slug,
-        hasCover: Boolean(out.coverUrl),
-        hasCategory: Boolean(out.category),
-        hasAuthor: Boolean(out.author),
-        tagCount: out.tags.length,
-        hasSEO: Boolean(out.seo),
-    });
 
     return out;
 }

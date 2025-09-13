@@ -4,12 +4,11 @@ import { ArticleCard } from '@/components/articles/article-card';
 import { HorizontalArticleCard } from '@/components/articles/horizontal-article-card';
 import { getArticles } from '@/lib/strapi-client';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
+import type { ArticleDoc } from '@/lib/firestore-types';
 
 export default async function HomePage() {
-  const articles = await getArticles();
-
-  const latestArticles = articles.slice(0, 4);
-  const featuredArticles = articles.slice(4, 7);
+  const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
+  const featuredArticles: ArticleDoc[] = await getArticles({ limit: 3, filters: { featured: true } });
   
   return (
     <div className="bg-[#FDFBF5]">

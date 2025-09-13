@@ -18,13 +18,34 @@ export interface StrapiEntity {
 }
 
 export interface StrapiMedia {
+    id: number;
+    documentId: string;
     url: string;
     name: string;
-    alternativeText?: string;
-    caption?: string;
+    alternativeText?: string | null;
+    caption?: string | null;
+    width: number | null;
+    height: number | null;
+    formats?: {
+        thumbnail: StrapiMediaFormat;
+        small?: StrapiMediaFormat;
+        medium?: StrapiMediaFormat;
+        large?: StrapiMediaFormat;
+    };
+}
+
+export interface StrapiMediaFormat {
+    ext: string;
+    url: string;
+    hash: string;
+    mime: string;
+    name: string;
+    path: string | null;
+    size: number;
     width: number;
     height: number;
 }
+
 
 // --- SEO Component ---
 export type StrapiSeoComponent = { 
@@ -42,27 +63,32 @@ export type StrapiArticle = StrapiEntity & {
     title: string;
     slug: string;
     excerpt?: string;
-    Content?: any; // Rich text (blocks)
+    Content?: any; // Rich text (blocks) or Markdown
     Cover?: StrapiMedia;
     featured?: boolean;
     publishedAt?: string;
-    views?: number;
-    saves?: number;
-    type?: 'guia' | 'lista' | 'comparativa';
+    
+    home?: boolean | null;
+    Informacion?: string | null;
+    UrlYoutube?: string | null;
+    ContentMore?: string | null;
+    New?: boolean | null;
+    Tendencias?: boolean | null;
 
     // Relations
     category?: StrapiCategory;
     author?: StrapiAuthor;
     tags?: StrapiTag[];
-    subcategories?: string[];
-
-    // Component - THIS IS THE ACTUAL SEO component name from your schema
-    Name?: StrapiSeoComponent;
+    
+    // SEO Component, assuming it's named 'Name' in your Strapi schema
+    Name?: StrapiSeoComponent; 
+    
+    Carosel?: StrapiMedia[] | null;
 };
 
 export type StrapiAuthor = StrapiEntity & {
     Name: string; 
-    Avatar: StrapiMedia;
+    Avatar?: StrapiMedia;
     Bio?: any; // Blocks
 };
 
