@@ -313,21 +313,15 @@
   color: hsl(var(--foreground));
   text-shadow: 0 0 10px hsl(var(--primary) / 0.8);
 }
-.card-3d:hover {
-  animation-play-state: paused !important;
-}
-.card-3d:hover .card-item {
-  animation-play-state: paused !important;
-}
 
-.card-3d .card-item:nth-child(1) { transform: translate(-50%, -50%) rotateY(0deg) translateZ(200px); animation-delay: -0s; }
-.card-3d .card-item:nth-child(2) { transform: translate(-50%, -50%) rotateY(45deg) translateZ(200px); animation-delay: -2.5s; }
-.card-3d .card-item:nth-child(3) { transform: translate(-50%, -50%) rotateY(90deg) translateZ(200px); animation-delay: -5s; }
-.card-3d .card-item:nth-child(4) { transform: translate(-50%, -50%) rotateY(135deg) translateZ(200px); animation-delay: -7.5s; }
-.card-3d .card-item:nth-child(5) { transform: translate(-50%, -50%) rotateY(180deg) translateZ(200px); animation-delay: -10s; }
-.card-3d .card-item:nth-child(6) { transform: translate(-50%, -50%) rotateY(225deg) translateZ(200px); animation-delay: -12.5s; }
-.card-3d .card-item:nth-child(7) { transform: translate(-50%, -50%) rotateY(270deg) translateZ(200px); animation-delay: -15s; }
-.card-3d .card-item:nth-child(8) { transform: translate(-50%, -50%) rotateY(315deg) translateZ(200px); animation-delay: -17.5s; }
+.card-3d .card-item:nth-child(1) { transform: translate(-50%, -50%) rotateY(0deg) translateZ(150px); animation-delay: -0s; }
+.card-3d .card-item:nth-child(2) { transform: translate(-50%, -50%) rotateY(45deg) translateZ(150px); animation-delay: -2.5s; }
+.card-3d .card-item:nth-child(3) { transform: translate(-50%, -50%) rotateY(90deg) translateZ(150px); animation-delay: -5s; }
+.card-3d .card-item:nth-child(4) { transform: translate(-50%, -50%) rotateY(135deg) translateZ(150px); animation-delay: -7.5s; }
+.card-3d .card-item:nth-child(5) { transform: translate(-50%, -50%) rotateY(180deg) translateZ(150px); animation-delay: -10s; }
+.card-3d .card-item:nth-child(6) { transform: translate(-50%, -50%) rotateY(225deg) translateZ(150px); animation-delay: -12.5s; }
+.card-3d .card-item:nth-child(7) { transform: translate(-50%, -50%) rotateY(270deg) translateZ(150px); animation-delay: -15s; }
+.card-3d .card-item:nth-child(8) { transform: translate(-50%, -50%) rotateY(315deg) translateZ(150px); animation-delay: -17.5s; }
 
 
 @keyframes pulse {
