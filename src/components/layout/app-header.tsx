@@ -17,6 +17,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
 
   const navLinks = [
     ...categories.map(c => ({ name: c.name, href: `/categoria/${c.slug}` })),
+    { name: 'Autores', href: '/autores' },
     { name: 'Quiénes Somos', href: '/quienes-somos' },
   ];
 
