@@ -48,12 +48,12 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               </time>
             )}
 
-            <p className="text-lg font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300">
+            <h3 className="text-lg font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300">
               {article.title}
-            </p>
+            </h3>
 
             {article.excerpt && (
-              <p className="line-clamp-2 text-sm text-foreground/60 mt-1 group-hover:text-foreground/90 transition-opacity duration-300">
+              <p className="line-clamp-2 text-sm text-foreground/60 mt-1 transition-opacity duration-300">
                 {article.excerpt}
               </p>
             )}

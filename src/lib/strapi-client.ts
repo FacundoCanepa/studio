@@ -206,6 +206,7 @@ export async function getCategories(): Promise<CategoryDoc[]> {
           documentId: c.documentId,
           name: c.name,
           slug: c.slug,
+          description: c.description,
         };
       })
       .filter(Boolean) as CategoryDoc[];
@@ -215,6 +216,20 @@ export async function getCategories(): Promise<CategoryDoc[]> {
     }
     return mapped;
 }
+
+export async function getCategory(slug: string): Promise<CategoryDoc | null> {
+    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?filters[slug][$eq]=${slug}`);
+    if (!response.data || response.data.length === 0) return null;
+    const category = response.data[0];
+    return {
+        documentId: category.documentId,
+        name: category.name,
+        slug: category.slug,
+        description: category.description,
+        color: category.color
+    };
+}
+
 
 export async function getTags(): Promise<CategoryDoc[]> {
     const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*');
