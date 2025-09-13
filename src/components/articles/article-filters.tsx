@@ -143,11 +143,16 @@ export function ArticleFilters({
         {/* Featured */}
         <div className="flex items-center justify-between pt-4 border-t border-dashed border-black/50">
           <Label htmlFor="featured-switch" className="font-code text-sm uppercase tracking-wider">Solo Destacados</Label>
-          <Switch
-            id="featured-switch"
-            checked={filters.featured}
-            onCheckedChange={checked => onFilterChange({ featured: checked })}
-          />
+          <label className="retro-switch" htmlFor="featured-switch">
+            <input 
+              id="featured-switch"
+              type="checkbox" 
+              className="toggle"
+              checked={filters.featured}
+              onChange={e => onFilterChange({ featured: e.target.checked })}
+            />
+            <span className="slider"></span>
+          </label>
         </div>
 
         {/* Sort */}
