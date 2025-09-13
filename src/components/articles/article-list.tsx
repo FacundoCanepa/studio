@@ -21,6 +21,10 @@ export const ArticleList = ({ articles, categories }: ArticleListProps) => {
   console.log('[UI][ArticleList][ITEMS]', { count: filteredArticles?.length });
   console.log('[UI][ArticleList][FIRST_ITEM]', filteredArticles?.[0] ? { slug: filteredArticles[0]?.slug, documentId: filteredArticles[0]?.documentId } : 'no-first');
 
+  console.log('[ARTICLES][UI][PROPS]', { len: filteredArticles?.length });
+  filteredArticles?.forEach((a,i) => {
+    console.log("[ARTICLES][UI][ITEM]", i, { slug: a.slug, documentId: a.documentId, title: a.title });
+  });
 
   const categoryNames = [{ name: 'Todos' }, ...categories].map(c => c.name);
   

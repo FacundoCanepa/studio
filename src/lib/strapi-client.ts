@@ -30,6 +30,18 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       cache: 'no-store',
       next: { revalidate: 0 } 
     }); 
+    
+    if (model === 'articles') {
+        console.log("[ARTICLES][FETCH][URL]", url);
+        console.log("[ARTICLES][FETCH][HAS_AUTH]", Boolean(STRAPI_TOKEN));
+        console.log("[ARTICLES][FETCH][RESPONSE_STATUS]", response.status);
+        try {
+            console.log("[ARTICLES][FETCH][RAW_BODY]", await response.clone().text());
+        } catch (e) {
+            console.error('[ARTICLES][FETCH][RAW_BODY_ERROR]', e);
+        }
+    }
+    
     console.log('[STRAPI][RESPONSE]', { model, status: response?.status, ok: response?.ok, contentType: response.headers.get('content-type') });
     console.log('[STRAPI][RESPONSE][RATE_LIMIT?]', { remaining: response?.headers?.get?.('x-ratelimit-remaining'), limit: response?.headers?.get?.('x-ratelimit-limit') });
     
@@ -75,7 +87,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     const model = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
 
     do {
-        const fullEndpoint = `${endpoint}${endpoint.includes('?') ? '&' : '&'}pagination[page]=${page}&pagination[pageSize]=50`;
+        const fullEndpoint = `${endpoint}${endpoint.includes('?') ? '&' : '?'}pagination[page]=${page}&pagination[pageSize]=50`;
         try {
           const response: StrapiResponse<T[]> = await fetchStrapi(fullEndpoint);
           
@@ -113,6 +125,7 @@ export async function getStrapiMediaUrl(relativePath?: string | null): Promise<s
 // --- Mappers ---
 
 async function strapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc> {
+    console.log("[ARTICLES][MAP][IN]", JSON.stringify(item, null, 2));
     const docId = item.attributes.documentId;
     const coverUrl = await getStrapiMediaUrl(item.attributes.cover?.data?.attributes.url);
     const categorySlug = item.attributes.category?.data?.attributes.slug;
@@ -120,9 +133,7 @@ async function strapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDo
     const authorName = item.attributes.author?.data?.attributes.Name;
     const publishedAt = item.attributes.publishedAt;
     
-    // SEO component is named "Name"
     const seoComponent = item.attributes.Name;
-    console.log('[MAP][ARTICLE][IN]', { documentId: item.attributes.documentId, title: item.attributes.title, slug: item.attributes.slug, hasCover: Boolean(item.attributes.cover?.data?.attributes.url), hasSEO: Boolean(seoComponent), tagCount: item.attributes.tags.data.length || 0, categorySlug: categorySlug, authorName: authorName });
 
     const seo = seoComponent ? {
         metaTitle: seoComponent.metaTitle,
@@ -130,7 +141,6 @@ async function strapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDo
         ogImageUrl: await getStrapiMediaUrl(seoComponent.ogImage?.data?.attributes.url),
         canonicalUrl: seoComponent.canonicalUrl,
     } : undefined;
-    console.log('[MAP][ARTICLE][SEO]', seoComponent ? { hasSeo: true, metaTitle: seoComponent.metaTitle, hasOg: Boolean(seoComponent.ogImage) } : { hasSeo: false });
 
     const articleDoc: ArticleDoc = {
         documentId: docId,
@@ -164,7 +174,16 @@ async function strapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDo
         seo: seo
     };
     
-    console.log('[MAP][ARTICLE][OUT]', { id: docId, coverUrl, categorySlug, tagSlugs: tagSlugs.length, authorName, publishedAt });
+    console.log("[ARTICLES][MAP][OUT]", {
+        documentId: articleDoc.documentId,
+        title: articleDoc.title,
+        slug: articleDoc.slug,
+        hasCover: Boolean(articleDoc.coverUrl),
+        hasCategory: Boolean(articleDoc.category),
+        hasAuthor: Boolean(articleDoc.author),
+        tagCount: articleDoc.tags?.length ?? 0,
+        hasSEO: Boolean(articleDoc.seo),
+    });
 
     return articleDoc;
 }

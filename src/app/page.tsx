@@ -27,6 +27,11 @@ export default async function Home() {
   }
   
   console.log('[UI][Home][PROPS]', { articlesLen: articles?.length, categoriesLen: categories?.length });
+  
+  console.log('[ARTICLES][UI][PROPS]', { len: articles?.length });
+  articles?.forEach((a,i) => {
+    console.log("[ARTICLES][UI][ITEM]", i, { slug: a.slug, documentId: a.documentId, title: a.title });
+  });
 
   if (articles?.length === 0) {
      console.log('[UI][Home][RENDER_STATE]', 'EMPTY_LIST');
