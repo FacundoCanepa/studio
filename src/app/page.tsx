@@ -7,6 +7,7 @@ import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import type { ArticleDoc } from '@/lib/firestore-types';
 import { RecommendedArticles } from '@/components/shared/recommended-articles';
 import { FloatingIconsHero } from '@/components/shared/floating-icons-hero';
+import { SectionTitle } from '@/components/shared/section-title';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
@@ -21,8 +22,8 @@ export default async function HomePage() {
 
       {/* a. Sección "Lo Último" */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-4xl font-headline text-center mb-12">Lo Último</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <SectionTitle>Lo Último</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">
           {latestArticles.map((article) => (
             <ArticleCard key={article.documentId} article={article} />
           ))}
@@ -32,8 +33,8 @@ export default async function HomePage() {
       {/* b. Sección "No Te Pierdas" */}
       <section className="bg-[#556B2F] py-20 text-[#FDFBF5]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-headline text-center mb-12">No Te Pierdas</h2>
-          <div className="grid grid-cols-1 gap-12">
+          <SectionTitle className="text-white before:bg-white/20">No Te Pierdas</SectionTitle>
+          <div className="grid grid-cols-1 gap-12 mt-16">
             {featuredArticles.map((article) => (
               <HorizontalArticleCard key={article.documentId} article={article} />
             ))}
@@ -43,8 +44,10 @@ export default async function HomePage() {
 
       {/* Recomendados */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-4xl font-headline text-center mb-12">Recomendados para ti</h2>
-        <RecommendedArticles />
+        <SectionTitle>Recomendados para ti</SectionTitle>
+        <div className="mt-16">
+          <RecommendedArticles />
+        </div>
       </section>
 
     </div>
