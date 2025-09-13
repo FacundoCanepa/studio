@@ -1,7 +1,7 @@
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc } from './firestore-types';
-import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity } from '@/lib/strapi-types';
+import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
 const STRAPI_BASE_URL = "https://graceful-bear-073b8037ba.strapiapp.com";
@@ -142,7 +142,7 @@ async function strapiAuthorToAuthorDoc(item: StrapiAuthor): Promise<AuthorDoc> {
     return {
         documentId: item.documentId,
         name: item.Name,
-        avatarUrl: await getStrapiMediaUrl(item.Avatar?.data?.attributes.url),
+        avatarUrl: await getStrapiMediaUrl(item.Avatar?.url),
         bioBlocks: item.Bio,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
@@ -152,18 +152,13 @@ async function strapiAuthorToAuthorDoc(item: StrapiAuthor): Promise<AuthorDoc> {
 // --- API Methods ---
 
 export async function getArticles({
-  page = 1,
-  pageSize = 12,
   categorySlug,
 }: {
-  page?: number;
-  pageSize?: number;
   categorySlug?: string;
 } = {}): Promise<ArticleDoc[]> {
     const params = new URLSearchParams();
     params.set('populate', '*');
     params.set('sort', 'publishedAt:desc');
-    // The pagination params will be added by fetchPaginated
     
     const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`);
     console.log("[ARTICLES][RAW_LEN]", strapiArticles.length);
@@ -211,11 +206,16 @@ export async function getCategories(): Promise<CategoryDoc[]> {
     const json = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?populate=*&pagination[page]=1&pagination[pageSize]=100&sort=name:asc`);
     const raw = Array.isArray(json?.data) ? json.data : [];
     const mapped: CategoryDoc[] = raw
-      .map((c: any) => c?.documentId && c?.name && c?.slug ? ({
-        documentId: c.documentId,
-        name: c.name,
-        slug: c.slug
-      }) : null)
+      .map((c: any) => {
+        if (!c || !c.documentId || !c.name || !c.slug) {
+          return null;
+        }
+        return {
+          documentId: c.documentId,
+          name: c.name,
+          slug: c.slug,
+        };
+      })
       .filter(Boolean) as CategoryDoc[];
 
     if (process.env.DEBUG_STRAPI === "true") {
