@@ -1,7 +1,5 @@
 'use client';
 
-import { cn } from '@/lib/utils';
-
 export const AnimatedHeadline = () => {
   const title = 'Vestigio';
 

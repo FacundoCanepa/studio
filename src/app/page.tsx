@@ -6,7 +6,7 @@ import { getArticles } from '@/lib/strapi-client';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import type { ArticleDoc } from '@/lib/firestore-types';
 import { RecommendedArticles } from '@/components/shared/recommended-articles';
-import { AnimatedHeadline } from '@/components/shared/animated-headline';
+import { Hero3DCarousel } from '@/components/shared/hero-3d-carousel';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
@@ -16,7 +16,7 @@ export default async function HomePage() {
     <div className="bg-background">
       {/* Animated Headline Hero */}
       <section className="h-96 flex items-center justify-center text-center mb-20">
-        <AnimatedHeadline />
+        <Hero3DCarousel />
       </section>
 
       {/* a. Sección "Lo Último" */}
