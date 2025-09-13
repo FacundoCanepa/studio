@@ -4,13 +4,13 @@ import type { StrapiArticle } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc | null> {
-    if (!item || !item.documentId) return null;
+    if (!item || !item.id) return null;
 
     const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
     
     const categoryData = item.category;
     const category = categoryData ? {
-        documentId: categoryData.documentId,
+        documentId: String(categoryData.id),
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
@@ -19,16 +19,16 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
 
     const authorData = item.author;
     const author = authorData ? {
-        documentId: authorData.documentId,
+        documentId: String(authorData.id),
         name: authorData.Name,
         avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
     } : null;
     
     const tags = (item.tags || [])
         .map(t => t)
-        .filter(t => t && t.documentId && t.name && t.slug)
+        .filter(t => t && t.id && t.name && t.slug)
         .map(t => ({
-            documentId: t.documentId,
+            documentId: String(t.id),
             name: t.name,
             slug: t.slug,
         }));
@@ -44,7 +44,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
     const contentHtml = typeof item.Content === 'string' ? item.Content : undefined;
 
     const out: ArticleDoc = {
-        documentId: item.documentId,
+        documentId: String(item.id),
         title: item.title,
         slug: item.slug,
         excerpt: item.excerpt,

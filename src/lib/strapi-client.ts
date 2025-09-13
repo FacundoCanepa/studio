@@ -154,13 +154,32 @@ export async function getArticle(documentId: string): Promise<ArticleDoc | null>
 export async function getAuthors(): Promise<AuthorDoc[]> {
     const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*');
     return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
-        documentId: item.documentId,
+        documentId: String(item.id),
         name: item.Name,
         avatarUrl: await getStrapiMediaUrl(item.Avatar?.url),
         bioBlocks: item.Bio,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
     })));
+}
+
+export async function getAuthor(id: string): Promise<AuthorDoc | null> {
+    try {
+        const response = await fetchStrapi<StrapiResponse<StrapiAuthor>>(`/api/authors/${id}?populate=*`);
+        if (!response.data) return null;
+        const authorData = response.data;
+        return {
+            documentId: String(authorData.id),
+            name: authorData.Name,
+            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
+            bioBlocks: authorData.Bio,
+            createdAt: authorData.createdAt,
+            updatedAt: authorData.updatedAt,
+        };
+    } catch (error) {
+        console.error(`[STRAPI][GET_AUTHOR_ERROR] Failed to fetch author with id ${id}`, error);
+        return null;
+    }
 }
 
 export async function getCategories(): Promise<CategoryDoc[]> {
