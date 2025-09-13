@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { X, ListFilter, Search } from 'lucide-react';
@@ -125,19 +124,18 @@ export function ArticleFilters({
         {/* Tags */}
         <div>
             <Label className="font-code text-sm uppercase tracking-wider">Etiquetas</Label>
-            <div className="mt-3 space-y-3 max-h-40 overflow-y-auto pr-2">
+            <div className="mt-3 space-y-2 max-h-40 overflow-y-auto pr-2">
                 {allTags.map(tag => (
-                    <div key={tag} className="flex items-center">
-                        <Checkbox
+                    <label key={tag} className="checkbox-btn" htmlFor={`tag-${tag}`}>
+                       <span className="label-text">{tag}</span>
+                        <input
                             id={`tag-${tag}`}
+                            type="checkbox"
                             checked={filters.tags.includes(tag)}
-                            onCheckedChange={checked => handleTagChange(tag, !!checked)}
-                            className="h-5 w-5 border-2 border-black data-[state=checked]:bg-black data-[state=checked]:text-white"
+                            onChange={e => handleTagChange(tag, e.target.checked)}
                         />
-                        <Label htmlFor={`tag-${tag}`} className="ml-3 font-code text-base">
-                            {tag}
-                        </Label>
-                    </div>
+                        <span className="checkmark"></span>
+                    </label>
                 ))}
             </div>
         </div>
