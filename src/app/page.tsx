@@ -1,50 +1,43 @@
 import { AnimatedHeadline } from '@/components/shared/animated-headline';
 import { ArticleList } from '@/components/articles/article-list';
 import { AdSlot } from '@/components/marketing/ad-slot';
-import { getArticles, getCategories } from '@/lib/strapi-client';
 import type { ArticleDoc, CategoryDoc } from '@/lib/firestore-types';
 import { CategoryFilter } from '@/components/articles/category-filter';
+import { getArticles, getCategories } from '@/lib/strapi-client';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
-export default async function Home() {
-  const BYPASS_FIRESTORE = process.env.NODE_ENV === 'development';
-  let articles: ArticleDoc[] = [];
-  let categories: CategoryDoc[] = [];
-  let emptyReason = 'no-items-from-strapi';
+export default async function HomePage() {
+  const articles = await getArticles();
+  const categories = await getCategories();
 
-  if (BYPASS_FIRESTORE) {
-    console.log('[TEST][BYPASS_FIRESTORE] enabled');
-  }
-
-  try {
-    articles = await getArticles();
-    categories = await getCategories();
-    if (BYPASS_FIRESTORE) {
-      console.log('[TEST][BYPASS][STRAPI][COUNT]', articles.length);
-    }
-  } catch (error: any) {
-    console.log('[UI][Home][ERROR]', { message: error?.message, stack: error?.stack });
-    emptyReason = error.message;
-  }
-  
-  console.log('[UI][Home][PROPS]', { articlesLen: articles?.length, categoriesLen: categories?.length });
-  
-  console.log('[ARTICLES][UI][PROPS]', { len: articles?.length });
-  articles?.forEach((a,i) => {
-    console.log("[ARTICLES][UI][ITEM]", i, { slug: a.slug, documentId: a.documentId, title: a.title });
-  });
-
-  const safeArticles = Array.isArray(articles) ? articles.filter(Boolean) : [];
-
-  if (safeArticles.length === 0) {
-     console.log('[UI][Home][RENDER_STATE]', 'EMPTY_LIST');
-     console.log('[UI][Home][EMPTY_REASON]', emptyReason);
-  } else {
-     console.log('[UI][Home][RENDER_STATE]', 'rendering-list');
+  const NavButtons = () => {
+    const baseClasses = "inline-flex items-center rounded-full px-4 py-2 text-sm border transition-colors duration-200";
+    const activeClasses = "bg-primary text-primary-foreground border-primary";
+    const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
+    return (
+      <nav aria-label="Categorías" className="flex gap-3 flex-wrap">
+        <Link href="/" className={cn(baseClasses, activeClasses)}>
+          Todos
+        </Link>
+        {categories.map((c) => (
+          <Link
+            key={c.documentId}
+            href={`/categoria/${c.slug}`}
+            className={cn(baseClasses, idleClasses)}
+          >
+            {c.name}
+          </Link>
+        ))}
+      </nav>
+    )
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-      <section className="py-24 text-center">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="py-12 text-center">
         <AnimatedHeadline />
         <p className="mt-4 max-w-2xl mx-auto text-lg text-foreground/80">
           La revista de moda, estilo de vida y tendencias para la mujer moderna.
@@ -52,10 +45,16 @@ export default async function Home() {
       </section>
 
       <div className="space-y-12">
-        <CategoryFilter categories={categories} />
+        <NavButtons />
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           <div className="lg:col-span-3">
-            <ArticleList articles={safeArticles} />
+            <ArticleList articles={articles} />
+            {articles.length === 0 && (
+              <div className="text-center py-16 text-muted-foreground">
+                <p>No se encontraron artículos.</p>
+              </div>
+            )}
           </div>
           <aside className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24 space-y-6">

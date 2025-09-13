@@ -1,13 +1,13 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
 import type { CategoryDoc } from '@/lib/firestore-types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface CategoryFilterProps {
   categories: CategoryDoc[];
-  activeCategorySlug?: string;
+  activeCategorySlug?: string | null;
 }
 
 export const CategoryFilter = ({ categories, activeCategorySlug }: CategoryFilterProps) => {
@@ -16,8 +16,8 @@ export const CategoryFilter = ({ categories, activeCategorySlug }: CategoryFilte
   const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
   
   return (
-    <nav aria-label="Categorías" className="flex gap-3 flex-wrap">
-       <Link href="/" className={cn(baseClasses, !activeCategorySlug ? activeClasses : idleClasses)}>
+    <nav aria-label="Categorías" className="flex gap-3 flex-wrap items-center">
+      <Link href="/" className={cn(baseClasses, !activeCategorySlug ? activeClasses : idleClasses)}>
         Todos
       </Link>
       {categories.map((category) => (

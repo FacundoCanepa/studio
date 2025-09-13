@@ -1,8 +1,9 @@
 import { ArticleList } from "@/components/articles/article-list";
-import { CategoryFilter } from "@/components/articles/category-filter";
 import { AdSlot } from "@/components/marketing/ad-slot";
 import { getArticles, getCategories } from "@/lib/strapi-client";
 import type { Metadata } from "next";
+import Link from 'next/link';
+import { cn } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const { slug } = params;
@@ -23,9 +24,29 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   const categories = await getCategories();
   const category = categories.find(c => c.slug === slug);
 
-  if (process.env.DEBUG_STRAPI === "true") {
-    console.log("[CATEGORY][PAGE]", { slug, count: articles?.length || 0 });
-    if (articles?.[0]) console.log("[CATEGORY][FIRST]", { slug: articles[0].slug, id: articles[0].documentId });
+  const NavButtons = () => {
+    const baseClasses = "inline-flex items-center rounded-full px-4 py-2 text-sm border transition-colors duration-200";
+    const activeClasses = "bg-primary text-primary-foreground border-primary";
+    const idleClasses = "bg-secondary/50 hover:bg-secondary border-transparent";
+    return (
+      <nav aria-label="Categorías" className="flex gap-3 flex-wrap">
+        <Link href="/" className={cn(baseClasses, idleClasses)}>
+          Todos
+        </Link>
+        {categories.map((c) => (
+          <Link
+            key={c.documentId}
+            href={`/categoria/${c.slug}`}
+            className={cn(
+              baseClasses,
+              slug === c.slug ? activeClasses : idleClasses
+            )}
+          >
+            {c.name}
+          </Link>
+        ))}
+      </nav>
+    )
   }
 
   return (
@@ -37,7 +58,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
       </section>
 
       <div className="space-y-12">
-        <CategoryFilter categories={categories} activeCategorySlug={slug} />
+        <NavButtons />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
           <div className="lg:col-span-3">
@@ -61,7 +82,6 @@ export default async function CategoryPage({ params }: { params: { slug: string 
   );
 }
 
-// Generate static paths for all categories
 export async function generateStaticParams() {
   const categories = await getCategories();
  
