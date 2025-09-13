@@ -76,18 +76,9 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
           </div>
         </div>
         
-        <div className="cube-btn cube" role="button">
-            <div className="bg-top">
-                <div className="bg-inner"></div>
-            </div>
-            <div className="bg-right">
-                <div className="bg-inner"></div>
-            </div>
-            <div className="bg">
-                <div className="bg-inner"></div>
-            </div>
-            <div className="text">Ver más</div>
-        </div>
+        <button className="slide-button" type="button">
+          Ver más
+        </button>
       </div>
     </Link>
   );
