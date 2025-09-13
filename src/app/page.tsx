@@ -6,16 +6,17 @@ import { getArticles } from '@/lib/strapi-client';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import type { ArticleDoc } from '@/lib/firestore-types';
 import { RecommendedArticles } from '@/components/shared/recommended-articles';
+import { AnimatedHeadline } from '@/components/shared/animated-headline';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
   const featuredArticles: ArticleDoc[] = await getArticles({ limit: 3, filters: { featured: true } });
   
   return (
-    <div className="bg-[#FDFBF5]">
-      {/* Carrusel Principal - Placeholder */}
-      <section className="h-96 bg-gray-200 flex items-center justify-center text-center mb-20">
-        <p className="text-gray-500">Aquí irá el Carrusel Principal</p>
+    <div className="bg-background">
+      {/* Animated Headline Hero */}
+      <section className="h-96 flex items-center justify-center text-center mb-20">
+        <AnimatedHeadline />
       </section>
 
       {/* a. Sección "Lo Último" */}
