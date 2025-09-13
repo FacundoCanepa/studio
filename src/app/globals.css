@@ -141,42 +141,20 @@
     border: none;
   }
 
-  .arrow-button {
-    cursor: pointer;
-    font-weight: 700;
-    transition: all 0.2s;
-    padding: 10px 20px;
-    border-radius: 100px;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
-    border: 1px solid transparent;
-    display: flex;
-    align-items: center;
-    font-size: 15px;
-  }
-  
-  .arrow-button:hover {
-    background: hsl(var(--primary) / 0.9);
-  }
-  
-  .arrow-button > svg {
-    width: 34px;
-    margin-left: 10px;
-    transition: transform 0.3s ease-in-out;
+  .simple-arrow-button {
+    @apply flex items-center gap-2 text-sm font-semibold text-foreground/70 transition-all duration-300;
   }
 
-  .arrow-button > svg circle,
-  .arrow-button > svg path {
-    stroke: hsl(var(--primary-foreground));
-    fill: hsl(var(--primary-foreground));
+  .group:hover .simple-arrow-button {
+    @apply text-foreground;
   }
   
-  .arrow-button:hover svg {
-    transform: translateX(5px);
+  .simple-arrow-button > svg {
+    @apply transition-transform duration-300;
   }
-  
-  .arrow-button:active {
-    transform: scale(0.95);
+
+  .group:hover .simple-arrow-button > svg {
+    @apply translate-x-1;
   }
 
 }
