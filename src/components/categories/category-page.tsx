@@ -15,6 +15,11 @@ interface CategoryPageProps {
 
 export const CategoryPage = ({ categoryName, articles }: CategoryPageProps) => {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[UI][SearchBar][QUERY]', { q: e.target.value });
+    setSearchTerm(e.target.value);
+  }
   
   const filteredArticles = articles.filter(article =>
     article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -37,7 +42,7 @@ export const CategoryPage = ({ categoryName, articles }: CategoryPageProps) => {
               placeholder="Buscar en esta categoría..."
               className="h-10 pl-10 w-full sm:w-72"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           </div>

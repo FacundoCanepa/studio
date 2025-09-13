@@ -17,15 +17,24 @@ export const ArticleList = ({ articles, categories }: ArticleListProps) => {
   const filteredArticles = articles.filter(article => 
     selectedCategory === 'Todos' || article.category?.name === selectedCategory
   );
+  
+  console.log('[UI][ArticleList][ITEMS]', { count: filteredArticles?.length });
+  console.log('[UI][ArticleList][FIRST_ITEM]', filteredArticles?.[0] ? { slug: filteredArticles[0]?.slug, documentId: filteredArticles[0]?.documentId } : 'no-first');
+
 
   const categoryNames = [{ name: 'Todos' }, ...categories].map(c => c.name);
+  
+  const handleSetSelectedCategory = (category: string) => {
+    console.log('[UI][Home][FILTERS]', { currentFilters: { category } });
+    setSelectedCategory(category);
+  }
 
   return (
     <div>
       <CategoryFilter
         categories={categoryNames}
         selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
+        setSelectedCategory={handleSetSelectedCategory}
       />
       {filteredArticles.length > 0 ? (
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">

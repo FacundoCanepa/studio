@@ -2,10 +2,30 @@ import { AnimatedHeadline } from '@/components/shared/animated-headline';
 import { ArticleList } from '@/components/articles/article-list';
 import { AdSlot } from '@/components/marketing/ad-slot';
 import { getArticles, getCategories } from '@/lib/strapi-client';
+import type { ArticleDoc, CategoryDoc } from '@/lib/firestore-types';
 
 export default async function Home() {
-  const articles = await getArticles();
-  const categories = await getCategories();
+  let articles: ArticleDoc[] = [];
+  let categories: CategoryDoc[] = [];
+  let emptyReason = 'no-items-from-strapi';
+
+  try {
+    articles = await getArticles();
+    categories = await getCategories();
+  } catch (error: any) {
+    console.log('[UI][Home][ERROR]', { message: error?.message, stack: error?.stack });
+    emptyReason = error.message;
+  }
+  
+  console.log('[UI][Home][PROPS]', { articlesLen: articles?.length, categoriesLen: categories?.length });
+
+  if (articles?.length === 0) {
+     console.log('[UI][Home][RENDER_STATE]', 'EMPTY_LIST');
+     console.log('[UI][Home][EMPTY_REASON]', emptyReason);
+  } else {
+     console.log('[UI][Home][RENDER_STATE]', 'rendering-list');
+  }
+
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">

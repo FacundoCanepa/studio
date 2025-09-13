@@ -62,8 +62,8 @@ export type StrapiArticle = StrapiEntity & {
         author: StrapiRelation<StrapiAuthor>;
         tags: StrapiCollection<StrapiTag>;
 
-        // Component
-        seo?: { // Component name is 'seo' in Strapi
+        // Component - THIS IS THE ACTUAL SEO component name from your schema
+        seo?: { 
             metaTitle?: string;
             metaDescription?: string;
             canonicalUrl?: string;
