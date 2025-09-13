@@ -6,17 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Facebook, Instagram, Menu, Search, X } from 'lucide-react';
 import { TikTokIcon } from '@/components/icons/tiktok-icon';
+import type { CategoryDoc } from '@/lib/firestore-types';
 
-const navLinks = [
-  { name: 'Moda', href: '/moda' },
-  { name: 'Estilo de vida', href: '/estilo-de-vida' },
-  { name: 'Tips', href: '/tips' },
-  { name: 'Accesorios', href: '/accesorios' },
-  { name: 'Temporadas', href: '/temporadas' },
-];
+interface AppHeaderProps {
+  categories: CategoryDoc[];
+}
 
-export const AppHeader = () => {
+export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
   const [isSheetOpen, setSheetOpen] = useState(false);
+
+  const navLinks = categories.map(c => ({ name: c.name, href: `/categoria/${c.slug}` }));
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
