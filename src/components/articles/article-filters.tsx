@@ -13,6 +13,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { X, ListFilter, Search } from 'lucide-react';
 import type { ArticleDoc, CategoryDoc, AuthorDoc } from '@/lib/firestore-types';
+import { AdSlot } from '../marketing/ad-slot';
 
 export interface Filters {
   query: string;
@@ -173,6 +174,12 @@ export function ArticleFilters({
                 </SelectContent>
             </Select>
         </div>
+        
+        {/* Ad Slot */}
+        <div className="pt-8 border-t border-dashed border-black/50">
+            <AdSlot className="w-full h-48" />
+        </div>
+
 
         {/* Clear Filters */}
         <Button variant="outline" onClick={onClearFilters} className="w-full retro-input h-auto py-3 text-base">

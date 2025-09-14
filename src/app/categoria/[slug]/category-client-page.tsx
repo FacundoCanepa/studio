@@ -6,6 +6,8 @@ import { ArticleFilters, Filters } from '@/components/articles/article-filters';
 import type { ArticleDoc, CategoryDoc, AuthorDoc } from '@/lib/firestore-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
+import { AdSlot } from '@/components/marketing/ad-slot';
+import { FadeIn } from '@/components/shared/fade-in';
 
 const INITIAL_FILTERS: Filters = {
   query: '',
@@ -125,6 +127,23 @@ export default function CategoryClientPage({
   );
   
   const heroImage = category?.imageUrl || articles[0]?.coverUrl;
+  const articlesWithAds = React.useMemo(() => {
+    const adFrequency = 4;
+    const components: React.ReactNode[] = [];
+    filteredArticles.forEach((article, index) => {
+      components.push(
+          <ArticleList articles={[article]} />
+      );
+      if ((index + 1) % adFrequency === 0 && index < filteredArticles.length -1) {
+        components.push(
+          <FadeIn key={`ad-${index}`} delay={100} className="sm:col-span-2">
+            <AdSlot className="w-full h-32" />
+          </FadeIn>
+        );
+      }
+    });
+    return components;
+  }, [filteredArticles]);
 
   return (
     <div>
@@ -167,7 +186,15 @@ export default function CategoryClientPage({
                         onClearFilters={handleClearFilters}
                     />
                     <main className="flex-1 mt-12 lg:mt-0">
-                        <ArticleList articles={filteredArticles} />
+                         {articlesWithAds.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
+                                {articlesWithAds}
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-16">
+                                <p>No hay artículos para mostrar con los filtros seleccionados.</p>
+                            </div>
+                        )}
                     </main>
                 </div>
             )}

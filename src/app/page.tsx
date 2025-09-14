@@ -11,6 +11,7 @@ import { SectionTitle } from '@/components/shared/section-title';
 import { ImageGallery } from '@/components/shared/image-gallery';
 import { ColorPaletteSection } from '@/components/shared/color-palette-section';
 import { SocialFollow } from '@/components/shared/social-follow';
+import { AdSlot } from '@/components/marketing/ad-slot';
 
 export default async function HomePage() {
   const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true } });
@@ -44,6 +45,10 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 my-16">
+        <AdSlot className="w-full h-24 max-w-5xl mx-auto" />
+      </div>
 
       {/* Recomendados */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">

@@ -6,6 +6,7 @@ import { ArticleCard } from '@/components/articles/article-card';
 import { notFound } from 'next/navigation';
 import { SectionTitle } from '@/components/shared/section-title';
 import { Badge } from '@/components/ui/badge';
+import { AdSlot } from '@/components/marketing/ad-slot';
 
 type Props = {
   params: { id: string }
@@ -64,7 +65,7 @@ export default async function AuthorPage({ params }: Props) {
         </header>
 
         {author.bioBlocks && (
-            <section className="max-w-2xl mx-auto mb-20">
+            <section className="max-w-2xl mx-auto mb-16">
                 <div className="prose prose-lg dark:prose-invert prose-headings:font-headline prose-headings:text-primary prose-a:text-primary hover:prose-a:underline">
                     {author.bioBlocks.map((block: any, index: number) => {
                         if (block.type === 'paragraph') {
@@ -77,6 +78,10 @@ export default async function AuthorPage({ params }: Props) {
             </section>
         )}
         
+        <div className="my-16">
+            <AdSlot className="w-full h-24 max-w-4xl mx-auto" />
+        </div>
+
         <section>
           <SectionTitle>Artículos de {author.name}</SectionTitle>
           {authorArticles.length > 0 ? (
