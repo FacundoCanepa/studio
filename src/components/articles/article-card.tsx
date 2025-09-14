@@ -44,7 +44,8 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
         </figure>
         
         <div className="flex-grow">
-            <h3 className="text-xl font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300 clamp-text-h3">
+            {/* [RESPONSIVE FIX] Adjust heading clamp for smaller screens to avoid text being too large */}
+            <h3 className="text-lg sm:text-xl font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300 clamp-text-h3">
               {article.title}
             </h3>
 

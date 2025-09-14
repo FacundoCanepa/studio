@@ -4,6 +4,20 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppHeader } from '@/components/layout/app-header';
 import { AppFooter } from '@/components/layout/app-footer';
 import { getCategories } from '@/lib/strapi-client';
+import { Poppins, EB_Garamond } from 'next/font/google';
+import { cn } from '@/lib/utils';
+
+// [PERFORMANCE FIX] Use next/font to optimize font loading
+const fontBody = Poppins({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-body',
+});
+
+const fontHeadline = EB_Garamond({
+  subsets: ['latin'],
+  variable: '--font-headline',
+});
 
 export const metadata: Metadata = {
   title: 'Vestigio Magazine',
@@ -23,12 +37,7 @@ export default async function RootLayout({
   const categories = await getCategories();
   return (
     <html lang="es" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+      <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
         <div className="relative flex min-h-screen flex-col">
           <AppHeader categories={categories} />
           <main className="flex-1">{children}</main>
