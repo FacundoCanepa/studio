@@ -2,7 +2,7 @@
 import type { ArticleDoc } from '@/lib/firestore-types';
 import Link from 'next/link';
 import Image from 'next/image';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ArrowRight } from 'lucide-react';
 
@@ -13,7 +13,7 @@ interface ArticleCardProps {
 export const ArticleCard = ({ article }: ArticleCardProps) => {
   if (!article) return null;
 
-  const publishedDate = article.publishedAt ? new Date(article.publishedAt) : null;
+  const publishedDate = article.publishedAt ? parseISO(article.publishedAt) : null;
 
   return (
     <Link 
