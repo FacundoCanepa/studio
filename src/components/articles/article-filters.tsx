@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { X, ListFilter, Search } from 'lucide-react';
 import type { ArticleDoc, CategoryDoc, AuthorDoc } from '@/lib/firestore-types';
 
