@@ -145,6 +145,18 @@ export async function getArticles({
     return mappedArticles;
 }
 
+export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null> {
+    const params = new URLSearchParams();
+    params.set('filters[slug][$eq]', slug);
+    params.set('populate', '*');
+    params.set('pagination[limit]', '1');
+
+    const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(`/api/articles?${params.toString()}`);
+    if (!response.data || response.data.length === 0) return null;
+    
+    return await mapStrapiArticleToArticleDoc(response.data[0]);
+}
+
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
     const response = await fetchStrapi<StrapiResponse<StrapiArticle>>(`/api/articles/${documentId}?populate=*`);
     if (!response.data) return null;
