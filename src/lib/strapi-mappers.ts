@@ -42,6 +42,10 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
     } : undefined;
 
     const contentHtml = typeof item.Content === 'string' ? item.Content : undefined;
+    
+    const carouselImages = item.Carosel && Array.isArray(item.Carosel)
+      ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img.url)))
+      : [];
 
     const out: ArticleDoc = {
         documentId: String(item.id),
@@ -56,7 +60,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         updatedAt: item.updatedAt,
         views: item.views ?? 0,
         saves: item.saves ?? 0,
-        type: item.type as any, // Strapi type might be different from firestore one, might need mapping
+        type: item.type as any,
         category,
         author,
         tags,
@@ -65,6 +69,10 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         categorySlug: category?.slug,
         tagSlugs: tags.map(t => t.slug),
         authorName: author?.name,
+        informacion: item.Informacion,
+        contentMore: item.ContentMore,
+        urlYoutube: item.UrlYoutube,
+        carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
     };
 
     return out;
