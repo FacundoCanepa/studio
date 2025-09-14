@@ -24,7 +24,7 @@ export const ImageGallery = async () => {
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <div className="gallery-item-overlay">
-            <h4 className="font-headline text-2xl">{item.title}</h4>
+            <h4 className="font-headline text-2xl clamp-text-h4">{item.title}</h4>
             <p className="text-sm text-center px-4">{item.description}</p>
           </div>
         </div>

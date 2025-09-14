@@ -155,13 +155,14 @@ export default function CategoryClientPage({
                     fill
                     className="object-cover object-center"
                     priority
+                    sizes="100vw"
                 />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent"></div>
             )}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
             <div className="relative z-10 p-4">
-                <h1 className="text-5xl md:text-7xl font-headline font-medium tracking-tighter uppercase">
+                <h1 className="text-5xl md:text-7xl font-headline font-medium tracking-tighter uppercase clamp-text-h1">
                     {category?.name || 'Categoría'}
                 </h1>
                 {category?.description && (

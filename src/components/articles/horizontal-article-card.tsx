@@ -16,7 +16,7 @@ export const HorizontalArticleCard = ({ article }: HorizontalArticleCardProps) =
   const publishedDate = article.publishedAt ? new Date(article.publishedAt) : null;
 
   return (
-    <Link href={`/articulos/${article.slug}`} className="group grid grid-cols-1 md:grid-cols-5 gap-8 items-center p-8 bg-primary rounded-2xl">
+    <Link href={`/articulos/${article.slug}`} className="group grid grid-cols-1 md:grid-cols-5 gap-8 items-center p-4 sm:p-8 bg-primary rounded-2xl">
       <div className="md:col-span-2 layered-card">
           <div className="layered-card-content !rounded-lg">
             {article.coverUrl && (
@@ -26,6 +26,7 @@ export const HorizontalArticleCard = ({ article }: HorizontalArticleCardProps) =
                 width={600}
                 height={400}
                 className="object-cover w-full h-full aspect-video md:aspect-[4/3] transition-transform duration-300 group-hover:scale-105"
+                sizes="(min-width: 768px) 40vw, 100vw"
               />
             )}
           </div>
@@ -35,7 +36,7 @@ export const HorizontalArticleCard = ({ article }: HorizontalArticleCardProps) =
             {article.category && (
                 <p className="text-sm font-medium text-primary-foreground/70 mb-2">{article.category.name}</p>
             )}
-            <h3 className="text-3xl font-headline text-pretty text-primary-foreground group-hover:underline">
+            <h3 className="text-3xl font-headline text-pretty text-primary-foreground group-hover:underline clamp-text-h3">
               {article.title}
             </h3>
             {article.excerpt && (
@@ -54,6 +55,7 @@ export const HorizontalArticleCard = ({ article }: HorizontalArticleCardProps) =
                 width={40}
                 height={40}
                 className="rounded-full size-10 object-cover"
+                sizes="40px"
                 />
             )}
             <div>

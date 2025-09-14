@@ -57,10 +57,12 @@ export default async function AuthorPage({ params }: Props) {
                     alt={author.name}
                     fill
                     className="rounded-full object-cover border-4 border-card shadow-lg"
+                    sizes="160px"
+                    priority
                 />
             )}
           </div>
-          <h1 className="text-5xl font-headline font-medium">{author.name}</h1>
+          <h1 className="text-5xl font-headline font-medium clamp-text-h1">{author.name}</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">{bioFirstParagraph}</p>
         </header>
 

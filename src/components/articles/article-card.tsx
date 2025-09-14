@@ -29,6 +29,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               width={500}
               height={281}
               className="object-cover object-center aspect-video"
+              sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
             />
           ) : (
             <div className="aspect-video bg-muted/50"></div>
@@ -43,7 +44,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
         </figure>
         
         <div className="flex-grow">
-            <h3 className="text-xl font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300">
+            <h3 className="text-xl font-headline text-pretty mt-2 text-foreground hover:text-primary transition-colors duration-300 clamp-text-h3">
               {article.title}
             </h3>
 
@@ -64,6 +65,7 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
               width={40}
               height={40}
               className="rounded-full size-10 object-cover"
+              sizes="40px"
             />
           )}
           <div>

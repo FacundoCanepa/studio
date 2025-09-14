@@ -22,23 +22,32 @@ export const ArticleCarousel = ({ images, title }: ArticleCarouselProps) => {
   }
 
   return (
-    <Carousel className="w-full max-w-4xl mx-auto">
+    <Carousel 
+      className="w-full max-w-4xl mx-auto"
+      opts={{
+        align: "start",
+        loop: true,
+      }}
+      aria-roledescription="carousel"
+      aria-label={`Galería de imágenes para ${title}`}
+    >
       <CarouselContent>
         {images.map((imgSrc, index) => (
-          <CarouselItem key={index}>
+          <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
             <div className="relative aspect-video">
               <Image
                 src={imgSrc}
                 alt={`${title} - Imagen de galería ${index + 1}`}
                 fill
                 className="object-cover rounded-lg"
+                sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
               />
             </div>
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious className="left-[-2rem]" />
-      <CarouselNext className="right-[-2rem]" />
+      <CarouselPrevious className="left-[-1rem] md:left-[-2.5rem]" aria-label="Imagen anterior" />
+      <CarouselNext className="right-[-1rem] md:right-[-2.5rem]" aria-label="Siguiente imagen" />
     </Carousel>
   );
 };

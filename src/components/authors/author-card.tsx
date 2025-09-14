@@ -22,7 +22,7 @@ export const AuthorCard = ({ author }: AuthorCardProps) => {
               alt={`Portada de ${author.name}`}
               fill
               className="object-cover rounded-lg"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-muted rounded-lg">

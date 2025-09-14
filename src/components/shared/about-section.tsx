@@ -17,11 +17,12 @@ export const AboutSection = () => {
             className="object-cover"
             priority
             data-ai-hint="office background"
+            sizes="100vw"
           />
         )}
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
         <div className="relative z-10 p-4 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-headline font-medium tracking-tighter uppercase">
+          <h1 className="text-5xl md:text-7xl font-headline font-medium tracking-tighter uppercase clamp-text-h1">
             {title}
           </h1>
           <p className="mt-4 text-lg md:text-xl text-white/80">

@@ -24,6 +24,7 @@ export const FloatingIconsHero = () => {
             key={index}
             className={`icon-float absolute text-foreground/10 ${className}`}
             strokeWidth={1.5}
+            aria-hidden="true"
           />
         ))}
       </div>

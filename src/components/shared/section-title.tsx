@@ -12,7 +12,7 @@ export const SectionTitle = ({ children, className }: SectionTitleProps) => {
     <div className="relative text-center">
       <h2
         className={cn(
-          "relative inline-block bg-transparent px-4 text-5xl md:text-6xl font-headline uppercase tracking-wider z-10",
+          "relative inline-block bg-transparent px-4 font-headline uppercase tracking-wider z-10 clamp-text-h2",
           className
         )}
       >

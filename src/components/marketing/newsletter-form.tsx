@@ -43,6 +43,7 @@ export const NewsletterForm = () => {
         onChange={(e) => setEmail(e.target.value)}
         disabled={loading}
         aria-label="Email para la newsletter"
+        className="flex-1"
       />
       <Button type="submit" disabled={loading}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Suscribir'}

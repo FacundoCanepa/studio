@@ -8,6 +8,11 @@ import { getCategories } from '@/lib/strapi-client';
 export const metadata: Metadata = {
   title: 'Vestigio Magazine',
   description: 'Revista de moda, estilo de vida y tendencias.',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default async function RootLayout({

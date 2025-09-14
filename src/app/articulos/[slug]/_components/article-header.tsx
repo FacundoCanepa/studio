@@ -24,6 +24,8 @@ export const ArticleHeader = ({ article }: ArticleHeaderProps) => {
             fill
             className="object-cover object-center opacity-10 filter blur-sm scale-110"
             aria-hidden="true"
+            priority
+            sizes="100vw"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/80 to-transparent"></div>
@@ -43,7 +45,7 @@ export const ArticleHeader = ({ article }: ArticleHeaderProps) => {
                 <Badge variant="destructive" className="border-2 border-white/50">Destacado</Badge>
             )}
         </div>
-        <h1 className="mt-4 text-4xl md:text-6xl font-headline font-medium text-white text-balance">
+        <h1 className="mt-4 text-4xl md:text-6xl font-headline font-medium text-white text-balance clamp-text-h1">
           {article.title}
         </h1>
         {article.excerpt && (
@@ -61,6 +63,7 @@ export const ArticleHeader = ({ article }: ArticleHeaderProps) => {
                   width={48}
                   height={48}
                   className="rounded-full size-12 object-cover border-2 border-primary-foreground/50"
+                  sizes="48px"
                 />
               )}
               <div className="text-left">

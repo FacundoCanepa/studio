@@ -82,6 +82,7 @@ export default async function ArticlePage({ params }: Props) {
                 fill
                 className="object-cover"
                 priority
+                sizes="(min-width: 1280px) 1200px, (min-width: 768px) 90vw, 100vw"
               />
             </div>
           )}
@@ -141,7 +142,7 @@ export default async function ArticlePage({ params }: Props) {
         <section className="py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <SectionTitle>También te puede interesar</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
                 <ArticleList articles={filteredRelated} />
             </div>
           </div>
