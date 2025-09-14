@@ -19,15 +19,45 @@ const fontHeadline = EB_Garamond({
   variable: '--font-headline',
 });
 
+// [SEO FIX] Add metadataBase for root SEO configuration.
 export const metadata: Metadata = {
-  title: 'Vestigio Magazine',
+  metadataBase: new URL('https://vestigio.com.ar'),
+  title: {
+    default: 'Vestigio Magazine',
+    template: `%s - Vestigio Magazine`,
+  },
   description: 'Revista de moda, estilo de vida y tendencias.',
   viewport: {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
   },
+  // [SEO FIX] Add openGraph and twitter metadata with brand logo.
+  openGraph: {
+    title: 'Vestigio Magazine',
+    description: 'Revista de moda, estilo de vida y tendencias.',
+    images: ['/logo.png'],
+    siteName: 'Vestigio Magazine',
+    locale: 'es_AR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Vestigio Magazine',
+    description: 'Revista de moda, estilo de vida y tendencias.',
+    images: ['/logo.png'],
+  },
+  // [SEO FIX] Add icons for favicon and apple-touch-icon.
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
+  },
+  alternates: {
+    canonical: '/',
+  },
 };
+
 
 export default async function RootLayout({
   children,

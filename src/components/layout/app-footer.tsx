@@ -2,6 +2,7 @@ import { Facebook, Instagram, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import { AdSlot } from '../marketing/ad-slot';
+import Image from 'next/image';
 
 export const AppFooter = () => {
   return (
@@ -9,7 +10,8 @@ export const AppFooter = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-16">
           <div className="flex flex-col items-center md:items-start text-center md:text-left">
-            <h3 className="text-2xl font-headline text-primary">Vestigio</h3>
+            {/* [SEO FIX] Replace text logo with Image component for brand consistency */}
+            <Image src="/logo.png" alt="Vestigio Logo" width={140} height={40} className="dark:invert" />
             <p className="text-foreground/70 mt-2">La esencia del estilo contemporáneo.</p>
              {/* [UI/UX FIX]: Use same social follow component as header for consistency */}
             <div className="flex space-x-2 mt-4">
