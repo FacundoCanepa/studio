@@ -47,11 +47,9 @@ export const metadata: Metadata = {
     description: 'Revista de moda, estilo de vida y tendencias.',
     images: ['/logo.png'],
   },
-  // [SEO FIX] Add icons for favicon and apple-touch-icon.
+  // [SEO FIX] Use logo.png as the primary icon.
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/logo.png',
   },
   alternates: {
     canonical: '/',

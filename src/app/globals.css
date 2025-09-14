@@ -576,6 +576,14 @@
   font-weight: 800;
   color: transparent;
 }
+/* [RESPONSIVE FIX - /]: Adjust cube size on small screens to prevent overflow. */
+@media (max-width: 540px) {
+  .wrapper-grid {
+    --cube-width: 40px;
+    --cube-height: 40px;
+    --font-size: 1.5em;
+  }
+}
 .cube {
   position: relative;
   transform-style: preserve-3d;
