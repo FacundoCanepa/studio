@@ -25,9 +25,8 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-safe-top">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center">
-          {/* [SEO FIX] Replace text logo with Image component for brand consistency */}
-          <a href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Vestigio Logo" width={120} height={30} className="dark:invert" />
+          <a href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
+            VESTIGIO
           </a>
         </div>
         
@@ -64,9 +63,8 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
             <SheetContent side="right" className="w-[300px] sm:w-[400px] pt-safe-top pb-safe-bottom">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between p-4 border-b">
-                   {/* [SEO FIX] Replace text logo with Image component for brand consistency */}
-                   <a href="/" className="flex items-center gap-2">
-                     <Image src="/logo.png" alt="Vestigio Logo" width={120} height={30} className="dark:invert" />
+                   <a href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
+                     VESTIGIO
                    </a>
                    <Button variant="ghost" size="icon" onClick={() => setSheetOpen(false)}>
                       <X className="h-6 w-6" />
@@ -106,5 +104,3 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
     </header>
   );
 };
-
-    

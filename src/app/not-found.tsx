@@ -87,14 +87,11 @@ export default function NotFound() {
       <div className="absolute bottom-0 w-full overflow-hidden border-t border-black/10 bg-white/60 backdrop-blur">
         <div className="animate-[marquee_20s_linear_infinite] whitespace-nowrap py-3 text-sm text-gray-700">
           <span className="mx-8">
-            {/* [SEO FIX] Replace text logo with Image component for brand consistency */}
-            <Image src="/logo.png" alt="Vestigio" width={80} height={20} className="inline-block mx-2 dark:invert" />
             Estilo que perdura
           </span>
           <span className="mx-8">Vestir bien empieza por cuidarte</span>
           <span className="mx-8">
-            <Image src="/logo.png" alt="Vestigio" width={80} height={20} className="inline-block mx-2 dark:invert" />
-             — edición diaria
+             Vestigio — edición diaria
           </span>
           <span className="mx-8">Descubrí combinaciones y guías</span>
         </div>
