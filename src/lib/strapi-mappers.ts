@@ -1,7 +1,17 @@
+
 'use server';
 import type { ArticleDoc } from './firestore-types';
 import type { StrapiArticle } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
+
+// Helper function to convert markdown-like text to basic HTML
+function markdownToHtml(text: string): string {
+    // Replace **bold** with <strong>bold</strong>
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Replace paragraphs (double newline) with <p> tags
+    return text.split('\\n\\n').map(p => `<p>${p}</p>`).join('');
+}
+
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc | null> {
     if (!item || !item.id) return null;
@@ -41,10 +51,12 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
-    const contentHtml = typeof item.Content === 'string' ? item.Content : undefined;
+    // Use a simple markdown-to-html converter or expect HTML from Strapi.
+    // For now, we'll just handle basic paragraph breaks and bolding.
+    const contentHtml = item.Content ? markdownToHtml(item.Content) : undefined;
     
     const carouselImages = item.Carosel && Array.isArray(item.Carosel)
-      ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img.url)))
+      ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img?.url)))
       : [];
 
     const out: ArticleDoc = {
