@@ -406,6 +406,10 @@
     background-color: #1877F2;
     border-color: #1877F2;
   }
+  .social-container.tiktok:hover {
+    background-color: #000000;
+    border-color: #000000;
+  }
 
   .social-container:active {
     transform: scale(0.9);
