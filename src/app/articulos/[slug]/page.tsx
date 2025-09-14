@@ -81,6 +81,7 @@ export default async function ArticlePage({ params }: Props) {
                 alt={article.title}
                 fill
                 className="object-cover"
+                // [PERFORMANCE FIX - /articulos/[slug]]: Prioritize main article image and provide sizes.
                 priority
                 sizes="(min-width: 1280px) 1200px, (min-width: 768px) 90vw, 100vw"
               />

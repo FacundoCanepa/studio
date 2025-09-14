@@ -11,16 +11,19 @@ export const ArticleBody = ({ content }: ArticleBodyProps) => {
     return <p>Contenido no disponible.</p>;
   }
 
-  // Split content into paragraphs to insert an ad
+  // [RESPONSIVE FIX - /articulos/[slug]]: Insert ad more intelligently.
+  // Only show ad if content is long enough (e.g., > 4 paragraphs)
+  // and place it in the middle for a less intrusive experience.
   const contentParts = content.split('</p>');
-  const adIndex = 2; // Insert ad after the second paragraph
+  const shouldShowAd = contentParts.length > 4;
+  const adIndex = shouldShowAd ? Math.floor(contentParts.length / 2) : -1;
 
   return (
-    <div className="prose prose-lg lg:prose-xl dark:prose-invert max-w-none prose-headings:font-headline prose-headings:text-primary prose-a:text-primary hover:prose-a:underline">
+    <div className="prose prose-lg lg:prose-xl dark:prose-invert max-w-none prose-p:my-6 prose-headings:font-headline prose-headings:text-primary prose-strong:text-foreground prose-a:text-primary hover:prose-a:underline">
       {contentParts.map((part, index) => (
         <React.Fragment key={index}>
           <div dangerouslySetInnerHTML={{ __html: part + (index < contentParts.length - 1 ? '</p>' : '') }} />
-          {index === adIndex - 1 && (
+          {index === adIndex && (
              <div className="my-8 md:my-12 not-prose">
                 <AdSlot className="w-full h-40" />
             </div>
