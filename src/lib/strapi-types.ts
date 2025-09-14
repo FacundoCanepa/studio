@@ -1,137 +1,79 @@
-// Strapi API response types
+'use server';
+import type { ArticleDoc } from './firestore-types';
+import type { StrapiArticle } from './strapi-types';
+import { getStrapiMediaUrl } from './strapi-client';
 
-export interface StrapiResponse<T> {
-    data: T;
-    meta?: {
-        pagination: {
-            page: number;
-            pageSize: number;
-            pageCount: number;
-            total: number;
-        };
+export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc | null> {
+    if (!item || !item.id) return null;
+
+    const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
+    
+    const categoryData = item.category;
+    const category = categoryData ? {
+        documentId: String(categoryData.id),
+        name: categoryData.name,
+        slug: categoryData.slug,
+        description: categoryData.description,
+        color: categoryData.color,
+    } : null;
+
+    const authorData = item.author;
+    const author = authorData ? {
+        documentId: String(authorData.id),
+        name: authorData.Name,
+        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
+    } : null;
+    
+    const tags = (item.tags || [])
+        .map(t => t)
+        .filter(t => t && t.id && t.name && t.slug)
+        .map(t => ({
+            documentId: String(t.id),
+            name: t.name,
+            slug: t.slug,
+        }));
+
+    const seoBlock = item.Name;
+    const seo = seoBlock ? {
+        metaTitle: seoBlock.metaTitle,
+        metaDescription: seoBlock.metaDescription,
+        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.url),
+        canonicalUrl: seoBlock.canonicalUrl,
+    } : undefined;
+
+    const contentHtml = typeof item.Content === 'string' ? item.Content : undefined;
+    
+    const carouselImages = item.Carosel && Array.isArray(item.Carosel)
+      ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img.url)))
+      : [];
+
+    const out: ArticleDoc = {
+        documentId: String(item.id),
+        title: item.title,
+        slug: item.slug,
+        excerpt: item.excerpt,
+        contentHtml,
+        coverUrl,
+        featured: item.featured ?? false,
+        publishedAt: item.publishedAt,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        views: item.views ?? 0,
+        saves: item.saves ?? 0,
+        type: item.type as any,
+        category,
+        author,
+        tags,
+        subcategories: item.subcategories,
+        seo,
+        categorySlug: category?.slug,
+        tagSlugs: tags.map(t => t.slug),
+        authorName: author?.name,
+        informacion: item.Informacion,
+        contentMore: item.ContentMore,
+        urlYoutube: item.UrlYoutube,
+        carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
     };
+
+    return out;
 }
-
-export type StrapiEntity = {
-    id: number;
-    attributes: {
-        [key: string]: any; 
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    };
-}
-
-
-// A flatter type for easier use, merging attributes into the top level
-type Flatten<T> = T extends object ? {
-  [K in keyof T.attributes]: T.attributes[K]
-} & { id: T['id'] } : T;
-
-
-export type StrapiArticle = Flatten<StrapiEntity & {
-    attributes: {
-      title: string;
-      slug: string;
-      excerpt?: string;
-      Content?: any; // Rich text (blocks) or Markdown
-      Cover?: StrapiMedia;
-      featured?: boolean;
-      
-      home?: boolean | null;
-      Informacion?: string | null;
-      UrlYoutube?: string | null;
-      ContentMore?: string | null;
-      New?: boolean | null;
-      Tendencias?: boolean | null;
-  
-      // Relations
-      category?: { data: StrapiCategory };
-      author?: { data: StrapiAuthor };
-      tags?: { data: StrapiTag[] };
-      
-      // SEO Component
-      Name?: StrapiSeoComponent; 
-      
-      Carosel?: { data: StrapiMedia[] } | null;
-  
-      views?: number;
-      saves?: number;
-      type?: string;
-      subcategories?: string[];
-    }
-  }>;
-  
-  export type StrapiAuthor = Flatten<StrapiEntity & {
-      attributes: {
-          Name: string; 
-          Avatar?: { data: StrapiMedia };
-          Bio?: any; // Blocks
-      }
-  }>;
-  
-  export type StrapiCategory = Flatten<StrapiEntity & {
-      attributes: {
-          name: string;
-          slug: string;
-          description?: string;
-          color?: string;
-          img?: { data: StrapiMedia };
-      }
-  }>;
-  
-  export type StrapiTag = Flatten<StrapiEntity & {
-      attributes: {
-          name: string;
-          slug: string; 
-      }
-  }>;
-
-export type StrapiGalleryItem = Flatten<StrapiEntity & {
-    attributes: {
-        Nota: string;
-        Famoso: string;
-        Imagen: { data: StrapiMedia };
-    }
-}>;
-
-
-export interface StrapiMedia {
-    id: number;
-    attributes: {
-        url: string;
-        name: string;
-        alternativeText?: string | null;
-        caption?: string | null;
-        width: number | null;
-        height: number | null;
-        formats?: {
-            thumbnail: StrapiMediaFormat;
-            small?: StrapiMediaFormat;
-            medium?: StrapiMediaFormat;
-            large?: StrapiMediaFormat;
-        };
-    }
-}
-
-export interface StrapiMediaFormat {
-    ext: string;
-    url: string;
-    hash: string;
-    mime: string;
-    name: string;
-    path: string | null;
-    size: number;
-    width: number;
-    height: number;
-}
-
-
-// --- SEO Component ---
-export type StrapiSeoComponent = { 
-    id: number;
-    metaTitle: string;
-    metaDescription?: string;
-    canonicalUrl?: string;
-    ogImage?: { data: StrapiMedia };
-};

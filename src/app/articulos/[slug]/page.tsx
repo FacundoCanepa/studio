@@ -12,6 +12,8 @@ import { ShareButtons } from './_components/share-buttons';
 import { ArticleList } from '@/components/articles/article-list';
 import { SectionTitle } from '@/components/shared/section-title';
 import { AdSlot } from '@/components/marketing/ad-slot';
+import { ArticleCarousel } from './_components/article-carousel';
+import { YouTubeEmbed } from './_components/youtube-embed';
 
 type Props = {
   params: { slug: string };
@@ -85,6 +87,13 @@ export default async function ArticlePage({ params }: Props) {
           )}
           
           <div className="p-4 md:p-8 lg:p-12">
+
+            {article.informacion && (
+                <div className="bg-secondary/50 p-6 rounded-lg mb-12 border-l-4 border-primary">
+                    <p className="text-lg italic text-foreground/80">{article.informacion}</p>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               
               <aside className="lg:col-span-3 lg:order-last">
@@ -96,6 +105,25 @@ export default async function ArticlePage({ params }: Props) {
 
               <div className="lg:col-span-9">
                 <ArticleBody content={article.contentHtml} />
+                
+                {article.urlYoutube && (
+                    <div className="my-12">
+                        <YouTubeEmbed url={article.urlYoutube} />
+                    </div>
+                )}
+
+                {article.carousel && article.carousel.length > 0 && (
+                  <div className="my-12">
+                    <ArticleCarousel images={article.carousel} title={article.title} />
+                  </div>
+                )}
+
+                {article.contentMore && (
+                    <div className="mt-12 border-t pt-8">
+                         <h3 className="font-headline text-2xl mb-4">{article.contentMore}</h3>
+                        {/* Here you could parse more markdown if `contentMore` was rich text */}
+                    </div>
+                )}
                 
                 {article.tags && article.tags.length > 0 && (
                   <div className="mt-12">

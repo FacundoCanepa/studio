@@ -32,6 +32,12 @@ export type ArticleDoc = {
     ogImageUrl?: string;
     canonicalUrl?: string;
   };
+  
+  // Extra content fields from Strapi
+  informacion?: string | null;
+  contentMore?: string | null;
+  urlYoutube?: string | null;
+  carousel?: string[];
 }
 
 export type AuthorDoc = {

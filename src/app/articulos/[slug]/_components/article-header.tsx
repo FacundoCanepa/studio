@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FadeIn } from '@/components/shared/fade-in';
+import { Badge } from '@/components/ui/badge';
 
 interface ArticleHeaderProps {
   article: ArticleDoc;
@@ -29,14 +30,19 @@ export const ArticleHeader = ({ article }: ArticleHeaderProps) => {
       </div>
 
       <FadeIn className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {article.category && (
-          <Link
-            href={`/categoria/${article.category.slug}`}
-            className="text-sm font-bold uppercase tracking-widest text-accent hover:text-white transition-colors"
-          >
-            {article.category.name}
-          </Link>
-        )}
+        <div className="flex items-center justify-center gap-4">
+            {article.category && (
+              <Link
+                href={`/categoria/${article.category.slug}`}
+                className="text-sm font-bold uppercase tracking-widest text-accent hover:text-white transition-colors"
+              >
+                {article.category.name}
+              </Link>
+            )}
+            {article.featured && (
+                <Badge variant="destructive" className="border-2 border-white/50">Destacado</Badge>
+            )}
+        </div>
         <h1 className="mt-4 text-4xl md:text-6xl font-headline font-medium text-white text-balance">
           {article.title}
         </h1>
