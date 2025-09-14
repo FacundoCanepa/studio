@@ -124,12 +124,12 @@ export default function CategoryClientPage({
     </div>
   );
   
-  const heroImage = articles.length > 0 ? articles[0].coverUrl : null;
+  const heroImage = category?.imageUrl || articles[0]?.coverUrl;
 
   return (
     <div>
         <section className="relative text-center py-20 md:py-32 min-h-[40vh] flex items-center justify-center text-white overflow-hidden">
-            {heroImage && (
+            {heroImage ? (
                 <Image
                     src={heroImage}
                     alt={`Fondo de la categoría ${category?.name}`}
@@ -137,6 +137,8 @@ export default function CategoryClientPage({
                     className="object-cover object-center"
                     priority
                 />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent"></div>
             )}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
             <div className="relative z-10 p-4">

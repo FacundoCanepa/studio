@@ -49,6 +49,7 @@ export type CategoryDoc = {
   slug: string;
   description?: string;
   color?: string;
+  imageUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 }

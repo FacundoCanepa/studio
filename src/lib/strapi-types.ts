@@ -76,6 +76,7 @@ export type StrapiArticle = Flatten<StrapiEntity & {
           slug: string;
           description?: string;
           color?: string;
+          img?: { data: StrapiMedia };
       }
   }>;
   

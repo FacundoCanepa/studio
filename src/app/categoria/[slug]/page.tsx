@@ -15,12 +15,13 @@ export async function generateMetadata(
   const category = await getCategory(slug);
 
   const previousImages = (await parent).openGraph?.images || []
+  const categoryImage = category?.imageUrl ? [category.imageUrl] : [];
 
   return {
     title: `${category?.name || 'Categoría'} - Vestigio Magazine`,
     description: category?.description || `Explora artículos en la categoría ${category?.name || slug}.`,
     openGraph: {
-      images: ['/some-specific-page-image.jpg', ...previousImages],
+      images: [...categoryImage, ...previousImages],
     },
   }
 }

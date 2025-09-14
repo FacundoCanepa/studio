@@ -188,21 +188,23 @@ export async function getCategories(): Promise<CategoryDoc[]> {
         return [];
     }
     const raw = Array.isArray(response.data) ? response.data : [];
-    const mapped: CategoryDoc[] = raw
-      .map((c: StrapiCategory) => {
-        if (!c || !c.documentId || !c.name || !c.slug) {
+    
+    const mapped: Promise<CategoryDoc | null>[] = raw
+      .map(async (c: StrapiCategory) => {
+        if (!c || !c.id || !c.name || !c.slug) {
           return null;
         }
         return {
-          documentId: c.documentId,
+          documentId: String(c.id),
           name: c.name,
           slug: c.slug,
           description: c.description,
+          color: c.color,
+          imageUrl: await getStrapiMediaUrl(c.img?.url),
         };
-      })
-      .filter(Boolean) as CategoryDoc[];
+      });
 
-    return mapped;
+    return (await Promise.all(mapped)).filter(Boolean) as CategoryDoc[];
 }
 
 export async function getCategory(slug: string): Promise<CategoryDoc | null> {
@@ -210,11 +212,12 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
     if (!response.data || response.data.length === 0) return null;
     const categoryData = response.data[0];
     return {
-        documentId: categoryData.documentId,
+        documentId: String(categoryData.id),
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
-        color: categoryData.color
+        color: categoryData.color,
+        imageUrl: await getStrapiMediaUrl(categoryData.img?.url),
     };
 }
 
@@ -222,7 +225,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
 export async function getTags(): Promise<CategoryDoc[]> {
     const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*');
     return tags.map(tag => ({
-        documentId: tag.documentId,
+        documentId: String(tag.id),
         name: tag.name,
         slug: tag.slug,
         createdAt: tag.createdAt,
