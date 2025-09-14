@@ -1,6 +1,5 @@
 import * as React from 'react';
-import { Instagram, Facebook } from 'lucide-react';
-import { TikTokIcon } from '@/components/icons/tiktok-icon';
+import { Instagram, Facebook, Pinterest } from 'lucide-react';
 
 export const SocialFollow = () => {
   return (
@@ -9,8 +8,8 @@ export const SocialFollow = () => {
         <Instagram className="social-svg" />
       </a>
       
-      <a href="#" className="social-container tiktok">
-        <TikTokIcon className="social-svg" />
+      <a href="#" className="social-container pinterest">
+        <Pinterest className="social-svg" />
       </a>
         
       <a href="#" className="social-container facebook">

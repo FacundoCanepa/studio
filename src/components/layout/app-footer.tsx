@@ -1,7 +1,6 @@
-import { Facebook, Instagram } from 'lucide-react';
+import { Facebook, Instagram, Pinterest } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
-import { TikTokIcon } from '@/components/icons/tiktok-icon';
 import { AdSlot } from '../marketing/ad-slot';
 
 export const AppFooter = () => {
@@ -19,8 +18,8 @@ export const AppFooter = () => {
                 </a>
               </Button>
               <Button variant="ghost" size="icon" asChild>
-                <a href="#" aria-label="TikTok">
-                  <TikTokIcon className="h-5 w-5" />
+                <a href="#" aria-label="Pinterest">
+                  <Pinterest className="h-5 w-5" />
                 </a>
               </Button>
               <Button variant="ghost" size="icon" asChild>
