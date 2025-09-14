@@ -132,7 +132,7 @@ export default function CategoryClientPage({
     const components: React.ReactNode[] = [];
     filteredArticles.forEach((article, index) => {
       components.push(
-          <ArticleList articles={[article]} />
+          <ArticleList key={article.documentId} articles={[article]} />
       );
       if ((index + 1) % adFrequency === 0 && index < filteredArticles.length -1) {
         components.push(
