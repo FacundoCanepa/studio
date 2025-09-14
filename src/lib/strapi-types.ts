@@ -86,6 +86,14 @@ export type StrapiArticle = Flatten<StrapiEntity & {
       }
   }>;
 
+export type StrapiGalleryItem = Flatten<StrapiEntity & {
+    attributes: {
+        Nota: string;
+        Famoso: string;
+        Imagen: { data: StrapiMedia };
+    }
+}>;
+
 
 export interface StrapiMedia {
     id: number;

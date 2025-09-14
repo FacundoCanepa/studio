@@ -56,7 +56,7 @@ export default async function HomePage() {
       {/* Image Gallery */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <SectionTitle>Galería</SectionTitle>
-        <div className="mt-16 gallery-container">
+        <div className="mt-16 flex flex-wrap justify-center gap-8">
           <ImageGallery />
         </div>
       </section>

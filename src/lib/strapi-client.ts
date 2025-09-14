@@ -1,7 +1,7 @@
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc } from './firestore-types';
-import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse } from '@/lib/strapi-types';
+import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse, StrapiGalleryItem } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
 const STRAPI_BASE_URL = "https://graceful-bear-073b8037ba.strapiapp.com";
@@ -228,4 +228,22 @@ export async function getTags(): Promise<CategoryDoc[]> {
         createdAt: tag.createdAt,
         updatedAt: tag.updatedAt,
     }));
+}
+
+export async function getGalleryItems(): Promise<{ id: string; title: string; description: string; imageUrl: string }[]> {
+  const response = await fetchStrapi<StrapiResponse<StrapiGalleryItem[]>>('/api/Galerias?populate=*');
+  if (!response.data) {
+    return [];
+  }
+  const items = await Promise.all(response.data.map(async (item) => {
+    const imageUrl = await getStrapiMediaUrl(item.Imagen?.url);
+    if (!imageUrl) return null;
+    return {
+      id: String(item.id),
+      title: item.Famoso,
+      description: item.Nota,
+      imageUrl: imageUrl,
+    };
+  }));
+  return items.filter(Boolean) as { id: string; title: string; description: string; imageUrl: string }[];
 }
