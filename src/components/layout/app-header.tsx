@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Facebook, Instagram, Menu, Search, X, Pinterest } from 'lucide-react';
+import { Facebook, Instagram, Menu, Search, X, PenSquare } from 'lucide-react';
 import type { CategoryDoc } from '@/lib/firestore-types';
 
 interface AppHeaderProps {
@@ -40,7 +40,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
         <div className="flex items-center justify-end space-x-4">
           <div className="hidden md:flex items-center space-x-2">
             <a href="#" aria-label="Instagram"><Instagram className="h-5 w-5 text-foreground/70 hover:text-primary"/></a>
-            <a href="#" aria-label="Pinterest"><Pinterest className="h-5 w-5 text-foreground/70 hover:text-primary"/></a>
+            <a href="#" aria-label="Pinterest"><PenSquare className="h-5 w-5 text-foreground/70 hover:text-primary"/></a>
             <a href="#" aria-label="Facebook"><Facebook className="h-5 w-5 text-foreground/70 hover:text-primary"/></a>
           </div>
           <div className="hidden sm:block relative w-48">
@@ -73,7 +73,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                  <div className="mt-auto p-4 border-t">
                     <div className="flex items-center justify-center space-x-4">
                         <a href="#" aria-label="Instagram"><Instagram className="h-6 w-6 text-foreground/70 hover:text-primary"/></a>
-                        <a href="#" aria-label="Pinterest"><Pinterest className="h-6 w-6 text-foreground/70 hover:text-primary"/></a>
+                        <a href="#" aria-label="Pinterest"><PenSquare className="h-6 w-6 text-foreground/70 hover:text-primary"/></a>
                         <a href="#" aria-label="Facebook"><Facebook className="h-6 w-6 text-foreground/70 hover:text-primary"/></a>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Instagram, Facebook, Pinterest } from 'lucide-react';
+import { Instagram, Facebook, PenSquare } from 'lucide-react';
 
 export const SocialFollow = () => {
   return (
@@ -9,7 +9,7 @@ export const SocialFollow = () => {
       </a>
       
       <a href="#" className="social-container pinterest">
-        <Pinterest className="social-svg" />
+        <PenSquare className="social-svg" />
       </a>
         
       <a href="#" className="social-container facebook">

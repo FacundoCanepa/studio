@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Pinterest } from 'lucide-react';
+import { Facebook, Instagram, PenSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import { AdSlot } from '../marketing/ad-slot';
@@ -19,7 +19,7 @@ export const AppFooter = () => {
               </Button>
               <Button variant="ghost" size="icon" asChild>
                 <a href="#" aria-label="Pinterest">
-                  <Pinterest className="h-5 w-5" />
+                  <PenSquare className="h-5 w-5" />
                 </a>
               </Button>
               <Button variant="ghost" size="icon" asChild>
