@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
     initialScale: 1,
     maximumScale: 1,
   },
-  // [SEO FIX] Add openGraph and twitter metadata with brand logo.
+  // [SEO FIX] Use logo.png as the primary icon.
   openGraph: {
     title: 'Vestigio Magazine',
     description: 'Revista de moda, estilo de vida y tendencias.',
@@ -47,7 +48,6 @@ export const metadata: Metadata = {
     description: 'Revista de moda, estilo de vida y tendencias.',
     images: ['/logo.png'],
   },
-  // [SEO FIX] Use logo.png as the primary icon.
   icons: {
     icon: '/logo.png',
   },
