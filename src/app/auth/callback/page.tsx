@@ -14,41 +14,30 @@ export default function AuthCallbackPage() {
   const { toast } = useToast();
   const [error, setError] = React.useState<string | null>(null);
 
-  // Use a ref to ensure the effect runs only once.
   const processed = React.useRef(false);
 
   React.useEffect(() => {
-    // [DEBUG] Log the full search params on arrival
-    console.log('[CALLBACK_PAGE] URL Search Params:', searchParams.toString());
-
-    // Don't run until the auth context has finished its initial load
     if (isAuthContextLoading || processed.current) {
         return;
     }
     processed.current = true;
     
-    // 1. Check for errors first. Strapi can send errors in various formats.
+    // Primary token parameter from Strapi
+    const token = searchParams.get('access_token');
+    
+    // Check for various error formats
     const errorParam = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
     
     let errorMessage = null;
 
     if (errorParam) {
-      if (errorDescription) {
-        errorMessage = `${errorParam}: ${errorDescription}`;
-      } else {
-        errorMessage = errorParam;
-      }
+      errorMessage = errorDescription ? `${errorParam}: ${errorDescription}` : errorParam;
     } else if (errorDescription) {
       errorMessage = errorDescription;
     }
-
+    
     if (errorMessage) {
-      if (errorMessage.toLowerCase().includes('invalid_client')) {
-        errorMessage = "Error de configuración del proveedor (invalid_client). Revisa el Client Secret y las URIs de redirección en la consola del proveedor y en Strapi."
-      }
-      // [DEBUG] Log the detected error
-      console.error('[CALLBACK_PAGE] Error detected from URL:', errorMessage);
       setError(errorMessage);
       toast({
         title: 'Error de Autenticación',
@@ -59,21 +48,13 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // 2. If no error, try to find the access token.
-    const token = searchParams.get('access_token');
-    
-    // [DEBUG] Log the extracted token
-    console.log('[CALLBACK_PAGE] Extracted access_token:', token);
-
     if (token) {
       setSessionFromToken(token)
         .then(() => {
-          console.log('[CALLBACK_PAGE] Session set successfully. Redirecting to home.');
           toast({ title: "¡Bienvenido!" });
           router.replace('/');
         })
         .catch((err) => {
-          console.error('[CALLBACK_PAGE] Error from setSessionFromToken:', err);
           const friendlyError = err.message || 'Ocurrió un error al validar la sesión.';
           setError(friendlyError);
           toast({
@@ -86,9 +67,7 @@ export default function AuthCallbackPage() {
       return;
     }
     
-    // 3. If no token and no error, it's a misconfiguration.
-    const missingTokenError = 'Token de acceso no encontrado en la respuesta. Asegúrate de que la "URL de redirección del Front-end" en Strapi esté configurada correctamente.';
-    console.error('[CALLBACK_PAGE] No token and no error found in URL.');
+    const missingTokenError = 'Token de acceso no encontrado en la respuesta.';
     setError(missingTokenError);
     toast({
         title: 'Error de Configuración',

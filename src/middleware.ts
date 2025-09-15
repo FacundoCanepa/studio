@@ -7,27 +7,35 @@ import {respondWithError} from '@/lib/api-utils';
 // --- Configuration ---
 
 function getAllowedOrigins(): string[] {
-    const allowed = [];
-    
+    const allowed = new Set<string>();
+
     // For local development
     if (process.env.NODE_ENV !== 'production') {
-        allowed.push('http://localhost:3000', 'http://localhost:9002');
+        allowed.add('http://localhost:3000');
+        allowed.add('http://localhost:9002');
     }
+
+    // For Firebase Studio environment
+    allowed.add('https://studio-lemon.vercel.app');
 
     // For Vercel deployments (production and previews)
     if (process.env.VERCEL_URL) {
-        // The current Vercel deployment URL
-        allowed.push(`https://${process.env.VERCEL_URL}`);
+        allowed.add(`https://${process.env.VERCEL_URL}`);
     }
+    // Specific Vercel preview URL, if available
+    if (process.env.VERCEL_BRANCH_URL) {
+        allowed.add(`https://${process.env.VERCEL_BRANCH_URL}`);
+    }
+
     // Main production URL from env var
     if (process.env.FRONT_ORIGIN_PROD) {
-        allowed.push(process.env.FRONT_ORIGIN_PROD);
+        allowed.add(process.env.FRONT_ORIGIN_PROD);
     }
     
-    // Log the determined origins for debugging
-    console.log('[MIDDLEWARE_CONFIG] Allowed Origins:', allowed);
+    const allowedArray = Array.from(allowed);
+    console.log('[MIDDLEWARE_CONFIG] Allowed Origins:', allowedArray);
     
-    return allowed;
+    return allowedArray;
 }
 
 
