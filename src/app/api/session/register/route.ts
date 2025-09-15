@@ -1,16 +1,24 @@
+// src/app/api/session/register/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
-import {API_BASE, registerSchema, mapStrapiError} from '@/lib/api-utils';
+import {
+  API_BASE,
+  registerSchema,
+  mapStrapiError,
+  respondWithError,
+} from '@/lib/api-utils';
 
+/**
+ * Handles user registration by proxying data to Strapi.
+ */
 export async function POST(request: NextRequest) {
   try {
     // 1. Validate request body
     const body = await request.json();
     const validated = registerSchema.safeParse(body);
     if (!validated.success) {
-      return NextResponse.json(
-        {error: validated.error.flatten().fieldErrors},
-        {status: 400}
-      );
+      return respondWithError('validation_error', {
+        issues: validated.error.flatten().fieldErrors,
+      });
     }
 
     // 2. Proxy register request to Strapi
@@ -23,28 +31,32 @@ export async function POST(request: NextRequest) {
     const strapiData = await strapiRes.json();
 
     if (!strapiRes.ok) {
-      const {status, message} = mapStrapiError(strapiData);
-      return NextResponse.json({error: message}, {status});
+      return mapStrapiError(strapiData);
     }
 
-    // 3. Check if email confirmation is required
+    // 3. Check if email confirmation is required by Strapi
+    // Strapi returns a user object but no JWT if confirmation is pending.
     if (strapiData.user && !strapiData.jwt) {
       return NextResponse.json({
-        message: 'Revisá tu correo para confirmar tu cuenta.',
+        ok: true,
+        data: {
+          message: 'Revisá tu correo para confirmar tu cuenta.',
+          requiresConfirmation: true,
+        },
       });
     }
 
-    // This part would handle auto-login, but we respect Strapi's flow
-    // If JWT is present, user is confirmed. For now, we ask them to log in.
+    // If a JWT is present, Strapi has auto-confirmed the user.
+    // We don't auto-login them to keep the flow simple.
     return NextResponse.json({
-      message:
-        'Registro exitoso. Por favor, inicia sesión.',
+      ok: true,
+      data: {
+        message: 'Registro exitoso. Por favor, inicia sesión.',
+        requiresConfirmation: false,
+      },
     });
   } catch (error) {
     console.error('[API_REGISTER_ERROR]', error);
-    return NextResponse.json(
-      {error: 'Ocurrió un error en el servidor.'},
-      {status: 500}
-    );
+    return respondWithError('internal_server_error');
   }
 }

@@ -1,28 +1,31 @@
+// src/app/api/session/set/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {
   API_BASE,
   setSessionSchema,
   createSessionCookie,
   mapStrapiError,
+  respondWithError,
 } from '@/lib/api-utils';
 
-// This endpoint is called by the frontend after a successful social login redirect
-// The frontend extracts the access_token from the URL and sends it here.
+/**
+ * Handles setting the session cookie after a successful social login redirect.
+ * The frontend sends the `access_token` from the URL to this endpoint.
+ */
 export async function POST(request: NextRequest) {
   try {
     // 1. Validate request body
     const body = await request.json();
     const validated = setSessionSchema.safeParse(body);
     if (!validated.success) {
-      return NextResponse.json(
-        {error: validated.error.flatten().fieldErrors},
-        {status: 400}
-      );
+      return respondWithError('validation_error', {
+        issues: validated.error.flatten().fieldErrors,
+      });
     }
 
     const {token} = validated.data;
 
-    // 2. Verify token by fetching user data from Strapi
+    // 2. Verify the access_token by fetching user data from Strapi
     const strapiRes = await fetch(`${API_BASE}/users/me`, {
       headers: {Authorization: `Bearer ${token}`},
       cache: 'no-store',
@@ -31,25 +34,27 @@ export async function POST(request: NextRequest) {
     const strapiData = await strapiRes.json();
 
     if (!strapiRes.ok) {
-      const {status, message} = mapStrapiError(strapiData);
-      return NextResponse.json({error: message}, {status: status || 401});
+      // Map Strapi error, but default to 401 if status is missing
+      const {status, ...errorResponse} = mapStrapiError(strapiData);
+      return NextResponse.json(errorResponse, {status: status || 401});
     }
 
-    // 3. Create session cookie and send sanitized user response
-    const cookie = createSessionCookie(token);
-    const response = NextResponse.json({
+    // 3. Create HttpOnly session cookie
+    const cookie = await createSessionCookie(token);
+
+    // 4. Return sanitized user data
+    const sanitizedUser = {
       id: strapiData.id,
       username: strapiData.username,
       email: strapiData.email,
-    });
+    };
+
+    const response = NextResponse.json({ok: true, data: sanitizedUser});
     response.headers.set('Set-Cookie', cookie);
 
     return response;
   } catch (error) {
     console.error('[API_SESSION_SET_ERROR]', error);
-    return NextResponse.json(
-      {error: 'Ocurrió un error en el servidor.'},
-      {status: 500}
-    );
+    return respondWithError('internal_server_error');
   }
 }

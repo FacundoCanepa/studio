@@ -1,13 +1,21 @@
+// src/app/api/session/me/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
-import {API_BASE, mapStrapiError} from '@/lib/api-utils';
+import {
+  API_BASE,
+  mapStrapiError,
+  respondWithError,
+  getJwtFromCookie,
+} from '@/lib/api-utils';
 
+/**
+ * Fetches the current user's data from Strapi if a valid session cookie is present.
+ */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Get token from HttpOnly cookie
-    const token = request.cookies.get(process.env.COOKIE_NAME!)?.value;
-
+    // 1. Get and verify JWT from the HttpOnly cookie
+    const token = await getJwtFromCookie(request);
     if (!token) {
-      return NextResponse.json({error: 'No autenticado.'}, {status: 401});
+      return respondWithError('unauthorized', {details: 'No session cookie.'});
     }
 
     // 2. Fetch user data from Strapi using the token
@@ -15,27 +23,32 @@ export async function GET(request: NextRequest) {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      cache: 'no-store',
+      cache: 'no-store', // Ensure fresh data
     });
 
     const strapiData = await strapiRes.json();
 
     if (!strapiRes.ok) {
-      const {status, message} = mapStrapiError(strapiData);
-      return NextResponse.json({error: message}, {status});
+      return mapStrapiError(strapiData);
     }
 
     // 3. Return sanitized user data
-    return NextResponse.json({
+    const sanitizedUser = {
       id: strapiData.id,
       username: strapiData.username,
       email: strapiData.email,
-    });
+    };
+
+    return NextResponse.json({ok: true, data: sanitizedUser});
   } catch (error) {
+    // This catches JWT verification errors or fetch failures
+    if (
+      error instanceof Error &&
+      (error.message.includes('invalid') || error.message.includes('expired'))
+    ) {
+      return respondWithError('unauthorized', {details: error.message});
+    }
     console.error('[API_ME_ERROR]', error);
-    return NextResponse.json(
-      {error: 'Ocurrió un error en el servidor.'},
-      {status: 500}
-    );
+    return respondWithError('internal_server_error');
   }
 }

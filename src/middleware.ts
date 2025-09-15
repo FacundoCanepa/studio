@@ -1,87 +1,104 @@
+// src/middleware.ts
 import {NextResponse, type NextRequest} from 'next/server';
-import {rateLimiter} from '@/lib/api/rate-limiter';
+import {RateLimiter} from '@/lib/api/rate-limiter';
 import {validateCsrf} from '@/lib/api/csrf';
+import {respondWithError} from '@/lib/api-utils';
 
-// Define allowed origins for CORS
+// --- Configuration ---
+
 const allowedOrigins =
   process.env.NODE_ENV === 'production'
     ? [process.env.FRONT_ORIGIN_PROD!]
     : [process.env.FRONT_ORIGIN_DEV!, 'http://localhost:9002'];
 
-// Middleware function to handle API security
+const sensitiveRoutes = [
+  '/api/session/login',
+  '/api/session/register',
+  '/api/password/forgot',
+  '/api/password/reset',
+  '/api/session/set',
+];
+
+const csrfProtectedRoutes = [
+  '/api/session/login',
+  '/api/session/register',
+  '/api/session/logout',
+  '/api/password/forgot',
+  '/api/password/reset',
+  '/api/session/set',
+];
+
+// --- Main Middleware Logic ---
+
 export async function middleware(request: NextRequest) {
   const {pathname} = request.nextUrl;
+  const method = request.method;
 
   // Only apply middleware to /api/ routes
   if (!pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
 
-  // Handle CORS preflight requests
-  if (request.method === 'OPTIONS') {
-    return handleCors(request, new NextResponse(null, {status: 204}));
-  }
-
-  const response = NextResponse.next();
-  handleCors(request, response); // Apply CORS headers to the actual request
-
-  // --- Security Checks ---
-  try {
-    // 1. Rate Limiting for sensitive endpoints
-    const sensitiveRoutes = [
-      '/api/session/login',
-      '/api/session/register',
-      '/api/password/forgot',
-      '/api/password/reset',
-      '/api/session/set',
-    ];
-    if (sensitiveRoutes.includes(pathname)) {
-      const ip = request.ip ?? '127.0.0.1';
-      const {success} = await rateLimiter.limit(ip);
-      if (!success) {
-        return new NextResponse('Too many requests.', {status: 429});
-      }
-    }
-
-    // 2. CSRF Protection for all mutating API routes (POST, PUT, DELETE)
-    const isMutation =
-      request.method === 'POST' ||
-      request.method === 'PUT' ||
-      request.method === 'DELETE';
-    if (isMutation) {
-      await validateCsrf(request);
-    }
-  } catch (error: any) {
-    // Return a generic error to avoid leaking implementation details
-    return new NextResponse(error.message || 'Forbidden', {
-      status: error.status || 403,
-    });
-  }
-
-  return response;
-}
-
-// Helper function to manage CORS headers
-function handleCors(request: NextRequest, response: NextResponse) {
+  // --- CORS Preflight and Header Handling ---
   const origin = request.headers.get('origin') ?? '';
-  if (allowedOrigins.includes(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
+  const isAllowedOrigin = allowedOrigins.includes(origin);
+
+  if (method === 'OPTIONS') {
+    if (isAllowedOrigin) {
+      return new NextResponse(null, {
+        status: 204,
+        headers: getCorsHeaders(origin),
+      });
+    }
+    return respondWithError('cors_denied');
   }
 
-  response.headers.set(
-    'Access-Control-Allow-Methods',
-    'GET, POST, PUT, DELETE, OPTIONS'
-  );
-  response.headers.set(
-    'Access-Control-Allow-Headers',
-    'Content-Type, Authorization, X-CSRF-Token'
-  );
-  response.headers.set('Access-Control-Allow-Credentials', 'true');
+  // --- Security Checks for Non-Preflight Requests ---
+  if (!isAllowedOrigin && origin) {
+    // Block requests from non-allowed origins
+    return respondWithError('cors_denied');
+  }
+  
+  // Rate Limiting
+  if (sensitiveRoutes.includes(pathname)) {
+    const ip = request.ip ?? '127.0.0.1';
+    const identifier = `${ip}:${pathname}`;
+    const {success} = await RateLimiter.limit(identifier);
+    if (!success) {
+      return respondWithError('rate_limited');
+    }
+  }
+
+  // CSRF Protection for mutating endpoints
+  if (method === 'POST' && csrfProtectedRoutes.includes(pathname)) {
+    const csrfErrorResponse = await validateCsrf(request);
+    if (csrfErrorResponse) {
+      return csrfErrorResponse;
+    }
+  }
+
+  // If all checks pass, proceed and add CORS headers to the final response
+  const response = NextResponse.next();
+  Object.entries(getCorsHeaders(origin)).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
 
   return response;
 }
 
-// Config to specify which paths the middleware should run on
+// --- Helper Functions ---
+
+function getCorsHeaders(origin: string) {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CSRF-Token',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
+// --- Config ---
+
 export const config = {
   matcher: '/api/:path*',
 };

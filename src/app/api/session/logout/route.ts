@@ -1,17 +1,21 @@
+// src/app/api/session/logout/route.ts
 import {NextResponse} from 'next/server';
-import {clearSessionCookie} from '@/lib/api-utils';
+import {clearSessionCookie, respondWithError} from '@/lib/api-utils';
 
+/**
+ * Clears the user's session cookie, effectively logging them out.
+ */
 export async function POST() {
   try {
     const cookie = clearSessionCookie();
-    const response = NextResponse.json({message: 'Cierre de sesión exitoso.'});
+    const response = NextResponse.json({
+      ok: true,
+      data: {message: 'Cierre de sesión exitoso.'},
+    });
     response.headers.set('Set-Cookie', cookie);
     return response;
   } catch (error) {
     console.error('[API_LOGOUT_ERROR]', error);
-    return NextResponse.json(
-      {error: 'Ocurrió un error en el servidor.'},
-      {status: 500}
-    );
+    return respondWithError('internal_server_error');
   }
 }
