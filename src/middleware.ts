@@ -5,22 +5,45 @@ import {validateCsrf} from '@/lib/api/csrf';
 import {respondWithError} from '@/lib/api-utils';
 
 // --- Configuration ---
-const allowedOrigins =
-  process.env.NODE_ENV === 'production'
-    ? [process.env.FRONT_ORIGIN_PROD!].filter(Boolean)
-    : ['http://localhost:3000', 'http://localhost:9002'];
 
-if (process.env.NODE_ENV === 'production' && !allowedOrigins.length) {
-  console.warn(
-    'WARNING: No production origin specified in FRONT_ORIGIN_PROD. CORS may block requests.'
-  );
+function getAllowedOrigins(): string[] {
+    const allowed = [];
+    
+    // For local development
+    if (process.env.NODE_ENV !== 'production') {
+        allowed.push('http://localhost:3000', 'http://localhost:9002');
+    }
+
+    // For Vercel deployments (production and previews)
+    if (process.env.VERCEL_URL) {
+        // Main production URL from env var
+        if (process.env.FRONT_ORIGIN_PROD) {
+            allowed.push(process.env.FRONT_ORIGIN_PROD);
+        }
+        // The current Vercel deployment URL
+        allowed.push(`https://${process.env.VERCEL_URL}`);
+    }
+
+    // Fallback in case env vars are not set
+    if (allowed.length === 0 && process.env.NODE_ENV === 'production') {
+        console.warn('WARNING: No allowed origins could be determined. CORS may fail.');
+    }
+    
+    // Log the determined origins for debugging
+    console.log('[MIDDLEWARE_CONFIG] Allowed Origins:', allowed);
+    
+    return allowed;
 }
+
 
 const MUTATING_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
 // --- Main Middleware Logic ---
 export async function middleware(request: NextRequest) {
   const {pathname} = request.nextUrl;
+  
+  // Dynamically determine allowed origins
+  const allowedOrigins = getAllowedOrigins();
 
   // Only apply middleware to /api/ routes
   if (!pathname.startsWith('/api/')) {
@@ -32,40 +55,39 @@ export async function middleware(request: NextRequest) {
 
 
   // --- CORS Handling ---
-  const isAllowedOrigin = allowedOrigins.includes(origin);
+  const isAllowedOrigin = allowedOrigins.some(allowedOrigin => origin.startsWith(allowedOrigin));
 
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
     console.log('[MIDDLEWARE] Handling OPTIONS preflight request.');
-    const headers = new Headers();
     if (isAllowedOrigin) {
       console.log(`[MIDDLEWARE] Origin ${origin} is allowed.`);
+      const headers = new Headers();
       headers.set('Access-Control-Allow-Origin', origin);
+      headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-csrf-token');
+      headers.set('Access-Control-Allow-Credentials', 'true');
+      return new NextResponse(null, {status: 204, headers});
     } else {
-       console.warn(`[MIDDLEWARE] Origin ${origin} is NOT allowed.`);
+       console.warn(`[MIDDLEWARE] OPTIONS request from disallowed origin ${origin}.`);
+       return new NextResponse(null, { status: 204 }); // Still respond to OPTIONS, but without allow headers.
     }
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    headers.set(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, x-csrf-token'
-    );
-    headers.set('Access-Control-Allow-Credentials', 'true');
-    return new NextResponse(null, {status: 204, headers});
   }
 
+  // Block non-preflight, non-allowed origins immediately
+  if (!isAllowedOrigin && pathname !== '/api/_health/auth') {
+    console.error(`[MIDDLEWARE] CORS denied for origin: ${origin} on path: ${pathname}`);
+    return respondWithError('cors_denied');
+  }
+  
   const response = NextResponse.next();
-
-  // Add CORS headers to the actual response
+  
+  // Add CORS headers to the actual response for allowed origins
   if (isAllowedOrigin) {
-    response.headers.set('Access-control-allow-origin', origin);
-    response.headers.set('Access-control-allow-credentials', 'true');
-  } else {
-    // Block requests from non-allowed origins, except for health checks or safe methods
-    if (pathname !== '/api/_health/auth' && request.method !== 'GET') {
-      console.error(`[MIDDLEWARE] CORS denied for origin: ${origin} on path: ${pathname}`);
-      return respondWithError('cors_denied');
-    }
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
   }
+
 
   // --- CSRF Protection ---
   // Apply CSRF validation only to mutating API endpoints.
