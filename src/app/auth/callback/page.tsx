@@ -15,14 +15,16 @@ export default function AuthCallbackPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const token = searchParams.get('access_token');
-    const errorParam = searchParams.get('error');
-    const errorDescription = searchParams.get('error_description');
+    // Check for token in various formats
+    const token = searchParams.get('access_token') || searchParams.get('jwt') || searchParams.get('token') || searchParams.get('accessToken');
+    
+    // Check for error in various formats, including nested ones
+    const errorParam = searchParams.get('error') || searchParams.get('error[error]');
+    const errorDescription = searchParams.get('error_description') || searchParams.get('error[message]') || 'No se pudo completar el inicio de sesión con el proveedor.';
 
     if (errorParam) {
-      const errorMessage = errorDescription || 'No se pudo completar el inicio de sesión con el proveedor.';
-      console.error('Social login error:', errorMessage);
-      setError(errorMessage);
+      console.error('Social login error:', errorParam, errorDescription);
+      setError(errorDescription);
       toast({
         title: 'Error de Autenticación',
         description: 'No se pudo completar el inicio de sesión. Por favor, intenta de nuevo.',

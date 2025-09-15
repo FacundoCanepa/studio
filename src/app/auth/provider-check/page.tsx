@@ -36,8 +36,25 @@ const ChecklistItem = ({ children, isChecked }: { children: React.ReactNode; isC
 );
 
 export default function ProviderCheckPage() {
-  const strapiUrl = process.env.STRAPI_URL;
+  const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
   const frontendUrl = process.env.FRONT_ORIGIN_PROD;
+
+  if (!strapiUrl || !frontendUrl) {
+    return (
+        <div className="container mx-auto max-w-4xl py-12 px-4">
+             <header className="text-center mb-10">
+                <h1 className="text-4xl font-headline font-bold">Verificación de Proveedores</h1>
+                <Alert variant="destructive" className="mt-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error de Configuración</AlertTitle>
+                    <AlertDescription>
+                        Las variables de entorno `NEXT_PUBLIC_STRAPI_URL` y `FRONT_ORIGIN_PROD` deben estar definidas para que esta página funcione.
+                    </AlertDescription>
+                </Alert>
+            </header>
+        </div>
+    )
+  }
 
   const googleRedirectUri = `${strapiUrl}/api/connect/google/callback`;
   const facebookRedirectUri = `${strapiUrl}/api/connect/facebook/callback`;
@@ -88,7 +105,7 @@ export default function ProviderCheckPage() {
                 <Badge variant="outline" className="ml-2 select-all">{frontendCallbackUrl}</Badge>
               </ChecklistItem>
                <ChecklistItem>
-                <strong>Pantalla de Consentimiento:</strong> Debe estar en modo &quot;Producción&quot; o tu email debe estar en la lista de &quot;Test users&quot;.
+                <strong>Pantalla de Consentimiento:</strong> Debe estar en modo "Producción" o tu email debe estar en la lista de "Test users".
               </ChecklistItem>
             </ul>
             <Button className="w-full" asChild>
@@ -114,15 +131,15 @@ export default function ProviderCheckPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Punto Crítico</AlertTitle>
               <AlertDescription>
-                Un dominio no autorizado en Meta for Developers causará el error &quot;No se puede cargar la URL&quot;.
+                Un dominio no autorizado en Meta for Developers causará el error "No se puede cargar la URL".
               </AlertDescription>
             </Alert>
             <ul className="space-y-4 text-sm">
               <ChecklistItem>
                 <strong>Dominios de la App (en Meta Developers):</strong>
                  <div className="flex flex-col gap-1 mt-1">
-                    <Badge variant="outline" className="select-all">{new URL(strapiUrl!).hostname}</Badge>
-                    <Badge variant="outline" className="select-all">{new URL(frontendUrl!).hostname}</Badge>
+                    <Badge variant="outline" className="select-all">{new URL(strapiUrl).hostname}</Badge>
+                    <Badge variant="outline" className="select-all">{new URL(frontendUrl).hostname}</Badge>
                  </div>
               </ChecklistItem>
                <ChecklistItem>
@@ -138,7 +155,7 @@ export default function ProviderCheckPage() {
                 <Badge variant="outline" className="ml-2 select-all">{frontendCallbackUrl}</Badge>
               </ChecklistItem>
               <ChecklistItem>
-                <strong>Modo de la App:</strong> Si está en &quot;Development&quot;, tu cuenta de FB debe tener un rol en la app.
+                <strong>Modo de la App:</strong> Si está en "Development", tu cuenta de FB debe tener un rol en la app.
               </ChecklistItem>
             </ul>
             <Button className="w-full" asChild>
