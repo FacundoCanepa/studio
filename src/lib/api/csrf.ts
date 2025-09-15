@@ -1,3 +1,4 @@
+
 // src/lib/api/csrf.ts
 import {SignJWT, jwtVerify} from 'jose';
 import {type NextRequest} from 'next/server';
@@ -42,18 +43,27 @@ export async function validateCsrf(request: NextRequest) {
   const cookies = parse(request.headers.get('cookie') ?? '');
   const csrfTokenFromCookie = cookies[CSRF_COOKIE_NAME];
   
+  console.log('[CSRF_VALIDATE] Header token:', csrfTokenFromHeader ? 'present' : 'missing');
+  console.log('[CSRF_VALIDATE] Cookie token:', csrfTokenFromCookie ? 'present' : 'missing');
+
   if (!csrfTokenFromHeader || !csrfTokenFromCookie) {
+    console.error('[CSRF_VALIDATE] CSRF token missing from header or cookie.');
     return respondWithError('csrf_token_missing');
   }
 
   if (csrfTokenFromHeader !== csrfTokenFromCookie) {
+    console.error('[CSRF_VALIDATE] CSRF token mismatch.');
+    console.log('Header Token:', csrfTokenFromHeader);
+    console.log('Cookie Token:', csrfTokenFromCookie);
     return respondWithError('csrf_token_mismatch');
   }
 
   try {
     // Also verify the token signature and expiration to prevent tampering
     await jwtVerify(csrfTokenFromHeader, CSRF_SECRET);
+    console.log('[CSRF_VALIDATE] Token signature and expiration are valid.');
   } catch (error) {
+    console.error('[CSRF_VALIDATE] Token verification failed (invalid signature or expired):', error);
     return respondWithError('csrf_token_invalid');
   }
 

@@ -1,3 +1,4 @@
+
 // src/middleware.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {validateCsrf} from '@/lib/api/csrf';
@@ -25,18 +26,25 @@ export async function middleware(request: NextRequest) {
   if (!pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
+  
+  const origin = request.headers.get('origin') ?? '';
+  console.log(`[MIDDLEWARE] Request received for: ${request.method} ${pathname} from origin: ${origin}`);
+
 
   // --- CORS Handling ---
-  const origin = request.headers.get('origin') ?? '';
   const isAllowedOrigin = allowedOrigins.includes(origin);
 
   // Handle CORS preflight requests
   if (request.method === 'OPTIONS') {
+    console.log('[MIDDLEWARE] Handling OPTIONS preflight request.');
     const headers = new Headers();
     if (isAllowedOrigin) {
+      console.log(`[MIDDLEWARE] Origin ${origin} is allowed.`);
       headers.set('Access-Control-Allow-Origin', origin);
+    } else {
+       console.warn(`[MIDDLEWARE] Origin ${origin} is NOT allowed.`);
     }
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     headers.set(
       'Access-Control-Allow-Headers',
       'Content-Type, Authorization, x-csrf-token'
@@ -54,21 +62,25 @@ export async function middleware(request: NextRequest) {
   } else {
     // Block requests from non-allowed origins, except for health checks or safe methods
     if (pathname !== '/api/_health/auth' && request.method !== 'GET') {
+      console.error(`[MIDDLEWARE] CORS denied for origin: ${origin} on path: ${pathname}`);
       return respondWithError('cors_denied');
     }
   }
 
   // --- CSRF Protection ---
   // Apply CSRF validation only to mutating API endpoints.
-  if (
-    MUTATING_METHODS.includes(request.method) &&
-    !pathname.startsWith('/api/_health/') && // Exclude health checks
-    !pathname.startsWith('/api/csrf') // Exclude the CSRF token endpoint itself
-  ) {
+  const isCsrfProtected = MUTATING_METHODS.includes(request.method) &&
+    !pathname.startsWith('/api/_health/') &&
+    !pathname.startsWith('/api/csrf');
+
+  if (isCsrfProtected) {
+    console.log(`[MIDDLEWARE] Applying CSRF protection for ${request.method} ${pathname}`);
     const csrfErrorResponse = await validateCsrf(request);
     if (csrfErrorResponse) {
+      console.error(`[MIDDLEWARE] CSRF validation failed for ${pathname}`);
       return csrfErrorResponse;
     }
+    console.log(`[MIDDLEWARE] CSRF validation successful for ${pathname}`);
   }
 
   return response;

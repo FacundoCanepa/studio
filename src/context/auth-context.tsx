@@ -56,30 +56,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   const getCsrfToken = React.useCallback(async () => {
+    console.log('[CSRF] Requesting token...');
     if (csrfTokenRef.current) {
+        console.log('[CSRF] Returning cached token.');
         return csrfTokenRef.current;
     }
-    // If a request for the token is already in flight, wait for it to complete
     if (csrfPromiseRef.current) {
+        console.log('[CSRF] Waiting for in-flight token request.');
         return await csrfPromiseRef.current;
     }
 
-    // Otherwise, start a new request
     csrfPromiseRef.current = (async () => {
         try {
             const res = await fetch('/api/csrf', { credentials: 'include' });
-            if (!res.ok) throw new Error('Failed to fetch CSRF token');
+            if (!res.ok) throw new Error(`Failed to fetch CSRF token. Status: ${res.status}`);
             const data = await res.json();
             if (data.data?.token) {
+                console.log('[CSRF] Token fetched and cached successfully.');
                 csrfTokenRef.current = data.data.token;
                 return data.data.token;
             }
+            console.error('[CSRF] Token not found in response body:', data);
             return null;
         } catch (error) {
-            console.error('Failed to fetch CSRF token:', error);
+            console.error('[CSRF] Critical error fetching token:', error);
             return null;
         } finally {
-            // Reset the promise ref so a new request can be made if this one failed
             csrfPromiseRef.current = null;
         }
     })();
@@ -89,66 +91,75 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUser = React.useCallback(async () => {
     try {
-      // credentials: 'include' is vital for sending the HttpOnly session cookie
       const res = await fetch('/api/session/me', { cache: 'no-store', credentials: 'include' });
       if (res.ok) {
         const { data } = await res.json();
         setUser(data);
+        console.log('[AUTH_PROVIDER] User fetched successfully:', data);
       } else {
         setUser(null);
+        console.log('[AUTH_PROVIDER] No active session found.');
       }
     } catch (error) {
-      console.error('Fetch user error:', error);
+      console.error('[AUTH_PROVIDER] Fetch user error:', error);
       setUser(null);
     }
   }, []);
 
-  // On initial load, fetch user and CSRF token
   React.useEffect(() => {
     const initializeSession = async () => {
+        console.log('[AUTH_PROVIDER] Initializing session...');
         setIsLoading(true);
         await Promise.all([getCsrfToken(), fetchUser()]);
         setIsLoading(false);
+        console.log('[AUTH_PROVIDER] Session initialization complete.');
     }
     initializeSession();
   }, [getCsrfToken, fetchUser]);
 
   const performRequest = async (url: string, options: RequestInit = {}, requiresCsrf = false) => {
+    console.log(`[PERFORM_REQUEST] Starting request to ${url}`, { requiresCsrf });
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
     if (requiresCsrf) {
-      const token = await getCsrfToken(); // Ensures we wait for the token if needed
+      const token = await getCsrfToken();
       if (!token) {
+          console.error(`[PERFORM_REQUEST] CSRF token is missing for protected route ${url}.`);
           throw new Error("El token de seguridad no está disponible. Por favor, recarga la página.");
       }
       headers['x-csrf-token'] = token;
+      console.log(`[PERFORM_REQUEST] Attached CSRF token to header for ${url}.`);
     }
     
     let res: Response;
     try {
-        // credentials: 'include' sends cookies (both session and CSRF) with the request
         res = await fetch(url, { ...options, headers, credentials: 'include' });
     } catch(networkError) {
-        console.error("Network error during fetch:", networkError);
+        console.error(`[PERFORM_REQUEST] Network error for ${url}:`, networkError);
         throw new Error("No se pudo conectar con el servicio. Revisa tu conexión a internet.");
     }
     
+    console.log(`[PERFORM_REQUEST] Response from ${url} - Status: ${res.status}`);
+
     let data;
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
         data = await res.json();
     } else {
         const textResponse = await res.text();
-        console.error("Non-JSON response from API:", { status: res.status, body: textResponse });
+        console.error(`[PERFORM_REQUEST] Non-JSON response from ${url}:`, { status: res.status, body: textResponse });
         throw new Error("El servicio de autenticación no respondió correctamente.");
     }
     
+    console.log(`[PERFORM_REQUEST] JSON Response body from ${url}:`, data);
+
     if (!res.ok || data.ok === false) {
       const code = data.error?.code || 'default';
       const message = errorMessages[code as keyof typeof errorMessages] || data.error?.message || errorMessages.default;
+      console.error(`[PERFORM_REQUEST] API error from ${url}:`, { code, message, originalError: data.error });
       throw new Error(message);
     }
 
@@ -175,10 +186,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await performRequest('/api/session/logout', { method: 'POST' }, true);
     } catch (error) {
-       console.error("Logout failed but clearing session on client.", error);
+       console.error("[AUTH_PROVIDER] Logout failed server-side, but clearing client session anyway.", error);
     } finally {
       setUser(null);
-      csrfTokenRef.current = null; // Clear CSRF token on logout
+      csrfTokenRef.current = null;
+      console.log('[AUTH_PROVIDER] User logged out, session cleared.');
       router.push('/');
       router.refresh();
     }
@@ -199,11 +211,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const setSessionFromToken = async (token: string) => {
+    console.log('[AUTH_PROVIDER] Attempting to set session from social token.');
     const data = await performRequest('/api/session/set', {
       method: 'POST',
       body: JSON.stringify({ token }),
     }, true);
     setUser(data);
+    console.log('[AUTH_PROVIDER] Session set successfully from social token. User:', data);
     router.refresh();
   };
 
