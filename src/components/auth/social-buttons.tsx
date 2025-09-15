@@ -22,9 +22,14 @@ interface SocialButtonsProps {
 }
 
 export const SocialButtons = ({ disabled }: SocialButtonsProps) => {
-    const strapiBaseUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'https://graceful-bear-073b8037ba.strapiapp.com';
+    const strapiBaseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
   
     const handleSocialLogin = (provider: 'google' | 'facebook') => {
+        if (!strapiBaseUrl) {
+            console.error("La URL de Strapi no está configurada en las variables de entorno públicas (NEXT_PUBLIC_STRAPI_URL).");
+            // Optionally, show a toast to the user
+            return;
+        }
         // Redirect the user to the Strapi endpoint to initiate social login.
         window.location.href = `${strapiBaseUrl}/api/connect/${provider}`;
     }
