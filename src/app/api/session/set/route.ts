@@ -1,4 +1,3 @@
-
 // src/app/api/session/set/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
@@ -40,9 +39,7 @@ export async function POST(request: NextRequest) {
     const strapiData = await strapiRes.json();
 
     if (!strapiRes.ok) {
-      // Map Strapi error, but default to 401 if status is missing
-      const {status, ...errorResponse} = mapStrapiError(strapiData);
-      return NextResponse.json(errorResponse, {status: status || 401});
+      return mapStrapiError(strapiData);
     }
 
     // 3. Create HttpOnly session cookie

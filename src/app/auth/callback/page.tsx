@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function AuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setSessionFromToken, isLoading } = React.useContext(AuthContext);
+  const { setSessionFromToken, isLoading: isAuthContextLoading } = React.useContext(AuthContext);
   const { toast } = useToast();
   const [error, setError] = React.useState<string | null>(null);
 
@@ -18,13 +18,43 @@ export default function AuthCallbackPage() {
   const processed = React.useRef(false);
 
   React.useEffect(() => {
-    // Don't run until the initial session loading is complete
-    if (isLoading || processed.current) {
+    // Don't run until the auth context has finished its initial load
+    if (isAuthContextLoading || processed.current) {
         return;
     }
     processed.current = true;
     
-    // 1. Try to find the access token
+    // 1. Check for errors first. Strapi can send errors in various formats.
+    const errorParam = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    let errorMessage = null;
+
+    if (errorParam) {
+      if (errorDescription) {
+        errorMessage = `${errorParam}: ${errorDescription}`;
+      } else {
+        errorMessage = errorParam;
+      }
+    } else if (errorDescription) {
+      errorMessage = errorDescription;
+    }
+
+    if (errorMessage) {
+      if (errorMessage.toLowerCase().includes('invalid_client')) {
+        errorMessage = "Error de configuración del proveedor (invalid_client). Revisa el Client Secret y las URIs de redirección en la consola del proveedor y en Strapi."
+      }
+      setError(errorMessage);
+      toast({
+        title: 'Error de Autenticación',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      setTimeout(() => router.replace('/login'), 5000);
+      return;
+    }
+
+    // 2. If no error, try to find the access token.
     const token = searchParams.get('access_token');
     
     if (token) {
@@ -45,39 +75,18 @@ export default function AuthCallbackPage() {
         });
       return;
     }
-
-    // 2. If no token, check for errors from the provider
-    const errorParam = searchParams.get('error') || searchParams.get('error_description');
-    let errorMessage = "No se pudo completar el inicio de sesión con el proveedor.";
-
-    if (errorParam) {
-        if (errorParam.includes('invalid_client')) {
-            errorMessage = "Error de configuración del proveedor (invalid_client). Revisa el Client Secret y las URIs de redirección en la consola del proveedor y en Strapi."
-        } else {
-            errorMessage = `Error del proveedor: ${errorParam}`;
-        }
-        
-        setError(errorMessage);
-        toast({
-            title: 'Error de Autenticación',
-            description: errorMessage,
-            variant: 'destructive',
-        });
-        setTimeout(() => router.replace('/login'), 5000);
-        return;
-    }
-
-    // 3. If no token and no error, it's likely a misconfigured redirect in Strapi
-    const missingTokenError = 'Token de acceso no encontrado en la respuesta del proveedor. Asegúrate de que la "URL de redirección del Front-end" en Strapi esté configurada correctamente.';
+    
+    // 3. If no token and no error, it's a misconfiguration.
+    const missingTokenError = 'Token de acceso no encontrado en la respuesta. Asegúrate de que la "URL de redirección del Front-end" en Strapi esté configurada correctamente.';
     setError(missingTokenError);
     toast({
-        title: 'Error de Autenticación',
+        title: 'Error de Configuración',
         description: missingTokenError,
         variant: 'destructive',
     });
     setTimeout(() => router.replace('/login'), 5000);
 
-  }, [searchParams, router, setSessionFromToken, toast, isLoading]);
+  }, [searchParams, router, setSessionFromToken, toast, isAuthContextLoading]);
 
   if (error) {
     return (

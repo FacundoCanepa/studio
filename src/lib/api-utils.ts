@@ -14,25 +14,40 @@ const requiredEnv = (name: string): string => {
 };
 
 export const API_BASE = `${requiredEnv('STRAPI_URL')}/api`;
-const COOKIE_NAME = process.env.COOKIE_NAME || 'vestigio.sid';
-const COOKIE_SECRET = new TextEncoder().encode(process.env.COOKIE_SECRET || 'a-secure-secret-for-jwt-at-least-32-chars-long');
-const COOKIE_TTL_DAYS = parseInt(process.env.COOKIE_TTL_DAYS || '7', 10);
+export const COOKIE_NAME = requiredEnv('COOKIE_NAME');
+export const COOKIE_SECRET = new TextEncoder().encode(
+  requiredEnv('COOKIE_SECRET')
+);
+export const COOKIE_TTL_DAYS = parseInt(process.env.COOKIE_TTL_DAYS || '7', 10);
 
 // --- Zod Schemas for Input Validation ---
 export const loginSchema = z.object({
   identifier: z.string().email('Email inválido.'),
-  password: z
-    .string()
-    .min(1, 'La contraseña es requerida.'),
+  password: z.string().min(1, 'La contraseña es requerida.'),
 });
 
 export const registerSchema = z.object({
   username: z.string().min(3, 'El usuario debe tener al menos 3 caracteres.'),
   email: z.string().email('Email inválido.'),
-  password: z
-    .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres.'),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres.'),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email({message: 'Por favor, introduce un email válido.'}),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    code: z.string().min(1, {message: 'El código es requerido.'}),
+    password: z
+      .string()
+      .min(8, {message: 'La contraseña debe tener al menos 8 caracteres.'}),
+    passwordConfirmation: z.string(),
+  })
+  .refine(data => data.password === data.passwordConfirmation, {
+    message: 'Las contraseñas no coinciden.',
+    path: ['passwordConfirmation'],
+  });
 
 // --- JWT and Cookie Management ---
 export async function createSessionCookie(strapiToken: string) {
@@ -87,7 +102,12 @@ type ErrorCode =
   | 'email_in_use'
   | 'username_in_use'
   | 'internal_server_error'
-  | 'unknown_strapi_error';
+  | 'unknown_strapi_error'
+  | 'csrf_token_invalid'
+  | 'csrf_token_missing'
+  | 'csrf_token_mismatch'
+  | 'rate_limit_exceeded'
+  | 'cors_denied';
 
 const errorMap: Record<ErrorCode, {status: number; message: string}> = {
   validation_error: {status: 400, message: 'Datos de entrada inválidos.'},
@@ -97,34 +117,45 @@ const errorMap: Record<ErrorCode, {status: number; message: string}> = {
   username_in_use: {status: 409, message: 'El nombre de usuario ya está en uso.'},
   internal_server_error: {status: 500, message: 'Ocurrió un error en el servidor.'},
   unknown_strapi_error: {status: 500, message: 'Error inesperado de la API externa.'},
+  csrf_token_invalid: {status: 400, message: 'Token de seguridad inválido.'},
+  csrf_token_missing: {status: 400, message: 'Falta token de seguridad.'},
+  csrf_token_mismatch: {status: 400, message: 'El token de seguridad no coincide.'},
+  rate_limit_exceeded: {status: 429, message: 'Demasiados intentos.'},
+  cors_denied: {status: 403, message: 'Acceso denegado por política de CORS.'},
 };
 
 export function respondWithError(code: ErrorCode, extra: object = {}) {
   const {status, message} = errorMap[code];
   return NextResponse.json(
-    {ok: false, error: { code, message, ...extra}},
+    {ok: false, error: {code, message, ...extra}},
     {status, headers: {'Content-Type': 'application/json'}}
   );
 }
 
 // --- Strapi Error Mapping ---
-export function mapStrapiError(strapiError: any) {
-  const message = strapiError?.error?.message || 'Unknown error';
-  
+export function mapStrapiError(strapiData: any) {
+  const message = strapiData?.error?.message || 'Unknown error';
+  const status = strapiData?.error?.status;
+
   if (process.env.NODE_ENV !== 'production') {
-    console.log('[STRAPI_ERROR_DETAIL]', JSON.stringify(strapiError, null, 2));
+    console.log('[STRAPI_ERROR_DETAIL]', JSON.stringify(strapiData, null, 2));
   }
 
+  let code: ErrorCode;
   switch (message) {
     case 'Invalid identifier or password':
-      return respondWithError('invalid_credentials');
+      code = 'invalid_credentials';
+      break;
     case 'Email is already taken.':
-      return respondWithError('email_in_use');
+      code = 'email_in_use';
+      break;
     case 'Username already taken':
-      return respondWithError('username_in_use');
+      code = 'username_in_use';
+      break;
     default:
-      return respondWithError('unknown_strapi_error', {
-        details: message,
-      });
+      code = 'unknown_strapi_error';
   }
+  
+  const responseBody = {ok: false, error: {code, message: errorMap[code].message, details: message}};
+  return NextResponse.json(responseBody, {status: status || errorMap[code].status});
 }

@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
@@ -21,12 +22,17 @@ interface SocialButtonsProps {
 }
 
 export const SocialButtons = ({ disabled }: SocialButtonsProps) => {
+    const { toast } = useToast();
     const strapiBaseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
   
     const handleSocialLogin = (provider: 'google' | 'facebook') => {
         if (!strapiBaseUrl) {
             console.error("La URL de Strapi no está configurada en las variables de entorno públicas (NEXT_PUBLIC_STRAPI_URL).");
-            // Optionally, show a toast to the user
+            toast({
+                title: 'Error de Configuración',
+                description: 'La integración con el proveedor social no está configurada.',
+                variant: 'destructive',
+            });
             return;
         }
         // Redirect the user to the Strapi endpoint to initiate social login.
