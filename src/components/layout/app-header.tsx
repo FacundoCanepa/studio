@@ -1,11 +1,13 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Instagram, Menu, X, Facebook } from 'lucide-react';
+import { Instagram, Menu, X, Facebook, LogOut, UserCircle } from 'lucide-react';
 import type { CategoryDoc } from '@/lib/firestore-types';
-import Image from 'next/image';
+import Link from 'next/link';
+import { AuthContext } from '@/context/auth-context';
 
 interface AppHeaderProps {
   categories: CategoryDoc[];
@@ -13,6 +15,7 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
   const [isSheetOpen, setSheetOpen] = useState(false);
+  const { user, logout } = useContext(AuthContext);
 
   const navLinks = [
     ...categories.map(c => ({ name: c.name, href: `/categoria/${c.slug}` })),
@@ -25,34 +28,37 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-safe-top">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center">
-          <a href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
+          <Link href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
             VESTIGIO
-          </a>
+          </Link>
         </div>
         
         <nav className="hidden lg:flex items-center space-x-6">
           {navLinks.map((link) => (
-            <a key={link.name} href={link.href} className="text-sm font-medium transition-colors hover:text-primary">
+            <Link key={link.name} href={link.href} className="text-sm font-medium transition-colors hover:text-primary">
               {link.name}
-            </a>
+            </Link>
           ))}
         </nav>
 
         <div className="flex items-center justify-end space-x-2">
-           <div className="hidden md:flex items-center space-x-2">
-              <a href="#" className="social-container instagram" aria-label="Instagram">
-                <svg className="social-svg" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>
-              </a>
-              <a href="#" className="social-container pinterest" aria-label="Pinterest">
-                <svg className="social-svg h-5 w-5" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M8 0a8 8 0 0 0-2.32.445c-.463.188-.8.47-1.03.822-.224.34-.336.72-.34 1.132 0 .114.01.23.03.345.05.32.176.63.374.92.05.07.1.14.15.2l.09.11c.08.09.15.19.22.28.32.45.62.88.9 1.3.1.14.18.29.27.43.04.07.08.13.12.2.1.2.2.4.28.6.09.19.16.38.22.57.06.2.1.38.14.58.02.09.04.18.05.28.02.12.02.24.02.37 0 .3-.07.58-.2.83-.17.33-.42.6-.74.8-.3.18-.65.28-1.02.28-.48 0-.9-.13-1.25-.4-.28-.2-.5-.48-.63-.8-.13-.33-.18-.68-.15-1.05.05-.5.25-1.12.57-1.85.02-.04.03-.08.04-.12.06-.18.12-.35.18-.52.05-.15.1-.3.15-.45.05-.15.1-.3.15-.45l.05-.15c0-.02.01-.03.01-.05 0 0 0-.01-.01-.01-.12-.34-.28-.68-.48-1C1.04 6.7 1 6.53 1 6.3c0-.4.1-.75.3-1.05.2-.3.48-.52.82-.67.34-.15.7-.22 1.08-.22.9 0 1.65.3 2.25.9.6.6.9 1.4.9 2.4 0 .33-.04.64-.12.93-.08.3-.2.57-.34.83-.15.26-.3.5-.48.72-.18.2-.35.4-.53.58-.18.18-.35.34-.52.5-.17.14-.33.27-.48.38-.2.14-.38.25-.52.34-.1-.03-.18-.05-.24-.07a.52.52 0 0 1-.22-.18c-.04-.08-.07-.15-.09-.23-.03-.08-.04-.16-.05-.24a.97.97 0 0 1 0-.4c.02-.1.05-.2.08-.3.1-.2.2-.4.34-.6.13-.2.27-.4.4-.6.14-.2.27-.4.4-.6.14-.2.27-.4.4-.6.13-.2.26-.38.38-.56.12-.18.24-.36.35-.52.1-.17.2-.34.3-.5.1-.17.18-.33.25-.5.07-.16.13-.32.18-.47.05-.15.1-.3.13-.45.03-.15.05-.3.06-.45.01-.15.02-.3.02-.45 0-.68-.14-1.24-.42-1.7-.28-.46-.66-.82-1.14-1.1-.48-.27-1.02-.4-1.62-.4-.8 0-1.48.23-2.04.7-.56.46-.84 1.1-.84 1.9 0 .15.02.3.05.45.03.15.08.3.14.45.06.15.13.3.2.45.07.15.15.3.22.45.2.4.35.8.46 1.15.1.35.16.7.16 1.05 0 .5-.13.94-.4 1.3-.27.38-.64.66-1.1.86-.47.2-.98.3-1.53.3-.9 0-1.68-.24-2.32-.72-.65-.48-.97-1.13-.97-1.95 0-.5.1-.96.3-1.38.2-.42.48-.8.83-1.13.4-.38.8-.7 1.2-1 .06-.05.1-.1.15-.15.3-.3.58-.6.8-.9.24-.3.45-.6.62-.9.18-.3.32-.6.44-.9.1-.28.18-.55.24-.82.05-.28.08-.56.08-.85C7.5 1.73 7.15.97 6.45.46 5.75-.05 4.8-.2 3.6-.2c-.56 0-1.1.07-1.6.2-1.1.3-2.02.85-2.78 1.6C-.42 2.8-.75 3.8-.75 5c0 .7.16 1.35.48 1.95.32.6.77 1.1 1.35 1.5.6.4 1.25.6 2 .6.13 0 .26-.01.4-.04.13-.03.26-.06.4-.1.13-.05.25-.1.38-.17.12-.08.23-.15.34-.24.1-.1.2-.2.3-.3.1-.1.2-.2.3-.3l.3-.3c.6-.6 1.1-1.3 1.5-2.1.05-.1.1-.2.15-.3.1-.2.2-.4.3-.6.1-.2.2-.4.27-.6.08-.2.14-.4.2-.6.03-.1.05-.2.07-.3.03-.1.05-.2.06-.3v-.15c0-.05.01-.1.01-.14 0-.5-.13-.9-.4-1.2-.27-.3-.64-.45-1.1-.45-.4 0-.75.1-1.05.3-.3.2-.52.45-.67.75-.15.3-.22.6-.22.9 0 .2.03.4.08.6.05.2.13.4.22.6.1.2.2.4.3.6l.3.6.3.6c.1.2.2.4.28.6.08.2.15.4.22.6.07.2.12.4.16.6.04.2.06.4.06.6 0 .5-.13.9-.4 1.2-.27.3-.64-.45-1.1.45-.9 0-1.65-.3-2.25-.9-.6-.6-.9-1.4-.9-2.4 0-.8.23-1.5.7-2.1.46-.6.9-1.07 1.5-1.4.04-.02.06-.04.09-.06.3-.2.6-.4.9-.6.3-.2.6-.4.9-.6.3-.2.6-.4.9-.58.3-.2.58-.35.85-.48.28-.13.55-.22.82-.28.28-.06.55-.08.83-.08.95 0 1.8.2 2.55.6.75.4 1.35 1 1.8 1.8.45.8.68 1.7.68 2.7 0 .3-.02.6-.06.9-.04.3-.1.6-.18.88-.08.28-.2.56-.33.82-.13.26-.3.52-.48.77-.18.25-.38.5-.6.73-.22.23-.45.45-.7.66-.25.2-.5.4-.78.58-.28.17-.55.3-.82.43-.28.13-.55.23-.82.3-.28.08-.55.12-.82.14-.28.02-.55.03-.83.03-1.1 0-2.1-.25-3-.74-.9-.5-1.62-1.2-2.18-2.1-.55-.9-.82-2-.82-3.3 0-1.1.25-2.1.74-3 .5-.9 1.2-1.6 2.1-2.1s1.9-.76 3-.76c1.3 0 2.4.34 3.3 1.03.9.68 1.35 1.62 1.35 2.8 0 .4-.06.8-.18 1.2-.12.4-.28.75-.48 1.05-.2.3-.4.58-.63.82-.23.25-.48.48-.74.68-.26.2-.53.38-.82.53-.28.15-.57.27-.85.37-.3.1-.58.18-.85.22-.28.05-.55.08-.82.08-.55 0-1.05-.1-1.5-.3-.45-.2-.82-.5-1.1-.9-.28-.4-.42-.85-.42-1.35 0-.3.04-.6.1-.9.08-.3.2-.56.34-.8.14-.25.3-.48.48-.7.18-.22.37-.42.58-.6.2-.18.4-.35.6-.5.2-.15.4-.3.6-.45.2-.15.4-.3.6-.45.2-.15.38-.28.58-.4.2-.12.4-.22.6-.3.1-.05.2-.08.3-.12.2-.1.4-.2.6-.28.2-.08.4-.15.6-.2.2-.05.4-.08.6-.1.2-.02.4-.03.6-.03 1.4 0 2.6.45 3.6 1.35.84.75 1.25 1.72 1.25 2.9 0 1.1-.3 2.05-.9 2.85-.6.8-1.43 1.2-2.5 1.2-.3 0-.6-.04-.9-.12a2.3 2.3 0 0 1-.8-.38c-.25-.18-.46-.4-.6-.65-.15-.25-.22-.52-.22-.8 0-.4.12-.75.38-1.05.25-.3.58-.52.98-.67.4-.15.8-.22 1.2-.22.55 0 1.05.13 1.45.4.4.27.72.62.95 1.05.23.43.35.9.35 1.4 0 .7-.2 1.3-.6 1.8-.4.5-1 .74-1.75.74-.65 0-1.2-.17-1.65-.5-.45-.33-.8-.74-1.02-1.2-.22-.48-.33-1-.33-1.56 0-.5.1-.98.3-1.4.2-.42.45-.8.75-1.1s.65-.55 1-.75c.35-.2.7-.32 1.05-.4.35-.08.7-.12 1.05-.12.95 0 1.75.24 2.4.73.65.5.98 1.15.98 1.95 0 .5-.13.9-.4 1.2-.27.3-.64-.45-1.1.45-.25 0-.5-.04-.74-.13-.24-.09-.45-.2-.64-.33-.2-.13-.36-.28-.5-.45-.13-.17-.22-.35-.28-.53-.06-.18-.08-.36-.08-.55 0-.45.16-.8.48-1.05.32-.25.7-.38 1.15-.38.75 0 1.35.27 1.8.8.45.54.68 1.2.68 2 0 .9-.26 1.67-.78 2.3-.52.63-1.2 1-2.07 1.1-.1.01-.2.01-.3.01z" /></svg>
-              </a>
-               <a href="#" className="social-container tiktok" aria-label="TikTok">
-                  <svg className="social-svg h-5 w-5" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/></svg>
-                </a>
-              <a href="#" className="social-container facebook" aria-label="Facebook">
-                <svg className="social-svg h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-              </a>
-          </div>
+          {user ? (
+            <>
+              <span className="hidden sm:inline text-sm font-medium">{user.username}</span>
+              <Button variant="ghost" size="icon" onClick={logout}>
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Cerrar sesión</span>
+              </Button>
+            </>
+          ) : (
+             <Button asChild variant="ghost" size="sm">
+                <Link href="/login">
+                    <UserCircle className="h-5 w-5 mr-2" />
+                    Ingresar
+                </Link>
+             </Button>
+          )}
+
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden">
@@ -63,9 +69,9 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
             <SheetContent side="right" className="w-[300px] sm:w-[400px] pt-safe-top pb-safe-bottom">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between p-4 border-b">
-                   <a href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
+                   <Link href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
                      VESTIGIO
-                   </a>
+                   </Link>
                    <Button variant="ghost" size="icon" onClick={() => setSheetOpen(false)}>
                       <X className="h-6 w-6" />
                       <span className="sr-only">Cerrar menú</span>
@@ -73,9 +79,9 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                 </div>
                 <nav className="flex flex-col space-y-4 p-4">
                   {navLinks.map((link) => (
-                    <a key={link.name} href={link.href} onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
+                    <Link key={link.name} href={link.href} onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
                       {link.name}
-                    </a>
+                    </Link>
                   ))}
                 </nav>
                  <div className="mt-auto p-4 border-t">
