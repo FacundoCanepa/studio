@@ -1,6 +1,6 @@
 // src/lib/api-utils.ts
 import {z} from 'zod';
-import {serialize, parse} from 'cookie';
+import {serialize} from 'cookie';
 import {type NextRequest, NextResponse} from 'next/server';
 import {SignJWT, jwtVerify} from 'jose';
 
@@ -14,16 +14,16 @@ const requiredEnv = (name: string): string => {
 };
 
 export const API_BASE = `${requiredEnv('STRAPI_URL')}/api`;
-const COOKIE_NAME = requiredEnv('COOKIE_NAME');
-const COOKIE_SECRET = new TextEncoder().encode(requiredEnv('COOKIE_SECRET'));
-const COOKIE_TTL_DAYS = parseInt(requiredEnv('COOKIE_TTL_DAYS'), 10);
+const COOKIE_NAME = process.env.COOKIE_NAME || 'vestigio.sid';
+const COOKIE_SECRET = new TextEncoder().encode(process.env.COOKIE_SECRET || 'a-secure-secret-for-jwt-at-least-32-chars-long');
+const COOKIE_TTL_DAYS = parseInt(process.env.COOKIE_TTL_DAYS || '7', 10);
 
 // --- Zod Schemas for Input Validation ---
 export const loginSchema = z.object({
   identifier: z.string().email('Email inválido.'),
   password: z
     .string()
-    .min(8, 'La contraseña debe tener al menos 8 caracteres.'),
+    .min(1, 'La contraseña es requerida.'),
 });
 
 export const registerSchema = z.object({
@@ -34,32 +34,8 @@ export const registerSchema = z.object({
     .min(8, 'La contraseña debe tener al menos 8 caracteres.'),
 });
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Email inválido.'),
-});
-
-export const resetPasswordSchema = z
-  .object({
-    code: z.string().min(1, 'El código es requerido.'),
-    password: z
-      .string()
-      .min(8, 'La nueva contraseña debe tener al menos 8 caracteres.'),
-    passwordConfirmation: z.string(),
-  })
-  .refine((data) => data.password === data.passwordConfirmation, {
-    message: 'Las contraseñas no coinciden.',
-    path: ['passwordConfirmation'],
-  });
-
-export const setSessionSchema = z.object({
-  token: z.string().min(1, 'El token de acceso es requerido.'),
-});
-
 // --- JWT and Cookie Management ---
-
 export async function createSessionCookie(strapiToken: string) {
-  // We re-sign the Strapi token into our own JWT to control its lifecycle
-  // and prevent the Strapi token from being exposed directly.
   const signedToken = await new SignJWT({token: strapiToken})
     .setProtectedHeader({alg: 'HS256'})
     .setIssuedAt()
@@ -93,32 +69,24 @@ export async function getJwtFromCookie(
 
   try {
     const {payload} = await jwtVerify(cookie, COOKIE_SECRET);
-    // Ensure the payload contains the Strapi token
     if (typeof payload.token === 'string') {
       return payload.token;
     }
     return null;
   } catch (error) {
-    // Catches expired or invalid signatures
     console.warn('[JWT_VERIFY_ERROR]', (error as Error).message);
     return null;
   }
 }
 
 // --- Standardized Error Responses ---
-
 type ErrorCode =
   | 'validation_error'
   | 'invalid_credentials'
   | 'unauthorized'
   | 'email_in_use'
   | 'username_in_use'
-  | 'rate_limited'
   | 'internal_server_error'
-  | 'csrf_token_missing'
-  | 'csrf_token_mismatch'
-  | 'csrf_token_invalid'
-  | 'cors_denied'
   | 'unknown_strapi_error';
 
 const errorMap: Record<ErrorCode, {status: number; message: string}> = {
@@ -127,19 +95,14 @@ const errorMap: Record<ErrorCode, {status: number; message: string}> = {
   unauthorized: {status: 401, message: 'No autenticado o sesión expirada.'},
   email_in_use: {status: 409, message: 'El email ya está en uso.'},
   username_in_use: {status: 409, message: 'El nombre de usuario ya está en uso.'},
-  rate_limited: {status: 429, message: 'Demasiados intentos. Intenta de nuevo más tarde.'},
   internal_server_error: {status: 500, message: 'Ocurrió un error en el servidor.'},
-  csrf_token_missing: {status: 403, message: 'Token de seguridad faltante.'},
-  csrf_token_mismatch: {status: 403, message: 'El token de seguridad no coincide.'},
-  csrf_token_invalid: {status: 403, message: 'Token de seguridad inválido o expirado.'},
-  cors_denied: {status: 403, message: 'Acceso denegado por política de CORS.'},
   unknown_strapi_error: {status: 500, message: 'Error inesperado de la API externa.'},
 };
 
 export function respondWithError(code: ErrorCode, extra: object = {}) {
   const {status, message} = errorMap[code];
   return NextResponse.json(
-    {ok: false, code, message, ...extra},
+    {ok: false, error: { code, message, ...extra}},
     {status, headers: {'Content-Type': 'application/json'}}
   );
 }
@@ -148,7 +111,6 @@ export function respondWithError(code: ErrorCode, extra: object = {}) {
 export function mapStrapiError(strapiError: any) {
   const message = strapiError?.error?.message || 'Unknown error';
   
-  // Do not log the full error object in production if it contains sensitive data
   if (process.env.NODE_ENV !== 'production') {
     console.log('[STRAPI_ERROR_DETAIL]', JSON.stringify(strapiError, null, 2));
   }
@@ -161,10 +123,6 @@ export function mapStrapiError(strapiError: any) {
     case 'Username already taken':
       return respondWithError('username_in_use');
     default:
-      // Check for specific error names for password reset
-      if (strapiError?.error?.name === 'ApplicationError' && message.includes('code invalid')) {
-           return respondWithError('validation_error', {issues: {code: 'Código inválido o expirado.'}});
-      }
       return respondWithError('unknown_strapi_error', {
         details: message,
       });

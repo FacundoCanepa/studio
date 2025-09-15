@@ -111,7 +111,7 @@ export const LoginForm = () => {
           </Button>
         </form>
       </Form>
-      <SocialButtons disabled={loading} />
+      <SocialButtons disabled={true} />
     </AuthCard>
   );
 };

@@ -14,6 +14,7 @@ import { SocialButtons } from './social-buttons';
 import { AuthContext } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
   username: z.string().min(3, { message: 'El usuario debe tener al menos 3 caracteres.' }),
@@ -26,6 +27,7 @@ type FormData = z.infer<typeof formSchema>;
 export const RegisterForm = () => {
   const { register } = React.useContext(AuthContext);
   const { toast } = useToast();
+  const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
 
@@ -42,15 +44,15 @@ export const RegisterForm = () => {
     setLoading(true);
     try {
       const response = await register(data.username, data.email, data.password);
-      if (response.message.includes('Revisá tu correo')) {
-        setSuccess(true);
+      // Asumimos que la confirmación por email está activada en Strapi
+      if (response?.user?.confirmed === false) {
+        setSuccess(true); // Muestra mensaje de "revisa tu correo"
       } else {
-        toast({
+         toast({
             title: '¡Registro Exitoso!',
             description: 'Ahora puedes iniciar sesión con tus credenciales.',
         });
-        form.reset();
-        // Consider redirecting to login page
+        router.push('/login');
       }
     } catch (error: any) {
       toast({
@@ -136,7 +138,7 @@ export const RegisterForm = () => {
           </Button>
         </form>
       </Form>
-      <SocialButtons disabled={loading} />
+      <SocialButtons disabled={true} />
     </AuthCard>
   );
 };
