@@ -49,16 +49,20 @@ const errorMessages: { [key: string]: string } = {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<User | null>(null);
-  const [csrfToken, setCsrfToken] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const csrfTokenRef = React.useRef<string | null>(null);
   const router = useRouter();
 
   const getCsrfToken = React.useCallback(async () => {
+    // If we already have a token, don't fetch a new one
+    if (csrfTokenRef.current) {
+        return csrfTokenRef.current;
+    }
     try {
       const res = await fetch('/api/csrf');
       const data = await res.json();
       if (data.token) {
-        setCsrfToken(data.token);
+        csrfTokenRef.current = data.token;
         return data.token;
       }
     } catch (error) {
@@ -85,34 +89,48 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // On initial load, fetch user and CSRF token
   React.useEffect(() => {
-    getCsrfToken();
-    fetchUser();
+    const initializeSession = async () => {
+        setIsLoading(true);
+        await getCsrfToken();
+        await fetchUser();
+        setIsLoading(false);
+    }
+    initializeSession();
   }, [getCsrfToken, fetchUser]);
 
   const performRequest = async (url: string, options: RequestInit = {}, requiresCsrf = false) => {
-    let currentCsrfToken = csrfToken;
-    if (requiresCsrf && !currentCsrfToken) {
-      currentCsrfToken = await getCsrfToken();
-    }
-
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
-    if (requiresCsrf && currentCsrfToken) {
-      headers['x-csrf-token'] = currentCsrfToken;
+    if (requiresCsrf) {
+      const token = csrfTokenRef.current || await getCsrfToken();
+      if (!token) {
+          throw new Error("CSRF token not available. Please try again.");
+      }
+      headers['x-csrf-token'] = token;
     }
     
-    const res = await fetch(url, { ...options, headers });
-
-    let data;
+    let res: Response;
     try {
-      data = await res.json();
-    } catch (e) {
-      console.error("Failed to parse JSON response:", await res.text());
-      throw new Error("El servicio de autenticación no está disponible en este momento.");
+        res = await fetch(url, { ...options, headers });
+    } catch(networkError) {
+        console.error("Network error during fetch:", networkError);
+        throw new Error("No se pudo conectar con el servicio. Revisa tu conexión a internet.");
+    }
+    
+    let data;
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+        data = await res.json();
+    } else {
+        // If the response is not JSON, it's an unexpected server error
+        const textResponse = await res.text();
+        console.error("Non-JSON response from API:", { status: res.status, body: textResponse });
+        throw new Error("El servicio de autenticación no respondió correctamente.");
     }
     
     if (!res.ok) {
@@ -124,14 +142,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return data.data;
   };
 
-  const login = (identifier: string, password: string) => {
-    return performRequest('/api/session/login', {
+  const login = async (identifier: string, password: string) => {
+    const data = await performRequest('/api/session/login', {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
-    }, true).then(data => {
-        setUser(data);
-        return data;
-    });
+    }, true);
+    setUser(data);
+    return data;
   };
   
   const register = (username: string, email: string, password: string) => {
@@ -148,6 +165,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
        console.error("Logout failed but clearing session on client.", error);
     } finally {
       setUser(null);
+      csrfTokenRef.current = null; // Clear CSRF token on logout
       router.push('/');
       router.refresh();
     }
@@ -171,7 +189,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const data = await performRequest('/api/session/set', {
       method: 'POST',
       body: JSON.stringify({ token }),
-    }, true);
+    }, true); // performRequest now handles getting CSRF token
     setUser(data);
     router.refresh(); // Refresh to update server-side state if needed
   };

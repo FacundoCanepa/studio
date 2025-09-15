@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function AuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setSessionFromToken } = React.useContext(AuthContext);
+  const { setSessionFromToken, isLoading } = React.useContext(AuthContext);
   const { toast } = useToast();
   const [error, setError] = React.useState<string | null>(null);
 
@@ -18,12 +18,13 @@ export default function AuthCallbackPage() {
   const processed = React.useRef(false);
 
   React.useEffect(() => {
-    if (processed.current) {
+    // Don't run until the initial session loading is complete
+    if (isLoading || processed.current) {
         return;
     }
     processed.current = true;
     
-    // 1. Prioritize finding the access token
+    // 1. Try to find the access token
     const token = searchParams.get('access_token');
     
     if (token) {
@@ -45,7 +46,7 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // 2. If no token, check for errors
+    // 2. If no token, check for errors from the provider
     const errorParam = searchParams.get('error') || searchParams.get('error_description');
     let errorMessage = "No se pudo completar el inicio de sesión con el proveedor.";
 
@@ -66,7 +67,7 @@ export default function AuthCallbackPage() {
         return;
     }
 
-    // 3. If no token and no error, it's a failed redirect
+    // 3. If no token and no error, it's likely a misconfigured redirect in Strapi
     const missingTokenError = 'Token de acceso no encontrado en la respuesta del proveedor. Asegúrate de que la "URL de redirección del Front-end" en Strapi esté configurada correctamente.';
     setError(missingTokenError);
     toast({
@@ -76,7 +77,7 @@ export default function AuthCallbackPage() {
     });
     setTimeout(() => router.replace('/login'), 5000);
 
-  }, [searchParams, router, setSessionFromToken, toast]);
+  }, [searchParams, router, setSessionFromToken, toast, isLoading]);
 
   if (error) {
     return (
