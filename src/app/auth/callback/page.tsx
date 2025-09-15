@@ -24,13 +24,13 @@ export default function AuthCallbackPage() {
 
     if (errorParam) {
       console.error('Social login error:', errorParam, errorDescription);
-      setError(errorDescription);
+      setError(`Error del proveedor: ${errorDescription} (${errorParam}). Revisa la configuración en la consola del proveedor (Google/Facebook) y en Strapi.`);
       toast({
         title: 'Error de Autenticación',
         description: 'No se pudo completar el inicio de sesión. Por favor, intenta de nuevo.',
         variant: 'destructive',
       });
-      setTimeout(() => router.replace('/login'), 3000);
+      setTimeout(() => router.replace('/login'), 5000); // Increased timeout to read the message
       return;
     }
 
@@ -49,7 +49,7 @@ export default function AuthCallbackPage() {
           });
           setTimeout(() => router.replace('/login'), 3000);
         });
-    } else if (!error) { // Only set error if no other error has been set
+    } else { // Only set error if no other error has been set and there is no token
         const missingTokenError = 'Token de acceso no encontrado en la respuesta del proveedor.';
         setError(missingTokenError);
         toast({
@@ -59,7 +59,7 @@ export default function AuthCallbackPage() {
         });
         setTimeout(() => router.replace('/login'), 3000);
     }
-  }, [searchParams, router, setSessionFromToken, toast, error]);
+  }, [searchParams, router, setSessionFromToken, toast]);
 
   if (error) {
     return (
