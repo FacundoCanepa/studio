@@ -25,6 +25,7 @@ export const SocialButtons = ({ disabled }: SocialButtonsProps) => {
     const strapiBaseUrl = process.env.NEXT_PUBLIC_STRAPI_URL || 'https://graceful-bear-073b8037ba.strapiapp.com';
   
     const handleSocialLogin = (provider: 'google' | 'facebook') => {
+        // Redirect the user to the Strapi endpoint to initiate social login.
         window.location.href = `${strapiBaseUrl}/api/connect/${provider}`;
     }
 
