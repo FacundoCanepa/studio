@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { CheckCircle, AlertCircle, ExternalLink, HardDriveUpload, Link2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, ExternalLink, HardDriveUpload, Link2, Search } from 'lucide-react';
 import { ProviderCheckStatus } from './_components/provider-check-status';
 
 export const metadata: Metadata = {
@@ -82,32 +82,32 @@ export default function ProviderCheckPage() {
             <CardDescription>Pasos para validar el proveedor de Google OAuth.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Punto Crítico</AlertTitle>
-              <AlertDescription>
-                Un `Client Secret` incorrecto o una URI de redirección no autorizada causará un error `invalid_client`.
-              </AlertDescription>
-            </Alert>
             <ul className="space-y-4 text-sm">
               <ChecklistItem>
-                <strong>Client ID (en Strapi):</strong> Debe terminar en `.apps.googleusercontent.com`.
+                <strong>Client ID (en Strapi):</strong> Asegúrate que el valor termine en <Badge variant="secondary">.apps.googleusercontent.com</Badge>.
               </ChecklistItem>
               <ChecklistItem>
-                <strong>Client Secret (en Strapi):</strong> Debe ser el secreto del cliente OAuth, no una API Key.
+                <strong>Client Secret (en Strapi):</strong> Debe ser el secreto del cliente OAuth, no una API Key. Lo encuentras en <span className="font-mono">Google Cloud → APIs & Services → Credentials → OAuth 2.0 Client IDs</span>.
               </ChecklistItem>
               <ChecklistItem>
-                <strong>URI de Redirección Autorizada (en Google Cloud Console):</strong>
+                <strong>Authorized redirect URIs (en Google Cloud Console):</strong> Debe contener esta URL exacta:
                 <Badge variant="outline" className="ml-2 select-all">{googleRedirectUri}</Badge>
               </ChecklistItem>
               <ChecklistItem>
-                <strong>URL de Redirección del Frontend (en Strapi):</strong>
+                <strong>Front-end redirect URL (en Strapi):</strong> El campo "The redirect URL to your front-end app" debe ser:
                 <Badge variant="outline" className="ml-2 select-all">{frontendCallbackUrl}</Badge>
               </ChecklistItem>
                <ChecklistItem>
-                <strong>Pantalla de Consentimiento:</strong> Debe estar en modo "Producción" o tu email debe estar en la lista de "Test users".
+                <strong>Pantalla de Consentimiento:</strong> Debe estar en modo "Producción" o tu email de prueba debe estar en la lista de "Test users".
               </ChecklistItem>
             </ul>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Prueba Esperada</AlertTitle>
+              <AlertDescription>
+                Al hacer clic, deberías volver a <Badge variant="secondary">/auth/callback?access_token=...</Badge>. Si ves <Badge variant="destructive">?error=invalid_client</Badge>, revisa el Client Secret y las URIs.
+              </AlertDescription>
+            </Alert>
             <Button className="w-full" asChild>
               <a href={`${strapiUrl}/api/connect/google`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-2 h-4 w-4" />
@@ -127,37 +127,37 @@ export default function ProviderCheckPage() {
             <CardDescription>Pasos para validar el proveedor de Facebook Login.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Punto Crítico</AlertTitle>
-              <AlertDescription>
-                Un dominio no autorizado en Meta for Developers causará el error "No se puede cargar la URL".
-              </AlertDescription>
-            </Alert>
             <ul className="space-y-4 text-sm">
               <ChecklistItem>
-                <strong>Dominios de la App (en Meta Developers):</strong>
+                <strong>App Domains (en Meta Developers → Settings → Basic):</strong>
                  <div className="flex flex-col gap-1 mt-1">
                     <Badge variant="outline" className="select-all">{new URL(strapiUrl).hostname}</Badge>
                     <Badge variant="outline" className="select-all">{new URL(frontendUrl).hostname}</Badge>
                  </div>
               </ChecklistItem>
                <ChecklistItem>
-                <strong>URL del Sitio Web (en Meta Developers):</strong>
+                <strong>Website (en Meta Developers → Add Platform → Website):</strong> El "Site URL" debe ser:
                 <Badge variant="outline" className="ml-2 select-all">{frontendUrl}</Badge>
               </ChecklistItem>
               <ChecklistItem>
-                <strong>URI de Redirección OAuth Válida (en Meta Developers):</strong>
+                <strong>Valid OAuth Redirect URIs (en Facebook Login → Settings):</strong> Debe contener esta URL exacta:
                 <Badge variant="outline" className="ml-2 select-all">{facebookRedirectUri}</Badge>
               </ChecklistItem>
                <ChecklistItem>
-                <strong>URL de Redirección del Frontend (en Strapi):</strong>
+                <strong>Front-end redirect URL (en Strapi):</strong> El campo de redirección debe ser:
                 <Badge variant="outline" className="ml-2 select-all">{frontendCallbackUrl}</Badge>
               </ChecklistItem>
               <ChecklistItem>
-                <strong>Modo de la App:</strong> Si está en "Development", tu cuenta de FB debe tener un rol en la app.
+                <strong>Modo de la App:</strong> Si está en modo "Development", tu cuenta de Facebook debe tener un rol asignado en la App de Meta.
               </ChecklistItem>
             </ul>
+             <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Prueba Esperada</AlertTitle>
+                <AlertDescription>
+                    Si Facebook muestra "No se puede cargar la URL", es casi seguro que falta alguna de las URLs en la configuración de Meta for Developers.
+                </AlertDescription>
+            </Alert>
             <Button className="w-full" asChild>
               <a href={`${strapiUrl}/api/connect/facebook`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-2 h-4 w-4" />
@@ -171,29 +171,35 @@ export default function ProviderCheckPage() {
        <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Link2 className="h-6 w-6" />
-              Simular Errores de Callback
+              <Search className="h-6 w-6" />
+              Diagnóstico Rápido (Qué mirar en la URL)
             </CardTitle>
              <CardDescription>
-                Usa estos enlaces para probar cómo la UI maneja los errores que devuelve el proveedor de social login.
+                Observa la URL de la barra de direcciones después de la redirección para entender el problema.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-4">
-              <Button variant="destructive" asChild>
-                <Link href="/auth/callback?error=invalid_client&error_description=El+secreto+de+cliente+no+es+válido">
-                    Simular `invalid_client` (Google)
-                </Link>
-              </Button>
-               <Button variant="destructive" asChild>
-                <Link href="/auth/callback?error=access_denied&error_description=El+usuario+denegó+el+acceso">
-                    Simular `access_denied`
-                </Link>
-              </Button>
-               <Button variant="destructive" asChild>
-                <Link href="/auth/callback?error=config_error&error_description=Error+de+configuración+genérico">
-                    Simular Error Genérico
-                </Link>
-              </Button>
+          <CardContent className="space-y-4 text-sm">
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Si ves <span className="font-mono">/auth/callback?error=invalid_client</span></AlertTitle>
+                <AlertDescription>
+                    El <strong>Client Secret de Google</strong> es incorrecto, o la <strong>Authorized redirect URI</strong> no está en la lista de permitidos en Google Cloud Console.
+                </AlertDescription>
+             </Alert>
+             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Si Facebook muestra "No se puede cargar la URL"</AlertTitle>
+                <AlertDescription>
+                    Falta alguna de estas configuraciones en Meta for Developers: <strong>App Domains</strong>, <strong>Website URL</strong> o <strong>Valid OAuth Redirect URIs</strong>. Revisa los tres.
+                </AlertDescription>
+             </Alert>
+             <Alert variant="default">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Si vuelves a <span className="font-mono">/auth/callback</span> pero sin token ni error</AlertTitle>
+                <AlertDescription>
+                    El campo <strong>Front-end redirect URL</strong> en Strapi (dentro del proveedor) está mal configurado o no coincide exactamente con el dominio de tu aplicación.
+                </AlertDescription>
+             </Alert>
           </CardContent>
        </Card>
     </div>
