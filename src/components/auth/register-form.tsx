@@ -138,7 +138,7 @@ export const RegisterForm = () => {
           </Button>
         </form>
       </Form>
-      <SocialButtons disabled={true} />
+      <SocialButtons disabled={loading} />
     </AuthCard>
   );
 };

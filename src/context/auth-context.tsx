@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (identifier: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
+  setSessionFromToken: (token: string) => Promise<void>;
 }
 
 export const AuthContext = React.createContext<AuthContextType>({
@@ -24,6 +25,7 @@ export const AuthContext = React.createContext<AuthContextType>({
   login: async () => {},
   register: async () => { return {} },
   logout: async () => {},
+  setSessionFromToken: async () => {},
 });
 
 const errorMessages: { [key: string]: string } = {
@@ -117,6 +119,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const setSessionFromToken = async (token: string) => {
+    const data = await performRequest('/api/session/set', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+    setUser(data);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -125,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         register,
         logout,
+        setSessionFromToken,
       }}
     >
       {children}

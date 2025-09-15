@@ -1,12 +1,18 @@
+
 // src/app/api/session/set/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
+import {z} from 'zod';
 import {
   API_BASE,
-  setSessionSchema,
   createSessionCookie,
   mapStrapiError,
   respondWithError,
 } from '@/lib/api-utils';
+
+const setSessionSchema = z.object({
+  token: z.string().min(1, {message: 'El token es requerido.'}),
+});
+
 
 /**
  * Handles setting the session cookie after a successful social login redirect.
