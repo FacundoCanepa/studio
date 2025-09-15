@@ -16,17 +16,12 @@ function getAllowedOrigins(): string[] {
 
     // For Vercel deployments (production and previews)
     if (process.env.VERCEL_URL) {
-        // Main production URL from env var
-        if (process.env.FRONT_ORIGIN_PROD) {
-            allowed.push(process.env.FRONT_ORIGIN_PROD);
-        }
         // The current Vercel deployment URL
         allowed.push(`https://${process.env.VERCEL_URL}`);
     }
-
-    // Fallback in case env vars are not set
-    if (allowed.length === 0 && process.env.NODE_ENV === 'production') {
-        console.warn('WARNING: No allowed origins could be determined. CORS may fail.');
+    // Main production URL from env var
+    if (process.env.FRONT_ORIGIN_PROD) {
+        allowed.push(process.env.FRONT_ORIGIN_PROD);
     }
     
     // Log the determined origins for debugging
