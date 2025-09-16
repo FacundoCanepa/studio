@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- CSRF Protection ---
-  // Apply CSRF validation only to mutating API endpoints.
+  // Apply CSRF validation only to mutating API endpoints that are not part of the health check or csrf token generation.
   const isCsrfProtected = MUTATING_METHODS.includes(request.method) &&
     !pathname.startsWith('/api/_health/') &&
     !pathname.startsWith('/api/csrf');
