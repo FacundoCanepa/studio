@@ -50,7 +50,7 @@ export async function toggleFavoriteAction(articleId: number) {
     const errorBody = await meResponse.json().catch(() => ({ message: 'Could not parse error body' }));
     console.error('[TOGGLE_FAVORITE_ACTION_ERROR] Failed to fetch user from Strapi.', {
         status: meResponse.status,
-        body: errorBody,
+        body: JSON.stringify(errorBody, null, 2),
     });
     throw new Error('Could not fetch user.');
   }
@@ -91,7 +91,7 @@ export async function toggleFavoriteAction(articleId: number) {
     const errorBody = await updateResponse.json().catch(() => ({}));
     console.error('[SERVER_ACTION_UPDATE_ERROR] Failed to update user in Strapi.', {
       status: updateResponse.status,
-      body: errorBody,
+      body: JSON.stringify(errorBody, null, 2),
     });
     throw new Error('Failed to update favorites in Strapi.');
   }
@@ -123,7 +123,7 @@ export async function toggleTagFavoriteAction(tagId: number) {
      const errorBody = await meResponse.json().catch(() => ({ message: 'Could not parse error body' }));
     console.error('[TOGGLE_TAG_ACTION_ERROR] Failed to fetch user from Strapi.', {
         status: meResponse.status,
-        body: errorBody,
+        body: JSON.stringify(errorBody, null, 2),
     });
     throw new Error('Could not fetch user.');
   }
@@ -163,7 +163,7 @@ export async function toggleTagFavoriteAction(tagId: number) {
     const errorBody = await updateResponse.json().catch(() => ({}));
     console.error('[SERVER_ACTION_UPDATE_ERROR] Failed to update tag favorites in Strapi.', {
       status: updateResponse.status,
-      body: errorBody,
+      body: JSON.stringify(errorBody, null, 2),
     });
     throw new Error('Failed to update tag favorites in Strapi.');
   }
