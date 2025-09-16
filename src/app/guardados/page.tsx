@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { COOKIE_NAME, getJwtFromCookie } from '@/lib/api-utils';
+import { COOKIE_NAME } from '@/lib/api-utils';
 import { getFavoriteArticles, getFavoriteTags } from '@/lib/strapi-client';
 import { SectionTitle } from '@/components/shared/section-title';
 import { ArticleList } from '@/components/articles/article-list';
@@ -10,45 +10,53 @@ import type { Metadata } from 'next';
 import { jwtVerify } from 'jose';
 import { COOKIE_SECRET } from '@/lib/api-utils';
 import Link from 'next/link';
+import { Buffer } from 'buffer';
 
 export const metadata: Metadata = {
     title: 'Mis Guardados - Vestigio Magazine',
     description: 'Tu colección personal de artículos e inspiración de Vestigio Magazine.',
 };
 
-async function getUserIdFromCookie(): Promise<number | null> {
+async function getSessionData(): Promise<{ userId: number; token: string } | null> {
     const cookie = cookies().get(COOKIE_NAME);
-    if (!cookie) return null;
+    if (!cookie?.value) {
+        console.log('[GuardadosPage] No session cookie found.');
+        return null;
+    }
     
     try {
         const { payload } = await jwtVerify(cookie.value, COOKIE_SECRET);
-        const strapiJwt = payload.token as string;
-        if (!strapiJwt) return null;
+        const strapiToken = payload.token as string;
+        if (!strapiToken) {
+            console.error('[GuardadosPage] Strapi token not found in session cookie payload.');
+            return null;
+        }
         
-        // Decoding the JWT payload to get the user ID
-        const decodedStrapiJwt = JSON.parse(Buffer.from(strapiJwt.split('.')[1], 'base64').toString());
-        return decodedStrapiJwt.id;
+        // Decode the Strapi JWT payload to get the user ID
+        const decodedStrapiJwt = JSON.parse(Buffer.from(strapiToken.split('.')[1], 'base64').toString());
+        const userId = decodedStrapiJwt.id;
+
+        if (!userId) {
+             console.error('[GuardadosPage] User ID not found in Strapi token.');
+             return null;
+        }
+
+        return { userId, token: strapiToken };
     } catch (e) {
-        console.error("Failed to verify session cookie:", e);
+        console.error("[GuardadosPage] Failed to verify session cookie:", e);
         return null;
     }
 }
 
 
 export default async function GuardadosPage() {
-    const cookie = cookies().get(COOKIE_NAME)?.value;
-    const token = await getJwtFromCookie({ cookies: { get: () => cookie } } as any);
+    const session = await getSessionData();
 
-    if (!token) {
+    if (!session) {
         redirect('/login');
     }
 
-    const userId = await getUserIdFromCookie();
-    if (!userId) {
-        // This case can happen if the cookie is invalid or expired.
-        // Redirecting to login is a safe fallback.
-        redirect('/login');
-    }
+    const { userId, token } = session;
     
     const [favoriteArticles, favoriteTags] = await Promise.all([
         getFavoriteArticles(userId, token),
