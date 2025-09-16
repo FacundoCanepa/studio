@@ -1,3 +1,4 @@
+
 // src/app/api/password/reset/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {
@@ -6,13 +7,13 @@ import {
   mapStrapiError,
   respondWithError,
 } from '@/lib/api-utils';
+import { validateCsrf } from '@/lib/api/csrf';
 
-/**
- * Proxies the "reset password" request to Strapi.
- */
 export async function POST(request: NextRequest) {
+  const csrfError = await validateCsrf(request);
+  if (csrfError) return csrfError;
+
   try {
-    // 1. Validate request body
     const body = await request.json();
     const validated = resetPasswordSchema.safeParse(body);
     if (!validated.success) {
@@ -21,20 +22,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. Proxy request to Strapi
     const strapiRes = await fetch(`${API_BASE}/auth/reset-password`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(validated.data),
     });
 
-    // 3. Handle Strapi's response
     if (!strapiRes.ok) {
       const strapiData = await strapiRes.json().catch(() => null);
       return mapStrapiError(strapiData);
     }
 
-    // 4. Return success response
     return NextResponse.json({
       ok: true,
       data: {message: 'Contraseña actualizada con éxito.'},

@@ -25,48 +25,35 @@ export async function createCsrfToken() {
 }
 
 // --- CSRF Cookie Serialization ---
-// The CSRF cookie is NOT HttpOnly, allowing the client-side JS to read it and send it in a header.
-// This is safe because only our frontend domain can read it.
 export function createCsrfCookie(csrfToken: string) {
   return serialize(CSRF_COOKIE_NAME, csrfToken, {
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'lax',
     path: '/',
     maxAge: 3600, // 1 hour
-    // This cookie is intentionally NOT httpOnly
+    httpOnly: true, // Make it HttpOnly for security
   });
 }
 
-// --- CSRF Validation Middleware Logic ---
+// --- CSRF Validation Logic for API Routes ---
 export async function validateCsrf(request: NextRequest) {
   const csrfTokenFromHeader = request.headers.get('x-csrf-token');
   const cookies = parse(request.headers.get('cookie') ?? '');
   const csrfTokenFromCookie = cookies[CSRF_COOKIE_NAME];
   
-  console.log('[CSRF_VALIDATE] Header token:', csrfTokenFromHeader ? 'present' : 'missing');
-  console.log('[CSRF_VALIDATE] Cookie token:', csrfTokenFromCookie ? 'present' : 'missing');
-
   if (!csrfTokenFromHeader || !csrfTokenFromCookie) {
-    console.error('[CSRF_VALIDATE] CSRF token missing from header or cookie.');
     return respondWithError('csrf_token_missing');
   }
 
   if (csrfTokenFromHeader !== csrfTokenFromCookie) {
-    console.error('[CSRF_VALIDATE] CSRF token mismatch.');
-    console.log('Header Token:', csrfTokenFromHeader);
-    console.log('Cookie Token:', csrfTokenFromCookie);
     return respondWithError('csrf_token_mismatch');
   }
 
   try {
-    // Also verify the token signature and expiration to prevent tampering
     await jwtVerify(csrfTokenFromHeader, CSRF_SECRET);
-    console.log('[CSRF_VALIDATE] Token signature and expiration are valid.');
   } catch (error) {
-    console.error('[CSRF_VALIDATE] Token verification failed (invalid signature or expired):', error);
     return respondWithError('csrf_token_invalid');
   }
 
-  // If all checks pass, return null to indicate success
   return null;
 }

@@ -1,6 +1,8 @@
+
 // src/app/api/session/register/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
+import { validateCsrf } from '@/lib/api/csrf';
 
 // Esquema de validación con Zod
 const registerSchema = z.object({
@@ -12,6 +14,9 @@ const registerSchema = z.object({
 const STRAPI_URL = process.env.STRAPI_URL;
 
 export async function POST(request: NextRequest) {
+  const csrfError = await validateCsrf(request);
+  if (csrfError) return csrfError;
+
   try {
     // 1. Validar el cuerpo de la petición
     const body = await request.json();
@@ -61,8 +66,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Devolver respuesta de éxito
-    // Si Strapi tiene la confirmación por email activada, `strapiData.user.confirmed` será `false`.
-    // El frontend puede usar esta información.
     return NextResponse.json({
       ok: true,
       data: {

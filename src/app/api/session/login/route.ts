@@ -1,3 +1,4 @@
+
 // src/app/api/session/login/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {
@@ -7,14 +8,13 @@ import {
   mapStrapiError,
   respondWithError,
 } from '@/lib/api-utils';
+import { validateCsrf } from '@/lib/api/csrf';
 
-/**
- * Handles user login by proxying credentials to Strapi, and if successful,
- * creates an HttpOnly session cookie.
- */
 export async function POST(request: NextRequest) {
+  const csrfError = await validateCsrf(request);
+  if (csrfError) return csrfError;
+
   try {
-    // 1. Validate request body
     const body = await request.json();
     const validated = loginSchema.safeParse(body);
     if (!validated.success) {
@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. Proxy login request to Strapi
     const strapiRes = await fetch(`${API_BASE}/auth/local`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -44,10 +43,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Create session cookie
     const cookie = await createSessionCookie(jwt);
 
-    // 4. Sanitize user data for the response
     const sanitizedUser = {
       id: user.id,
       username: user.username,

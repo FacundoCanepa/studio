@@ -13,46 +13,37 @@ export default function AuthCallbackPage() {
   const { setSessionFromToken, isLoading: isAuthContextLoading } = React.useContext(AuthContext);
   const { toast } = useToast();
   const [error, setError] = React.useState<string | null>(null);
-
+  
   const processed = React.useRef(false);
 
   React.useEffect(() => {
-    if (isAuthContextLoading || processed.current) {
-        return;
+    if (processed.current || isAuthContextLoading) {
+      return;
     }
     processed.current = true;
-    
-    // Primary token parameter from Strapi
-    const token = searchParams.get('access_token');
-    
-    // Check for various error formats
+
+    const accessToken = searchParams.get('access_token');
     const errorParam = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
-    
-    let errorMessage = null;
 
-    if (errorParam) {
-      errorMessage = errorDescription ? `${errorParam}: ${errorDescription}` : errorParam;
-    } else if (errorDescription) {
-      errorMessage = errorDescription;
-    }
-    
-    if (errorMessage) {
-      setError(errorMessage);
+    if (errorParam || errorDescription) {
+      const message = errorDescription || errorParam || "Error desconocido del proveedor.";
+      setError(message);
       toast({
         title: 'Error de Autenticación',
-        description: errorMessage,
+        description: message,
         variant: 'destructive',
       });
       setTimeout(() => router.replace('/login'), 5000);
       return;
     }
 
-    if (token) {
-      setSessionFromToken(token)
+    if (accessToken) {
+      setSessionFromToken(accessToken)
         .then(() => {
           toast({ title: "¡Bienvenido!" });
           router.replace('/');
+          router.refresh();
         })
         .catch((err) => {
           const friendlyError = err.message || 'Ocurrió un error al validar la sesión.';
@@ -66,10 +57,10 @@ export default function AuthCallbackPage() {
         });
       return;
     }
-    
+
     const missingTokenError = 'Token de acceso no encontrado en la respuesta.';
     setError(missingTokenError);
-    toast({
+     toast({
         title: 'Error de Configuración',
         description: missingTokenError,
         variant: 'destructive',
