@@ -104,10 +104,11 @@ export async function toggleFavoriteAction(articleId: number) {
   }
   
   const updatedUser: StrapiUser = await updateResponse.json();
-  console.log('[SERVER_ACTION_SUCCESS] Successfully updated user. New favorite articles:', updatedUser.favorite_articles?.map(a => a.id));
+  console.log('[SERVER_ACTION_SUCCESS] Successfully updated user. The response from Strapi does not contain the updated list, but the operation was successful.');
 
+  // Return the list we KNOW is correct, because we just sent it.
   return {
-    favoriteArticles: updatedUser.favorite_articles?.map(a => a.id) || [],
+    favoriteArticles: newFavorites,
   };
 }
 
@@ -156,7 +157,6 @@ export async function toggleTagFavoriteAction(tagId: number) {
   console.log(`[TOGGLE_TAG_ACTION] Preparing to PUT to: ${updateUrl}`);
   console.log('[TOGGLE_TAG_ACTION] Payload to be sent:', JSON.stringify(payload, null, 2));
 
-  // *** SOLUTION: Use Admin Token for the write operation ***
   const adminToken = process.env.STRAPI_API_TOKEN;
   if (!adminToken) {
     console.error('[SERVER_ACTION_UPDATE_ERROR] STRAPI_API_TOKEN is not configured.');
@@ -183,10 +183,10 @@ export async function toggleTagFavoriteAction(tagId: number) {
     throw new Error('Failed to update tag favorites in Strapi.');
   }
 
-  const updatedUser: StrapiUser = await updateResponse.json();
-  console.log('[SERVER_ACTION_SUCCESS] Successfully updated tag favorites. New favorite tags:', updatedUser.favorite_tags?.map(t => t.id));
+  console.log('[SERVER_ACTION_SUCCESS] Successfully updated tag favorites.');
 
+  // Return the list we KNOW is correct.
   return {
-    favoriteTags: updatedUser.favorite_tags?.map(t => t.id) || [],
+    favoriteTags: newFavorites,
   };
 }
