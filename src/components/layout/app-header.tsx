@@ -99,16 +99,12 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                 <span className="sr-only">Abrir menú</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px] pt-safe-top pb-safe-bottom">
+            <SheetContent side="right" className="w-[300px] sm:w-[400px] pt-safe-top pb-safe-bottom" onClick={() => setSheetOpen(false)}>
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between p-4 border-b">
                    <Link href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
                      VESTIGIO
                    </Link>
-                   <Button variant="ghost" size="icon" onClick={() => setSheetOpen(false)}>
-                      <X className="h-6 w-6" />
-                      <span className="sr-only">Cerrar menú</span>
-                   </Button>
                 </div>
                 <nav className="flex flex-col space-y-4 p-4">
                   {navLinks.map((link) => (
