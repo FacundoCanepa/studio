@@ -14,6 +14,7 @@ import { SectionTitle } from '@/components/shared/section-title';
 import { AdSlot } from '@/components/marketing/ad-slot';
 import { ArticleCarousel } from './_components/article-carousel';
 import { YouTubeEmbed } from './_components/youtube-embed';
+import { FavoriteButton } from './_components/favorite-button';
 
 type Props = {
   params: { slug: string };
@@ -81,7 +82,6 @@ export default async function ArticlePage({ params }: Props) {
                 alt={article.title}
                 fill
                 className="object-cover"
-                // [PERFORMANCE FIX - /articulos/[slug]]: Prioritize main article image and provide sizes.
                 priority
                 sizes="(min-width: 1280px) 1200px, (min-width: 768px) 90vw, 100vw"
               />
@@ -100,6 +100,7 @@ export default async function ArticlePage({ params }: Props) {
               
               <aside className="lg:col-span-3 lg:order-last">
                  <div className="sticky top-24 space-y-8">
+                    <FavoriteButton articleId={Number(article.documentId)} />
                     <ShareButtons article={article} />
                     <AdSlot className="w-full h-64" />
                  </div>

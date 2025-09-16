@@ -3,11 +3,13 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import type { ArticleDoc } from '@/lib/firestore-types';
 
 interface User {
   id: number;
   username: string;
   email: string;
+  favoriteArticles: number[];
 }
 
 interface AuthContextType {
@@ -18,6 +20,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<any>;
   resetPassword: (code: string, password: string, passwordConfirmation: string) => Promise<any>;
+  toggleFavorite: (articleId: number) => Promise<boolean>;
+  isFavorite: (articleId: number) => boolean;
 }
 
 export const AuthContext = React.createContext<AuthContextType>({
@@ -28,6 +32,8 @@ export const AuthContext = React.createContext<AuthContextType>({
   logout: async () => {},
   forgotPassword: async () => {},
   resetPassword: async () => {},
+  toggleFavorite: async () => false,
+  isFavorite: () => false,
 });
 
 const errorMessages: { [key: string]: string } = {
@@ -96,7 +102,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   React.useEffect(() => {
     const initializeSession = async () => {
         setIsLoading(true);
-        // We only need to fetch user. The CSRF token will be fetched on-demand by performRequest.
         await fetchUser();
         setIsLoading(false);
     }
@@ -168,7 +173,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
        console.error("[AUTH_PROVIDER] Logout failed server-side, but clearing client session anyway.", error);
     } finally {
       setUser(null);
-      csrfTokenRef.current = null; // Clear CSRF token on logout
+      csrfTokenRef.current = null; 
       router.push('/');
       router.refresh();
     }
@@ -187,6 +192,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       body: JSON.stringify({ code, password, passwordConfirmation }),
     }, true);
   };
+
+  const isFavorite = (articleId: number) => {
+    return user?.favoriteArticles?.includes(articleId) ?? false;
+  };
+
+  const toggleFavorite = async (articleId: number): Promise<boolean> => {
+    if (!user) {
+        throw new Error('Debes iniciar sesión para guardar favoritos.');
+    }
+    const data = await performRequest('/api/favorites/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ articleId }),
+    }, true);
+
+    const newFavoriteList = data.favoriteArticles;
+    setUser(prev => prev ? { ...prev, favoriteArticles: newFavoriteList } : null);
+    
+    return newFavoriteList.includes(articleId);
+  };
   
   return (
     <AuthContext.Provider
@@ -198,6 +222,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout,
         forgotPassword,
         resetPassword,
+        toggleFavorite,
+        isFavorite,
       }}
     >
       {children}

@@ -7,20 +7,19 @@ import {
   respondWithError,
   getJwtFromCookie,
 } from '@/lib/api-utils';
+import type { StrapiUser } from '@/lib/strapi-types';
 
 /**
  * Fetches the current user's data from Strapi if a valid session cookie is present.
  */
 export async function GET(request: NextRequest) {
   try {
-    // 1. Get and verify JWT from the HttpOnly cookie
     const token = await getJwtFromCookie(request);
     if (!token) {
       return respondWithError('unauthorized', {details: 'No session cookie.'});
     }
 
-    // 2. Fetch user data from Strapi using the token
-    const strapiRes = await fetch(`${API_BASE}/users/me`, {
+    const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -28,22 +27,21 @@ export async function GET(request: NextRequest) {
       cache: 'no-store', // Ensure fresh data
     });
 
-    const strapiData = await strapiRes.json();
+    const strapiData: StrapiUser = await strapiRes.json();
 
     if (!strapiRes.ok) {
       return mapStrapiError(strapiData);
     }
 
-    // 3. Return sanitized user data
     const sanitizedUser = {
       id: strapiData.id,
       username: strapiData.username,
       email: strapiData.email,
+      favoriteArticles: strapiData.favorite_articles?.map(a => a.id) || [],
     };
 
     return NextResponse.json({ok: true, data: sanitizedUser});
   } catch (error) {
-    // This catches JWT verification errors or fetch failures
     if (
       error instanceof Error &&
       (error.message.includes('invalid') || error.message.includes('expired'))

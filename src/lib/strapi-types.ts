@@ -1,4 +1,5 @@
 
+
 // --- STRAPI RESPONSE TYPES ---
 
 export interface StrapiResponse<T> {
@@ -83,6 +84,16 @@ export interface StrapiArticle extends StrapiEntity {
     author?: StrapiAuthor;
     tags?: StrapiTag[];
     Name?: StrapiSeoBlock; // This seems to be the SEO component
+}
+
+
+export interface StrapiUser extends StrapiEntity {
+    username: string;
+    email: string;
+    provider?: string;
+    confirmed?: boolean;
+    blocked?: boolean;
+    favorite_articles?: StrapiArticle[];
 }
 
 

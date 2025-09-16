@@ -1,7 +1,8 @@
+
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc } from './firestore-types';
-import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse, StrapiGalleryItem } from '@/lib/strapi-types';
+import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse, StrapiGalleryItem, StrapiUser } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
 const STRAPI_BASE_URL = "https://graceful-bear-073b8037ba.strapiapp.com";
@@ -109,6 +110,7 @@ type GetArticlesParams = {
     featured?: boolean;
     home?: boolean;
     isNew?: boolean;
+    ids?: number[];
   };
 };
 
@@ -136,6 +138,11 @@ export async function getArticles({
     }
     if (filters.isNew !== undefined) {
       params.set('filters[New][$eq]', String(filters.isNew));
+    }
+    if (filters.ids && filters.ids.length > 0) {
+        filters.ids.forEach(id => {
+            params.append('filters[id][$in]', String(id));
+        });
     }
     
     const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`);
@@ -262,3 +269,15 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
   }));
   return items.filter(Boolean) as { id: string; title: string; description: string; imageUrl: string }[];
 }
+
+
+export async function getFavoriteArticles(userId: number, jwt: string): Promise<ArticleDoc[]> {
+    const response = await fetchStrapi<StrapiUser>(`/api/users/${userId}?populate[favorite_articles][populate]=*`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+    });
+    if (!response || !response.favorite_articles) return [];
+    
+    const mapped = await Promise.all(response.favorite_articles.map(mapStrapiArticleToArticleDoc));
+    return mapped.filter(Boolean) as ArticleDoc[];
+}
+

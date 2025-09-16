@@ -4,10 +4,19 @@
 import { useState, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Instagram, Menu, X, Facebook, LogOut, UserCircle } from 'lucide-react';
+import { Instagram, Menu, X, LogOut, UserCircle, Bookmark } from 'lucide-react';
 import type { CategoryDoc } from '@/lib/firestore-types';
 import Link from 'next/link';
 import { AuthContext } from '@/context/auth-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 
 interface AppHeaderProps {
   categories: CategoryDoc[];
@@ -43,13 +52,29 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
 
         <div className="flex items-center justify-end space-x-2">
           {user ? (
-            <>
-              <span className="hidden sm:inline text-sm font-medium">{user.username}</span>
-              <Button variant="ghost" size="icon" onClick={logout}>
-                <LogOut className="h-5 w-5" />
-                <span className="sr-only">Cerrar sesión</span>
-              </Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                    <UserCircle className="h-5 w-5" />
+                    <span className="hidden sm:inline">{user.username}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                   <Link href="/guardados">
+                        <Bookmark className="mr-2 h-4 w-4" />
+                        <span>Mis Guardados</span>
+                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Cerrar sesión</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
              <Button asChild variant="ghost" size="sm">
                 <Link href="/login">
@@ -83,6 +108,11 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                       {link.name}
                     </Link>
                   ))}
+                   {user && (
+                        <Link href="/guardados" onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
+                            Mis Guardados
+                        </Link>
+                    )}
                 </nav>
                  <div className="mt-auto p-4 border-t">
                     <div className="flex items-center justify-center space-x-4">
@@ -94,9 +124,6 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                             <svg className="social-svg h-6 w-6" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                                 <path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/>
                             </svg>
-                        </a>
-                        <a href="#" className="social-container facebook" aria-label="Facebook">
-                          <Facebook className="social-svg h-6 w-6" />
                         </a>
                     </div>
                 </div>
