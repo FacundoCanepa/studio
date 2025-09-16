@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { toggleFavoriteAction, toggleTagFavoriteAction } from '@/app/actions/favoriteActions';
 
 interface User {
   id: number;
@@ -160,27 +161,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const toggleFavorite = async (articleId: number): Promise<boolean> => {
-    console.log(`[AuthContext] Toggling favorite for articleId: ${articleId}. Current user:`, user?.username);
+    console.log(`[AuthContext] Toggling favorite for articleId: ${articleId} via Server Action. Current user:`, user?.username);
     if (!user) {
         console.error('[AuthContext] User not logged in. Aborting toggleFavorite.');
         throw new Error('Debes iniciar sesión para guardar favoritos.');
     }
     
     try {
-        const data = await performRequest('/api/favorites/toggle', {
-            method: 'POST',
-            body: JSON.stringify({ articleId }),
-        });
-        console.log('[AuthContext] API response from /api/favorites/toggle:', data);
+        const data = await toggleFavoriteAction(articleId);
+        console.log('[AuthContext] Server Action response:', data);
 
         const newFavoriteList = data.favoriteArticles;
         setUser(prev => prev ? { ...prev, favoriteArticles: newFavoriteList } : null);
         console.log('[AuthContext] User state updated. New favorite articles:', newFavoriteList);
         
         return newFavoriteList.includes(articleId);
-    } catch (error) {
-        console.error('[AuthContext] Error calling toggle favorite API:', error);
-        throw error;
+    } catch (error: any) {
+        console.error('[AuthContext] Error calling toggle favorite action:', error);
+        throw new Error(error.message || 'No se pudo actualizar tu lista de favoritos.');
     }
   };
 
@@ -192,15 +190,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) {
         throw new Error('Debes iniciar sesión para guardar favoritos.');
     }
-    const data = await performRequest('/api/favorites/toggle-tag', {
-        method: 'POST',
-        body: JSON.stringify({ tagId }),
-    });
-
-    const newFavoriteList = data.favoriteTags;
-    setUser(prev => prev ? { ...prev, favoriteTags: newFavoriteList } : null);
     
-    return newFavoriteList.includes(tagId);
+    try {
+        const data = await toggleTagFavoriteAction(tagId);
+        const newFavoriteList = data.favoriteTags;
+        setUser(prev => prev ? { ...prev, favoriteTags: newFavoriteList } : null);
+        return newFavoriteList.includes(tagId);
+    } catch (error: any) {
+        console.error('[AuthContext] Error calling toggle tag favorite action:', error);
+        throw new Error(error.message || 'No se pudo actualizar tu lista de temas favoritos.');
+    }
   };
   
   return (
