@@ -91,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
         res = await fetch(url, { ...options, headers, cache: 'no-store' });
     } catch(networkError) {
+        console.error(`[AUTH_PROVIDER] Network error for ${url}:`, networkError);
         throw new Error("No se pudo conectar con el servicio. Revisa tu conexión a internet.");
     }
 
@@ -98,12 +99,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
         data = await res.json();
     } catch (e) {
+        console.error(`[AUTH_PROVIDER] JSON parse error for ${url}:`, e);
         throw new Error("La respuesta del servidor no es válida.");
     }
     
     if (!res.ok || data.ok === false) {
       const code = data.error?.code || 'default';
       const message = errorMessages[code as keyof typeof errorMessages] || data.error?.message || errorMessages.default;
+      console.error(`[AUTH_PROVIDER] API error for ${url}:`, { code, message, details: data.error?.details });
       throw new Error(message);
     }
 
@@ -157,18 +160,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const toggleFavorite = async (articleId: number): Promise<boolean> => {
+    console.log(`[AuthContext] Toggling favorite for articleId: ${articleId}. Current user:`, user?.username);
     if (!user) {
+        console.error('[AuthContext] User not logged in. Aborting toggleFavorite.');
         throw new Error('Debes iniciar sesión para guardar favoritos.');
     }
-    const data = await performRequest('/api/favorites/toggle', {
-        method: 'POST',
-        body: JSON.stringify({ articleId }),
-    });
-
-    const newFavoriteList = data.favoriteArticles;
-    setUser(prev => prev ? { ...prev, favoriteArticles: newFavoriteList } : null);
     
-    return newFavoriteList.includes(articleId);
+    try {
+        const data = await performRequest('/api/favorites/toggle', {
+            method: 'POST',
+            body: JSON.stringify({ articleId }),
+        });
+        console.log('[AuthContext] API response from /api/favorites/toggle:', data);
+
+        const newFavoriteList = data.favoriteArticles;
+        setUser(prev => prev ? { ...prev, favoriteArticles: newFavoriteList } : null);
+        console.log('[AuthContext] User state updated. New favorite articles:', newFavoriteList);
+        
+        return newFavoriteList.includes(articleId);
+    } catch (error) {
+        console.error('[AuthContext] Error calling toggle favorite API:', error);
+        throw error;
+    }
   };
 
   const isTagFavorite = (tagId: number) => {

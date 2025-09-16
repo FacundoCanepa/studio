@@ -31,6 +31,7 @@ export const FavoriteButton = ({ articleId }: FavoriteButtonProps) => {
   const isSaved = isFavorite(articleId);
 
   const handleToggle = async () => {
+    console.log(`[FavoriteButton] Clicked. Article ID: ${articleId}`);
     setLoading(true);
     try {
       const result = await toggleFavorite(articleId);
@@ -41,6 +42,7 @@ export const FavoriteButton = ({ articleId }: FavoriteButtonProps) => {
             : 'Este artículo se eliminó de tu lista.',
         });
     } catch (error: any) {
+        console.error('[FavoriteButton] Error toggling favorite:', error);
         toast({
             title: 'Error',
             description: error.message || 'No se pudo actualizar tu lista de favoritos.',
