@@ -27,6 +27,7 @@ async function performStrapiUpdate(userId: number, token: string, payload: objec
   const updateUrl = `${API_BASE}/users/${userId}`;
   
   console.log(`[SERVER_ACTION] Updating user ${userId} at ${updateUrl}`);
+  console.log(`[SERVER_ACTION] Payload being sent:`, JSON.stringify(payload, null, 2));
 
   const updateResponse = await fetch(updateUrl, {
     method: 'PUT',
@@ -81,9 +82,12 @@ export async function toggleFavoriteAction(articleId: number) {
     ? currentFavorites.filter(id => id !== articleId)
     : [...currentFavorites, articleId];
 
-  const updatedUser = await performStrapiUpdate(user.id, token, {
-    favorite_articles: { set: newFavorites },
-  });
+  // Strapi expects an array of objects with an 'id' property for relation updates
+  const payload = {
+    favorite_articles: newFavorites.map(id => ({ id }))
+  };
+
+  const updatedUser = await performStrapiUpdate(user.id, token, payload);
 
   return {
     favoriteArticles: updatedUser.favorite_articles?.map(a => a.id) || [],
@@ -118,10 +122,13 @@ export async function toggleTagFavoriteAction(tagId: number) {
   const newFavorites = isFavorite
     ? currentFavorites.filter(id => id !== tagId)
     : [...currentFavorites, tagId];
+  
+  // Strapi expects an array of objects with an 'id' property for relation updates
+  const payload = {
+    favorite_tags: newFavorites.map(id => ({ id }))
+  };
 
-  const updatedUser = await performStrapiUpdate(user.id, token, {
-    favorite_tags: { set: newFavorites },
-  });
+  const updatedUser = await performStrapiUpdate(user.id, token, payload);
 
   return {
     favoriteTags: updatedUser.favorite_tags?.map(t => t.id) || [],
