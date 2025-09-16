@@ -15,12 +15,9 @@ export interface StrapiResponse<T> {
 
 export interface StrapiEntity {
     id: number;
-    attributes: {
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    }
+    // Strapi response wraps attributes inside an 'attributes' property
 }
+
 
 export interface StrapiMedia {
     id: number;
@@ -62,48 +59,48 @@ export interface StrapiMediaFormat {
 }
 
 
-// --- STRAPI COLLECTION TYPES ---
+// --- STRAPI COLLECTION TYPES (with attributes property) ---
 
-export interface StrapiArticle extends StrapiEntity {
-    attributes: {
-        title: string;
-        slug: string;
-        excerpt?: string;
-        Content?: string;
-        ContentMore?: string | null;
-        Cover?: { data: StrapiMedia };
-        featured?: boolean;
-        home?: boolean;
-        New?: boolean;
-        Tendencias?: boolean;
-        views?: number;
-        saves?: number;
-        type?: 'guia' | 'lista' | 'comparativa';
-        subcategories?: string[];
-        Informacion?: string | null;
-        UrlYoutube?: string | null;
-        
-        Carosel?: { data: StrapiMedia[] | null };
-        category?: { data: StrapiCategory };
-        author?: { data: StrapiAuthor };
-        tags?: { data: StrapiTag[] };
-        seo?: StrapiSeoBlock; 
-        
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    }
+export type StrapiArticle = {
+    id: number;
+    title: string;
+    slug: string;
+    excerpt?: string;
+    Content?: string;
+    ContentMore?: string | null;
+    Cover?: { data: StrapiMedia | null };
+    featured?: boolean;
+    home?: boolean;
+    New?: boolean;
+    Tendencias?: boolean;
+    views?: number;
+    saves?: number;
+    type?: 'guia' | 'lista' | 'comparativa';
+    subcategories?: string[];
+    Informacion?: string | null;
+    UrlYoutube?: string | null;
+    
+    Carosel?: { data: StrapiMedia[] | null };
+    category?: { data: StrapiCategory | null };
+    author?: { data: StrapiAuthor | null };
+    tags?: { data: StrapiTag[] | null };
+    seo?: StrapiSeoBlock | null; 
+    
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
 }
 
 
-export interface StrapiUser extends StrapiEntity {
+export type StrapiUser = {
+    id: number;
     username: string;
     email: string;
     provider?: string;
     confirmed?: boolean;
     blocked?: boolean;
-    favorite_articles?: { data: StrapiArticle[] };
-    favorite_tags?: { data: StrapiTag[] };
+    favorite_articles?: StrapiArticle[];
+    favorite_tags?: StrapiTag[];
     role?: {
         id: number;
         name: string;
@@ -113,10 +110,11 @@ export interface StrapiUser extends StrapiEntity {
 }
 
 
-export interface StrapiAuthor extends StrapiEntity {
+export type StrapiAuthor = {
+    id: number;
     attributes: {
         Name: string;
-        Avatar?: { data: StrapiMedia };
+        Avatar?: { data: StrapiMedia | null };
         Bio?: any; // JSON content from rich text editor
         createdAt: string;
         updatedAt: string;
@@ -124,21 +122,23 @@ export interface StrapiAuthor extends StrapiEntity {
     }
 }
 
-export interface StrapiCategory extends StrapiEntity {
+export type StrapiCategory = {
+    id: number;
     attributes: {
         name: string;
         slug: string;
         description?: string;
         color?: string;
-        img?: { data: StrapiMedia };
-        articles?: { data: StrapiArticle[] };
+        img?: { data: StrapiMedia | null };
+        articles?: { data: StrapiArticle[] | null };
         createdAt: string;
         updatedAt: string;
         publishedAt?: string;
     }
 }
 
-export interface StrapiTag extends StrapiEntity {
+export type StrapiTag = {
+   id: number;
    attributes: {
         name: string;
         slug: string;
@@ -148,11 +148,12 @@ export interface StrapiTag extends StrapiEntity {
    }
 }
 
-export interface StrapiGalleryItem extends StrapiEntity {
+export type StrapiGalleryItem = {
+    id: number;
     attributes: {
         Nota: string;
         Famoso: string;
-        Imagen?: { data: StrapiMedia };
+        Imagen?: { data: StrapiMedia | null };
         createdAt: string;
         updatedAt: string;
         publishedAt?: string;
@@ -162,10 +163,10 @@ export interface StrapiGalleryItem extends StrapiEntity {
 
 // --- STRAPI COMPONENT TYPES ---
 
-export interface StrapiSeoBlock {
+export type StrapiSeoBlock = {
     id: number;
     metaTitle?: string;
     metaDescription?: string;
-    ogImage?: { data: StrapiMedia };
+    ogImage?: { data: StrapiMedia | null };
     canonicalUrl?: string;
 }

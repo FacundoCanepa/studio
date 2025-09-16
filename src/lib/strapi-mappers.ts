@@ -37,45 +37,45 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
 
     console.log('[MAPPER] Raw Strapi Item:', JSON.stringify(item, null, 2));
 
-    const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
+    const coverUrl = await getStrapiMediaUrl(item.Cover?.data?.attributes.url);
     
-    const categoryData = item.category;
+    const categoryData = item.category?.data;
     const category = categoryData ? {
         documentId: String(categoryData.id),
-        name: categoryData.name,
-        slug: categoryData.slug,
-        description: categoryData.description,
-        color: categoryData.color,
+        name: categoryData.attributes.name,
+        slug: categoryData.attributes.slug,
+        description: categoryData.attributes.description,
+        color: categoryData.attributes.color,
     } : null;
 
-    const authorData = item.author;
+    const authorData = item.author?.data;
     const author = authorData ? {
         documentId: String(authorData.id),
-        name: authorData.Name,
-        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
+        name: authorData.attributes.Name,
+        avatarUrl: await getStrapiMediaUrl(authorData.attributes.Avatar?.data?.attributes.url),
     } : null;
     
-    const tags = (item.tags || [])
-        .filter((t): t is StrapiTag => !!t && !!t.id && !!t.name && !!t.slug)
+    const tags = (item.tags?.data || [])
+        .filter((t): t is StrapiTag => !!t && !!t.id && !!t.attributes.name && !!t.attributes.slug)
         .map(t => ({
             documentId: String(t.id),
-            name: t.name,
-            slug: t.slug,
+            name: t.attributes.name,
+            slug: t.attributes.slug,
         }));
 
     const seoBlock = item.seo;
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,
-        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.url),
+        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.data?.attributes.url),
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
     // Use htmlToMarkdown for form defaultValue, and markdownToHtml for display
     const contentHtml = item.Content;
     
-    const carouselImages = item.Carosel && Array.isArray(item.Carosel)
-      ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img?.url)))
+    const carouselImages = item.Carosel?.data && Array.isArray(item.Carosel.data)
+      ? await Promise.all(item.Carosel.data.map(img => getStrapiMediaUrl(img?.attributes.url)))
       : [];
 
     const out: ArticleDoc = {
