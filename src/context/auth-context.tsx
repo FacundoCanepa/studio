@@ -18,7 +18,6 @@ interface AuthContextType {
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<any>;
   resetPassword: (code: string, password: string, passwordConfirmation: string) => Promise<any>;
-  setSessionFromToken: (token: string) => Promise<void>;
 }
 
 export const AuthContext = React.createContext<AuthContextType>({
@@ -29,7 +28,6 @@ export const AuthContext = React.createContext<AuthContextType>({
   logout: async () => {},
   forgotPassword: async () => {},
   resetPassword: async () => {},
-  setSessionFromToken: async () => {},
 });
 
 const errorMessages: { [key: string]: string } = {
@@ -190,15 +188,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, true);
   };
   
-  const setSessionFromToken = async (token: string) => {
-    const data = await performRequest('/api/session/set', {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    }, true);
-    setUser(data);
-    router.refresh();
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -209,7 +198,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout,
         forgotPassword,
         resetPassword,
-        setSessionFromToken,
       }}
     >
       {children}

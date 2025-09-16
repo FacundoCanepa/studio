@@ -11,9 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { AuthCard } from './auth-card';
-import { SocialButtons } from './social-buttons';
 import { AuthContext } from '@/context/auth-context';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 const formSchema = z.object({
@@ -28,6 +27,7 @@ export const LoginForm = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -99,7 +99,25 @@ export const LoginForm = () => {
                     </Link>
                 </div>
                 <FormControl>
-                  <Input type="password" placeholder="********" {...field} disabled={loading} />
+                  <div className="relative">
+                    <Input 
+                      type={showPassword ? 'text' : 'password'} 
+                      placeholder="********" 
+                      {...field} 
+                      disabled={loading} 
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute inset-y-0 right-0 text-muted-foreground hover:bg-transparent"
+                      onClick={() => setShowPassword(prev => !prev)}
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -111,7 +129,6 @@ export const LoginForm = () => {
           </Button>
         </form>
       </Form>
-      <SocialButtons disabled={loading} />
     </AuthCard>
   );
 };

@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { AuthCard } from './auth-card';
-import { SocialButtons } from './social-buttons';
 import { AuthContext } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -138,7 +137,6 @@ export const RegisterForm = () => {
           </Button>
         </form>
       </Form>
-      <SocialButtons disabled={loading} />
     </AuthCard>
   );
 };
