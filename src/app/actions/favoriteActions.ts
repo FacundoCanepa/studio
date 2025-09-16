@@ -1,3 +1,4 @@
+
 // src/app/actions/favoriteActions.ts
 'use server';
 
@@ -62,7 +63,15 @@ export async function toggleFavoriteAction(articleId: number) {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
   });
-  if (!meResponse.ok) throw new Error('Could not fetch user.');
+
+  if (!meResponse.ok) {
+    const errorBody = await meResponse.json().catch(() => ({ message: 'Could not parse error body' }));
+    console.error('[TOGGLE_FAVORITE_ACTION_ERROR] Failed to fetch user from Strapi.', {
+        status: meResponse.status,
+        body: errorBody,
+    });
+    throw new Error('Could not fetch user.');
+  }
   const user: StrapiUser = await meResponse.json();
   
   const currentFavorites = user.favorite_articles?.map(a => a.id) || [];
@@ -92,7 +101,15 @@ export async function toggleTagFavoriteAction(tagId: number) {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
   });
-  if (!meResponse.ok) throw new Error('Could not fetch user.');
+
+  if (!meResponse.ok) {
+     const errorBody = await meResponse.json().catch(() => ({ message: 'Could not parse error body' }));
+    console.error('[TOGGLE_TAG_ACTION_ERROR] Failed to fetch user from Strapi.', {
+        status: meResponse.status,
+        body: errorBody,
+    });
+    throw new Error('Could not fetch user.');
+  }
   const user: StrapiUser = await meResponse.json();
 
   const currentFavorites = user.favorite_tags?.map(t => t.id) || [];
