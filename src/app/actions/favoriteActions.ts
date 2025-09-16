@@ -73,7 +73,7 @@ export async function toggleFavoriteAction(articleId: number) {
     favorite_articles: newFavorites
   };
 
-  const updateUrl = `${API_BASE}/users/${user.id}`;
+  const updateUrl = `${API_BASE}/users/${user.id}?populate=favorite_articles`;
   console.log(`[TOGGLE_FAVORITE_ACTION] Preparing to PUT to: ${updateUrl}`);
   console.log('[TOGGLE_FAVORITE_ACTION] Payload to be sent:', JSON.stringify(payload, null, 2));
   
@@ -145,7 +145,7 @@ export async function toggleTagFavoriteAction(tagId: number) {
     favorite_tags: newFavorites
   };
 
-  const updateUrl = `${API_BASE}/users/${user.id}`;
+  const updateUrl = `${API_BASE}/users/${user.id}?populate=favorite_tags`;
   console.log(`[TOGGLE_TAG_ACTION] Preparing to PUT to: ${updateUrl}`);
   console.log('[TOGGLE_TAG_ACTION] Payload to be sent:', JSON.stringify(payload, null, 2));
   
