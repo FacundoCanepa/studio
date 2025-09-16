@@ -12,16 +12,21 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  console.log(`[METADATA_EDIT_PAGE] Fetching article for ID: ${params.id}`);
   const article = await getArticle(params.id);
   if (!article) {
+    console.log(`[METADATA_EDIT_PAGE] Article not found for ID: ${params.id}`);
     return { title: 'Artículo no encontrado' };
   }
+  console.log(`[METADATA_EDIT_PAGE] Article found: "${article.title}"`);
   return {
     title: `Editar: ${article.title} - Admin Panel`,
   };
 }
 
 export default async function EditArticlePage({ params }: Props) {
+  console.log(`[EDIT_ARTICLE_PAGE] Rendering for article ID: ${params.id}`);
+  
   const [article, authors, categories] = await Promise.all([
     getArticle(params.id),
     getAuthors(),
@@ -29,8 +34,12 @@ export default async function EditArticlePage({ params }: Props) {
   ]);
 
   if (!article) {
+    console.error(`[EDIT_ARTICLE_PAGE] Article with ID ${params.id} not found. Triggering 404.`);
     notFound();
   }
+
+  console.log(`[EDIT_ARTICLE_PAGE] Successfully fetched data for article "${article.title}"`);
+  console.log(`[EDIT_ARTICLE_PAGE] Fetched ${authors.length} authors and ${categories.length} categories.`);
 
   return (
     <div className="space-y-8">

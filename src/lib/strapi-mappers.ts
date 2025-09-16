@@ -29,7 +29,13 @@ function htmlToMarkdown(html: string | null | undefined): string | undefined {
 
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
-    if (!item || !item.id) return null;
+    console.log('[MAPPER] Starting to map Strapi article. ID:', item?.id);
+    if (!item || !item.id) {
+        console.error('[MAPPER] Item is null or has no ID. Aborting map.');
+        return null;
+    }
+
+    console.log('[MAPPER] Raw Strapi Item:', JSON.stringify(item, null, 2));
 
     const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
     
@@ -99,6 +105,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         urlYoutube: item.UrlYoutube,
         carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
     };
+    
+    console.log('[MAPPER] Finished mapping. Resulting ArticleDoc:', JSON.stringify(out, null, 2));
 
     return out;
 }

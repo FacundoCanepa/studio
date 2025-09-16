@@ -32,6 +32,8 @@ type FormState = {
 
 async function performStrapiRequest(endpoint: string, options: RequestInit) {
   const url = `${STRAPI_URL}${endpoint}`;
+  console.log(`[STRAPI_REQUEST] Performing request to: ${url}`, { method: options.method });
+  
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -44,13 +46,15 @@ async function performStrapiRequest(endpoint: string, options: RequestInit) {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    console.error(`[STRAPI_ERROR] URL: ${url}, Status: ${response.status}`, errorBody);
+    console.error(`[STRAPI_ERROR] URL: ${url}, Status: ${response.status}`, JSON.stringify(errorBody, null, 2));
     throw new Error(
       errorBody.error?.message || `Error en la operación de Strapi: ${response.statusText}`
     );
   }
-
-  return response.json();
+  
+  const responseData = await response.json();
+  console.log(`[STRAPI_SUCCESS] Successfully performed request to: ${url}`);
+  return responseData;
 }
 
 export async function saveArticleAction(
@@ -58,7 +62,9 @@ export async function saveArticleAction(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
+  console.log('[SAVE_ARTICLE_ACTION] Started.', { id });
   const rawData = Object.fromEntries(formData.entries());
+  console.log('[SAVE_ARTICLE_ACTION] Raw form data:', rawData);
 
   const dataToValidate = {
     ...rawData,
@@ -67,16 +73,21 @@ export async function saveArticleAction(
     category: rawData.category || '',
     author: rawData.author || '',
   };
+  console.log('[SAVE_ARTICLE_ACTION] Data to validate:', dataToValidate);
+
 
   const validation = articleSchema.safeParse(dataToValidate);
 
   if (!validation.success) {
+    console.error('[SAVE_ARTICLE_ACTION] Validation failed:', validation.error.flatten().fieldErrors);
     return {
       message: 'Error de validación. Por favor, revisa los campos.',
       errors: validation.error.flatten().fieldErrors,
       success: false,
     };
   }
+  
+  console.log('[SAVE_ARTICLE_ACTION] Validation successful.');
 
   const { title, slug, excerpt, content, category, author, featured, publishedAt, tags } =
     validation.data;
@@ -84,24 +95,32 @@ export async function saveArticleAction(
   // Convert tags from names to IDs, creating them if they don't exist
   let tagIds: number[] = [];
   if (tags && tags.length > 0) {
+      console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
       const allTagsResponse = await performStrapiRequest('/api/tags', { method: 'GET' });
       const existingTags: { id: number, attributes: { name: string } }[] = allTagsResponse.data;
+      console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t.attributes.name));
 
       for (const tagName of tags) {
           const existingTag = existingTags.find(t => t.attributes.name.toLowerCase() === tagName.toLowerCase());
           if (existingTag) {
               tagIds.push(existingTag.id);
+              console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);
           } else {
               // Create new tag
+              console.log(`[SAVE_ARTICLE_ACTION] Tag '${tagName}' not found. Creating new tag.`);
               const newTagResponse = await performStrapiRequest('/api/tags', {
                   method: 'POST',
                   body: JSON.stringify({ data: { name: tagName, slug: tagName.toLowerCase().replace(/\s+/g, '-') } }),
               });
               if (newTagResponse.data) {
                   tagIds.push(newTagResponse.data.id);
+                  console.log(`[SAVE_ARTICLE_ACTION] Created new tag '${tagName}' with ID ${newTagResponse.data.id}`);
+              } else {
+                  console.error(`[SAVE_ARTICLE_ACTION] Failed to create new tag '${tagName}'`);
               }
           }
       }
+      console.log('[SAVE_ARTICLE_ACTION] Final tag IDs:', tagIds);
   }
 
 
@@ -118,23 +137,26 @@ export async function saveArticleAction(
       tags: tagIds,
     },
   };
+  
+  console.log('[SAVE_ARTICLE_ACTION] Final payload to be sent to Strapi:', JSON.stringify(payload, null, 2));
+
 
   try {
     if (id) {
-      // Update existing article
+      console.log(`[SAVE_ARTICLE_ACTION] Updating article with ID: ${id}`);
       await performStrapiRequest(`/api/articles/${id}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
     } else {
-      // Create new article
+      console.log('[SAVE_ARTICLE_ACTION] Creating new article.');
       await performStrapiRequest('/api/articles', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
     }
 
-    // Revalidate paths to reflect changes
+    console.log('[SAVE_ARTICLE_ACTION] Revalidating paths.');
     revalidatePath('/admin/articles');
     revalidatePath(`/articulos/${slug}`);
     revalidatePath('/');
@@ -144,6 +166,7 @@ export async function saveArticleAction(
       success: true,
     };
   } catch (error: any) {
+    console.error('[SAVE_ARTICLE_ACTION] Error during Strapi operation:', error);
     return {
       message: `Error al guardar el artículo: ${error.message}`,
       success: false,
@@ -152,6 +175,7 @@ export async function saveArticleAction(
 }
 
 export async function deleteArticleAction(id: string): Promise<{ success: boolean; message: string }> {
+    console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with ID: ${id}`);
     try {
         const response = await fetch(`${STRAPI_URL}/api/articles/${id}`, {
             method: 'DELETE',
@@ -163,15 +187,18 @@ export async function deleteArticleAction(id: string): Promise<{ success: boolea
 
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}));
+            console.error('[DELETE_ARTICLE_ACTION] Failed to delete article.', { id, status: response.status, errorBody });
             throw new Error(errorBody.error?.message || 'No se pudo eliminar el artículo.');
         }
         
+        console.log(`[DELETE_ARTICLE_ACTION] Successfully deleted article ${id}. Revalidating paths.`);
         revalidatePath('/admin/articles');
         revalidatePath('/');
 
         return { success: true, message: 'Artículo eliminado con éxito.' };
 
     } catch (error: any) {
+        console.error(`[DELETE_ARTICLE_ACTION] Exception caught for article ID ${id}:`, error);
         return { success: false, message: error.message };
     }
 }
