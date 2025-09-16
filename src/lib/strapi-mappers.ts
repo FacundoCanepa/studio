@@ -7,15 +7,26 @@ import { getStrapiMediaUrl } from './strapi-client';
 // Helper function to convert markdown-like text to basic HTML
 function markdownToHtml(text: string | null | undefined): string | undefined {
     if (!text) return undefined;
-    
-    // Process paragraphs first
-    let html = text.split('\\n\\n').map(p => {
-        // Then process bold within each paragraph
-        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+
+    // First, escape any existing HTML to prevent injection
+    // let escapedText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Process paragraphs (split by one or more newlines)
+    let html = text.split(/\n\s*\n/).map(paragraph => {
+        // Process bold and italic
+        paragraph = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        paragraph = paragraph.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        return `<p>${paragraph.replace(/\n/g, '<br>')}</p>`;
     }).join('');
 
     return html;
 }
+
+function htmlToMarkdown(html: string | null | undefined): string | undefined {
+    if (!html) return undefined;
+    return html.replace(/<p>/g, '').replace(/<\/p>/g, '\n\n').replace(/<br>/g, '\n').trim();
+}
+
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
     if (!item || !item.id) return null;
@@ -54,7 +65,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
-    const contentHtml = markdownToHtml(item.Content);
+    // Use htmlToMarkdown for form defaultValue, and markdownToHtml for display
+    const contentHtml = item.Content;
     
     const carouselImages = item.Carosel && Array.isArray(item.Carosel)
       ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img?.url)))
@@ -65,7 +77,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         title: item.title,
         slug: item.slug,
         excerpt: item.excerpt,
-        contentHtml,
+        contentHtml: contentHtml, // Store the raw content for editing
         coverUrl,
         featured: item.featured ?? false,
         publishedAt: item.publishedAt,
