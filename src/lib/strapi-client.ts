@@ -50,20 +50,21 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
 
 async function fetchPaginated<T extends StrapiEntity>(endpoint: string, init?: RequestInit): Promise<T[]> {
   const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
-  const fetchAll = url.searchParams.get('pagination[limit]') === '-1';
+  const params = new URLSearchParams(url.search);
+  const fetchAll = params.get('pagination[limit]') === '-1';
 
   if (fetchAll) {
-    url.searchParams.delete('pagination[limit]');
-    url.searchParams.set('pagination[pageSize]', '100');
+    params.delete('pagination[limit]');
+    params.set('pagination[pageSize]', '100');
     
     let allResults: T[] = [];
     let page = 1;
     let totalPages = 1;
 
     do {
-      url.searchParams.set('pagination[page]', String(page));
+      params.set('pagination[page]', String(page));
       try {
-        const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search, init);
+        const response: StrapiResponse<T[]> = await fetchStrapi(`${url.pathname}?${params.toString()}`, init);
         
         if (response.data && Array.isArray(response.data)) {
           allResults = allResults.concat(response.data);
@@ -84,7 +85,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string, init?: R
     return allResults;
   } else {
     // Original behavior for single page / specific limit
-    const response: StrapiResponse<T[] | T> = await fetchStrapi(url.pathname + url.search, init);
+    const response: StrapiResponse<T[] | T> = await fetchStrapi(`${url.pathname}?${params.toString()}`, init);
     if (Array.isArray(response.data)) {
         return response.data;
     }
@@ -209,10 +210,8 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
     }
 }
 
-export async function getCategories(): Promise<CategoryDoc[]> {
-    const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, {
-      // Use Next.js default caching (force-cache) for this call as it's in the main layout
-    });
+export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> {
+    const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, init);
     
     const mapped: Promise<CategoryDoc | null>[] = raw
       .map(async (c: StrapiCategory) => {

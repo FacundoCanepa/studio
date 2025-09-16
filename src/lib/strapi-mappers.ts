@@ -57,7 +57,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
             slug: t.slug,
         }));
 
-    const seoBlock = item.Name; // This seems to be the SEO component from Strapi
+    const seoBlock = item.seo;
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,

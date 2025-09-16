@@ -3,7 +3,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { API_BASE } from '@/lib/api-utils';
 
 const STRAPI_URL = process.env.STRAPI_URL;
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
@@ -86,10 +85,10 @@ export async function saveArticleAction(
   let tagIds: number[] = [];
   if (tags && tags.length > 0) {
       const allTagsResponse = await performStrapiRequest('/api/tags', { method: 'GET' });
-      const existingTags: { id: number, name: string }[] = allTagsResponse.data.map((t: any) => ({ id: t.id, name: t.attributes.name }));
+      const existingTags: { id: number, attributes: { name: string } }[] = allTagsResponse.data;
 
       for (const tagName of tags) {
-          const existingTag = existingTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+          const existingTag = existingTags.find(t => t.attributes.name.toLowerCase() === tagName.toLowerCase());
           if (existingTag) {
               tagIds.push(existingTag.id);
           } else {
