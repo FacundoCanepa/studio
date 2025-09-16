@@ -23,36 +23,6 @@ async function getJwtFromServerAction(): Promise<string | null> {
   }
 }
 
-async function performStrapiUpdate(userId: number, token: string, payload: object) {
-  const updateUrl = `${API_BASE}/users/${userId}`;
-  
-  console.log(`[SERVER_ACTION] Updating user ${userId} at ${updateUrl}`);
-  console.log(`[SERVER_ACTION] Payload being sent:`, JSON.stringify(payload, null, 2));
-
-  const updateResponse = await fetch(updateUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-    cache: 'no-store',
-  });
-
-  if (!updateResponse.ok) {
-    const errorBody = await updateResponse.json().catch(() => ({}));
-    console.error('[SERVER_ACTION_ERROR] Failed to update user in Strapi.', {
-      status: updateResponse.status,
-      body: errorBody,
-    });
-    throw new Error('Failed to update favorites in Strapi.');
-  }
-
-  const updatedUser: StrapiUser = await updateResponse.json();
-  console.log('[SERVER_ACTION_SUCCESS] Successfully updated user.');
-  return updatedUser;
-}
-
 export async function toggleFavoriteAction(articleId: number) {
   console.log(`[TOGGLE_FAVORITE_ACTION] Received request for articleId: ${articleId}`);
   const token = await getJwtFromServerAction();
@@ -82,12 +52,32 @@ export async function toggleFavoriteAction(articleId: number) {
     ? currentFavorites.filter(id => id !== articleId)
     : [...currentFavorites, articleId];
 
-  // Strapi expects an array of objects with an 'id' property for relation updates
   const payload = {
-    favorite_articles: newFavorites.map(id => ({ id }))
+    favorite_articles: newFavorites
   };
 
-  const updatedUser = await performStrapiUpdate(user.id, token, payload);
+  const updateUrl = `${API_BASE}/users/${user.id}`;
+  const updateResponse = await fetch(updateUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
+
+  if (!updateResponse.ok) {
+    const errorBody = await updateResponse.json().catch(() => ({}));
+    console.error('[SERVER_ACTION_UPDATE_ERROR] Failed to update user in Strapi.', {
+      status: updateResponse.status,
+      body: errorBody,
+    });
+    throw new Error('Failed to update favorites in Strapi.');
+  }
+  
+  const updatedUser: StrapiUser = await updateResponse.json();
+  console.log('[SERVER_ACTION_SUCCESS] Successfully updated user.');
 
   return {
     favoriteArticles: updatedUser.favorite_articles?.map(a => a.id) || [],
@@ -123,12 +113,32 @@ export async function toggleTagFavoriteAction(tagId: number) {
     ? currentFavorites.filter(id => id !== tagId)
     : [...currentFavorites, tagId];
   
-  // Strapi expects an array of objects with an 'id' property for relation updates
   const payload = {
-    favorite_tags: newFavorites.map(id => ({ id }))
+    favorite_tags: newFavorites
   };
+  
+  const updateUrl = `${API_BASE}/users/${user.id}`;
+  const updateResponse = await fetch(updateUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  });
 
-  const updatedUser = await performStrapiUpdate(user.id, token, payload);
+  if (!updateResponse.ok) {
+    const errorBody = await updateResponse.json().catch(() => ({}));
+    console.error('[SERVER_ACTION_UPDATE_ERROR] Failed to update tag favorites in Strapi.', {
+      status: updateResponse.status,
+      body: errorBody,
+    });
+    throw new Error('Failed to update tag favorites in Strapi.');
+  }
+
+  const updatedUser: StrapiUser = await updateResponse.json();
+  console.log('[SERVER_ACTION_SUCCESS] Successfully updated tag favorites.');
 
   return {
     favoriteTags: updatedUser.favorite_tags?.map(t => t.id) || [],
