@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         return respondWithError('validation_error', { details: 'articleId is required.' });
     }
 
-    // 1. Get current user with their favorites
+    // 1. Get current user with their favorites using the correct populate syntax
     const meResponse = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true`, {
         headers: { Authorization: `Bearer ${token}` },
     });

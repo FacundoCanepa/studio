@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
       return respondWithError('unauthorized', {details: 'No session cookie.'});
     }
 
+    // Correctly populate favorite_articles
     const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true`, {
       headers: {
         Authorization: `Bearer ${token}`,
