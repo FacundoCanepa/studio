@@ -32,25 +32,24 @@ async function getJwtFromServerAction(): Promise<string | null> {
 
 export async function toggleFavoriteAction(articleId: number) {
   console.log(`[TOGGLE_FAVORITE_ACTION] Received request for articleId: ${articleId}`);
-  const token = await getJwtFromServerAction();
-  if (!token) {
+  const userToken = await getJwtFromServerAction();
+  if (!userToken) {
     throw new Error('Authentication required.');
   }
-  console.log(`[TOGGLE_FAVORITE_ACTION] Using token: ${token.substring(0, 15)}...`);
-
+  console.log(`[TOGGLE_FAVORITE_ACTION] Using user token for reading: ${userToken.substring(0, 15)}...`);
 
   const meUrl = `${API_BASE}/users/me?populate[favorite_articles]=true`;
   console.log(`[TOGGLE_FAVORITE_ACTION] Fetching current user from: ${meUrl}`);
   const meResponse = await fetch(meUrl, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${userToken}` },
       cache: 'no-store',
   });
 
   if (!meResponse.ok) {
-    const errorBody = await meResponse.json().catch(() => ({ message: 'Could not parse error body' }));
+    const errorBody = await meResponse.text().catch(() => 'Could not parse error body');
     console.error('[TOGGLE_FAVORITE_ACTION_ERROR] Failed to fetch user from Strapi.', {
         status: meResponse.status,
-        body: JSON.stringify(errorBody, null, 2),
+        body: errorBody,
     });
     throw new Error('Could not fetch user.');
   }
@@ -76,22 +75,30 @@ export async function toggleFavoriteAction(articleId: number) {
   const updateUrl = `${API_BASE}/users/${user.id}?populate=favorite_articles`;
   console.log(`[TOGGLE_FAVORITE_ACTION] Preparing to PUT to: ${updateUrl}`);
   console.log('[TOGGLE_FAVORITE_ACTION] Payload to be sent:', JSON.stringify(payload, null, 2));
-  
+
+  // *** SOLUTION: Use Admin Token for the write operation ***
+  const adminToken = process.env.STRAPI_API_TOKEN;
+  if (!adminToken) {
+    console.error('[SERVER_ACTION_UPDATE_ERROR] STRAPI_API_TOKEN is not configured.');
+    throw new Error('Server configuration error.');
+  }
+  console.log('[TOGGLE_FAVORITE_ACTION] Using ADMIN token for writing.');
+
   const updateResponse = await fetch(updateUrl, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${adminToken}`, // Use the admin token here
     },
     body: JSON.stringify(payload),
     cache: 'no-store',
   });
 
   if (!updateResponse.ok) {
-    const errorBody = await updateResponse.json().catch(() => ({}));
+    const errorBody = await updateResponse.text().catch(() => '{}');
     console.error('[SERVER_ACTION_UPDATE_ERROR] Failed to update user in Strapi.', {
       status: updateResponse.status,
-      body: JSON.stringify(errorBody, null, 2),
+      body: errorBody,
     });
     throw new Error('Failed to update favorites in Strapi.');
   }
@@ -106,24 +113,24 @@ export async function toggleFavoriteAction(articleId: number) {
 
 export async function toggleTagFavoriteAction(tagId: number) {
   console.log(`[TOGGLE_TAG_ACTION] Received request for tagId: ${tagId}`);
-  const token = await getJwtFromServerAction();
-  if (!token) {
+  const userToken = await getJwtFromServerAction();
+  if (!userToken) {
     throw new Error('Authentication required.');
   }
-  console.log(`[TOGGLE_TAG_ACTION] Using token: ${token.substring(0, 15)}...`);
+  console.log(`[TOGGLE_TAG_ACTION] Using user token for reading: ${userToken.substring(0, 15)}...`);
   
   const meUrl = `${API_BASE}/users/me?populate[favorite_tags]=true`;
   console.log(`[TOGGLE_TAG_ACTION] Fetching current user from: ${meUrl}`);
   const meResponse = await fetch(meUrl, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${userToken}` },
       cache: 'no-store',
   });
 
   if (!meResponse.ok) {
-     const errorBody = await meResponse.json().catch(() => ({ message: 'Could not parse error body' }));
+     const errorBody = await meResponse.text().catch(() => 'Could not parse error body');
     console.error('[TOGGLE_TAG_ACTION_ERROR] Failed to fetch user from Strapi.', {
         status: meResponse.status,
-        body: JSON.stringify(errorBody, null, 2),
+        body: errorBody,
     });
     throw new Error('Could not fetch user.');
   }
@@ -148,22 +155,30 @@ export async function toggleTagFavoriteAction(tagId: number) {
   const updateUrl = `${API_BASE}/users/${user.id}?populate=favorite_tags`;
   console.log(`[TOGGLE_TAG_ACTION] Preparing to PUT to: ${updateUrl}`);
   console.log('[TOGGLE_TAG_ACTION] Payload to be sent:', JSON.stringify(payload, null, 2));
+
+  // *** SOLUTION: Use Admin Token for the write operation ***
+  const adminToken = process.env.STRAPI_API_TOKEN;
+  if (!adminToken) {
+    console.error('[SERVER_ACTION_UPDATE_ERROR] STRAPI_API_TOKEN is not configured.');
+    throw new Error('Server configuration error.');
+  }
+  console.log('[TOGGLE_TAG_ACTION] Using ADMIN token for writing.');
   
   const updateResponse = await fetch(updateUrl, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${adminToken}`, // Use the admin token here
     },
     body: JSON.stringify(payload),
     cache: 'no-store',
   });
 
   if (!updateResponse.ok) {
-    const errorBody = await updateResponse.json().catch(() => ({}));
+    const errorBody = await updateResponse.text().catch(() => '{}');
     console.error('[SERVER_ACTION_UPDATE_ERROR] Failed to update tag favorites in Strapi.', {
       status: updateResponse.status,
-      body: JSON.stringify(errorBody, null, 2),
+      body: errorBody,
     });
     throw new Error('Failed to update tag favorites in Strapi.');
   }
