@@ -1,3 +1,4 @@
+
 // src/app/api/session/me/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
     const strapiRes = await fetch(`${API_BASE}/users/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
       cache: 'no-store', // Ensure fresh data
     });

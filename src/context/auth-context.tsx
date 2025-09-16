@@ -57,20 +57,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getCsrfToken = React.useCallback(async () => {
     if (csrfTokenRef.current) {
+        console.log('[CSRF] Returning cached token.');
         return csrfTokenRef.current;
     }
     if (csrfPromiseRef.current) {
+        console.log('[CSRF] Waiting for in-flight token request.');
         return await csrfPromiseRef.current;
     }
 
+    console.log('[CSRF] Requesting token...');
     csrfPromiseRef.current = (async () => {
         try {
             const res = await fetch('/api/csrf', { credentials: 'include' });
             if (!res.ok) throw new Error(`Failed to fetch CSRF token. Status: ${res.status}`);
             const data = await res.json();
-            if (data.data?.token) {
-                csrfTokenRef.current = data.data.token;
-                return data.data.token;
+            if (data.token) {
+                console.log('[CSRF] Token fetched and cached successfully.');
+                csrfTokenRef.current = data.token;
+                return data.token;
             }
             throw new Error('CSRF token not found in response');
         } catch (error) {
@@ -90,8 +94,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (res.ok) {
         const { data } = await res.json();
         setUser(data);
+        console.log('[AUTH_PROVIDER] Active session found for user:', data.username);
       } else {
         setUser(null);
+        console.log('[AUTH_PROVIDER] No active session found.');
       }
     } catch (error) {
       console.error('[AUTH_PROVIDER] Fetch user error:', error);
@@ -101,15 +107,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
     const initializeSession = async () => {
+        console.log('[AUTH_PROVIDER] Initializing session...');
         setIsLoading(true);
-        // Fetch user and CSRF token in parallel.
         await Promise.all([getCsrfToken(), fetchUser()]);
         setIsLoading(false);
+        console.log('[AUTH_PROVIDER] Session initialization complete.');
     }
     initializeSession();
   }, [getCsrfToken, fetchUser]);
 
   const performRequest = async (url: string, options: RequestInit = {}, requiresCsrf = false) => {
+    console.log(`[PERFORM_REQUEST] Starting request to ${url}`, { requiresCsrf });
+    
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -119,15 +128,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = await getCsrfToken();
       if (!token) {
           console.error(`[PERFORM_REQUEST] CSRF token is missing for protected route ${url}.`);
-          // Give a user-friendly error message for this specific failure.
           throw new Error("El token de seguridad no está disponible. Por favor, recarga la página.");
       }
       headers['x-csrf-token'] = token;
+      console.log(`[PERFORM_REQUEST] Attached CSRF token to header for ${url}.`);
     }
     
     let res: Response;
     try {
         res = await fetch(url, { ...options, headers, credentials: 'include' });
+        console.log(`[PERFORM_REQUEST] Response from ${url} - Status: ${res.status}`);
     } catch(networkError) {
         console.error(`[PERFORM_REQUEST] Network error for ${url}:`, networkError);
         throw new Error("No se pudo conectar con el servicio. Revisa tu conexión a internet.");
@@ -137,10 +147,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
         data = await res.json();
+        console.log(`[PERFORM_REQUEST] JSON Response body from ${url}:`, data);
     } else {
         const textResponse = await res.text();
         console.error(`[PERFORM_REQUEST] Non-JSON response from ${url}:`, { status: res.status, body: textResponse });
-        // Throw a generic error for non-JSON responses.
         throw new Error("El servicio de autenticación no respondió correctamente.");
     }
     
@@ -198,6 +208,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const setSessionFromToken = async (token: string) => {
+    console.log('[AUTH_PROVIDER] Attempting to set session from social token.');
     const data = await performRequest('/api/session/set', {
       method: 'POST',
       body: JSON.stringify({ token }),

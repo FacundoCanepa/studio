@@ -3,7 +3,6 @@
 import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
 import {
-  API_BASE,
   createSessionCookie,
   mapStrapiError,
   respondWithError,
@@ -13,10 +12,12 @@ const setSessionSchema = z.object({
   token: z.string().min(1, {message: 'El token es requerido.'}),
 });
 
+const STRAPI_URL = process.env.STRAPI_URL;
 
 /**
- * Handles setting the session cookie after a successful social login redirect.
- * The frontend sends the `access_token` from the URL to this endpoint.
+ * Exchanges a social login access token (e.g., from Google) for a Strapi JWT.
+ * It calls the Strapi provider's callback endpoint to perform the exchange.
+ * If successful, it creates a secure, HttpOnly session cookie containing the Strapi JWT.
  */
 export async function POST(request: NextRequest) {
   console.log('[API_SESSION_SET] Received request.');
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('[API_SESSION_SET] Request body:', body);
     const validated = setSessionSchema.safeParse(body);
+
     if (!validated.success) {
       console.error('[API_SESSION_SET] Validation failed:', validated.error);
       return respondWithError('validation_error', {
@@ -32,35 +34,45 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const {token} = validated.data;
-    console.log('[API_SESSION_SET] Validated token (first 10 chars):', token.substring(0, 10));
+    const {token: googleAccessToken} = validated.data;
+    console.log('[API_SESSION_SET] Google Access Token received (first 10 chars):', googleAccessToken.substring(0, 10));
 
-    // 2. Verify the access_token by fetching user data from Strapi
-    console.log('[API_SESSION_SET] Verifying token with Strapi /api/users/me');
-    const strapiRes = await fetch(`${API_BASE}/users/me`, {
-      headers: {Authorization: `Bearer ${token}`},
-      cache: 'no-store',
-    });
+    // 2. Exchange Google token for a Strapi JWT
+    const exchangeUrl = `${STRAPI_URL}/api/connect/google?access_token=${googleAccessToken}`;
+    console.log('[API_SESSION_SET] Calling Strapi to exchange token:', exchangeUrl);
 
+    const strapiRes = await fetch(exchangeUrl, { cache: 'no-store' });
     const strapiData = await strapiRes.json();
-    console.log(`[API_SESSION_SET] Strapi response status: ${strapiRes.status}`);
-    console.log('[API_SESSION_SET] Strapi response data:', strapiData);
-
+    
+    console.log(`[API_SESSION_SET] Strapi exchange response status: ${strapiRes.status}`);
+    console.log('[API_SESSION_SET] Strapi exchange response data:', strapiData);
 
     if (!strapiRes.ok) {
-      console.error('[API_SESSION_SET] Strapi verification failed.');
-      return mapStrapiError(strapiData);
+        console.error('[API_SESSION_SET] Strapi token exchange failed.');
+        // Use the error from the exchange response if available
+        const errorMessage = strapiData.error?.message || 'Failed to validate social token with Strapi.';
+        const errorCode = strapiData.error?.name === 'UnauthorizedError' ? 'unauthorized' : 'unknown_strapi_error';
+        return NextResponse.json({ ok: false, error: { code: errorCode, message: errorMessage } }, { status: strapiRes.status });
     }
 
-    // 3. Create HttpOnly session cookie
-    console.log('[API_SESSION_SET] Creating session cookie.');
-    const cookie = await createSessionCookie(token);
+    const { jwt, user } = strapiData;
+    if (!jwt || !user) {
+      console.error('[API_SESSION_SET] Strapi response missing JWT or user data.');
+      return respondWithError('unauthorized', {
+        details: 'JWT o datos de usuario no encontrados en la respuesta de Strapi tras el intercambio.',
+      });
+    }
+    
+    console.log('[API_SESSION_SET] Strapi JWT received, creating session cookie.');
+
+    // 3. Create HttpOnly session cookie with the Strapi JWT
+    const cookie = await createSessionCookie(jwt);
 
     // 4. Return sanitized user data
     const sanitizedUser = {
-      id: strapiData.id,
-      username: strapiData.username,
-      email: strapiData.email,
+      id: user.id,
+      username: user.username,
+      email: user.email,
     };
     console.log('[API_SESSION_SET] Session successfully created for user:', sanitizedUser);
 
