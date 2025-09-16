@@ -25,6 +25,7 @@ async function getUserIdFromCookie(): Promise<number | null> {
         const strapiJwt = payload.token as string;
         if (!strapiJwt) return null;
         
+        // Decoding the JWT payload to get the user ID
         const decodedStrapiJwt = JSON.parse(Buffer.from(strapiJwt.split('.')[1], 'base64').toString());
         return decodedStrapiJwt.id;
     } catch (e) {
@@ -44,6 +45,8 @@ export default async function GuardadosPage() {
 
     const userId = await getUserIdFromCookie();
     if (!userId) {
+        // This case can happen if the cookie is invalid or expired.
+        // Redirecting to login is a safe fallback.
         redirect('/login');
     }
     

@@ -1,19 +1,20 @@
 
 'use server';
 import type { ArticleDoc } from './firestore-types';
-import type { StrapiArticle } from './strapi-types';
+import type { StrapiArticle, StrapiCategory, StrapiAuthor, StrapiTag, StrapiSeoBlock } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
 
 // Helper function to convert markdown-like text to basic HTML
-function markdownToHtml(text: string): string {
+function markdownToHtml(text: string | null | undefined): string | undefined {
+    if (!text) return undefined;
     // Replace **bold** with <strong>bold</strong>
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     // Replace paragraphs (double newline) with <p> tags
-    return text.split('\\n\\n').map(p => `<p>${p}</p>`).join('');
+    html = html.split('\\n\\n').map(p => `<p>${p}</p>`).join('');
+    return html;
 }
 
-
-export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise<ArticleDoc | null> {
+export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
     if (!item || !item.id) return null;
 
     const coverUrl = await getStrapiMediaUrl(item.Cover?.url);
@@ -35,15 +36,14 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
     } : null;
     
     const tags = (item.tags || [])
-        .map(t => t)
-        .filter(t => t && t.id && t.name && t.slug)
+        .filter((t): t is StrapiTag => !!t && !!t.id && !!t.name && !!t.slug)
         .map(t => ({
             documentId: String(t.id),
             name: t.name,
             slug: t.slug,
         }));
 
-    const seoBlock = item.Name;
+    const seoBlock = item.Name; // This seems to be the SEO component from Strapi
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,
@@ -51,9 +51,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle): Promise
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
-    // Use a simple markdown-to-html converter or expect HTML from Strapi.
-    // For now, we'll just handle basic paragraph breaks and bolding.
-    const contentHtml = item.Content ? markdownToHtml(item.Content) : undefined;
+    const contentHtml = markdownToHtml(item.Content);
     
     const carouselImages = item.Carosel && Array.isArray(item.Carosel)
       ? await Promise.all(item.Carosel.map(img => getStrapiMediaUrl(img?.url)))

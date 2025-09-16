@@ -1,5 +1,4 @@
 
-
 // --- STRAPI RESPONSE TYPES ---
 
 export interface StrapiResponse<T> {
@@ -114,8 +113,11 @@ export interface StrapiCategory extends StrapiEntity {
 }
 
 export interface StrapiTag extends StrapiEntity {
+    id: number;
     name: string;
     slug: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface StrapiGalleryItem extends StrapiEntity {
