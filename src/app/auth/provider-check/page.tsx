@@ -35,11 +35,22 @@ const ChecklistItem = ({ children, isChecked }: { children: React.ReactNode; isC
   </li>
 );
 
+function getHostname(url: string | undefined): string | null {
+    if (!url) return null;
+    try {
+        return new URL(url).hostname;
+    } catch (e) {
+        return null;
+    }
+}
+
 export default function ProviderCheckPage() {
   const strapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
   const frontendUrl = process.env.FRONT_ORIGIN_PROD;
+  const strapiHostname = getHostname(strapiUrl);
+  const frontendHostname = getHostname(frontendUrl);
 
-  if (!strapiUrl || !frontendUrl) {
+  if (!strapiUrl) {
     return (
         <div className="container mx-auto max-w-4xl py-12 px-4">
              <header className="text-center mb-10">
@@ -48,7 +59,7 @@ export default function ProviderCheckPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error de Configuración</AlertTitle>
                     <AlertDescription>
-                        Las variables de entorno `NEXT_PUBLIC_STRAPI_URL` y `FRONT_ORIGIN_PROD` deben estar definidas para que esta página funcione.
+                        La variable de entorno `NEXT_PUBLIC_STRAPI_URL` debe estar definida para que esta página funcione.
                     </AlertDescription>
                 </Alert>
             </header>
@@ -58,7 +69,8 @@ export default function ProviderCheckPage() {
 
   const googleRedirectUri = `${strapiUrl}/api/connect/google/callback`;
   const facebookRedirectUri = `${strapiUrl}/api/connect/facebook/callback`;
-  const frontendCallbackUrl = `${frontendUrl}/auth/callback`;
+  const frontendCallbackUrl = frontendUrl ? `${frontendUrl}/auth/callback` : '/auth/callback (FRONT_ORIGIN_PROD no configurado)';
+
 
   return (
     <div className="container mx-auto max-w-4xl py-12 px-4">
@@ -131,13 +143,13 @@ export default function ProviderCheckPage() {
               <ChecklistItem>
                 <strong>App Domains (en Meta Developers → Settings → Basic):</strong>
                  <div className="flex flex-col gap-1 mt-1">
-                    <Badge variant="outline" className="select-all">{new URL(strapiUrl).hostname}</Badge>
-                    <Badge variant="outline" className="select-all">{new URL(frontendUrl).hostname}</Badge>
+                    <Badge variant="outline" className="select-all">{strapiHostname || 'Error: URL de Strapi inválida'}</Badge>
+                    <Badge variant="outline" className="select-all">{frontendHostname || 'Error: URL de Frontend inválida'}</Badge>
                  </div>
               </ChecklistItem>
                <ChecklistItem>
                 <strong>Website (en Meta Developers → Add Platform → Website):</strong> El "Site URL" debe ser:
-                <Badge variant="outline" className="ml-2 select-all">{frontendUrl}</Badge>
+                <Badge variant="outline" className="ml-2 select-all">{frontendUrl || 'FRONT_ORIGIN_PROD no configurado'}</Badge>
               </ChecklistItem>
               <ChecklistItem>
                 <strong>Valid OAuth Redirect URIs (en Facebook Login → Settings):</strong> Debe contener esta URL exacta:

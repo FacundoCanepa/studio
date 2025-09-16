@@ -22,11 +22,11 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       ...(STRAPI_TOKEN ? { Authorization: `Bearer ${STRAPI_TOKEN}` } : {}),
     };
 
+    // [FIX]: Allow caller to specify cache behavior. Default to Next.js's default.
     const response = await fetch(url, { 
-      ...init,
       method: init?.method ?? 'GET',
       headers, 
-      cache: 'no-store', // Revalidate on every request
+      ...init,
     }); 
     
     if (!response.ok) {
@@ -49,7 +49,7 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
   }
 }
 
-async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise<T[]> {
+async function fetchPaginated<T extends StrapiEntity>(endpoint: string, init?: RequestInit): Promise<T[]> {
   const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
   const fetchAll = url.searchParams.get('pagination[limit]') === '-1';
 
@@ -64,7 +64,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     do {
       url.searchParams.set('pagination[page]', String(page));
       try {
-        const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search);
+        const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search, init);
         
         if (response.data && Array.isArray(response.data)) {
           allResults = allResults.concat(response.data);
@@ -85,7 +85,7 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise
     return allResults;
   } else {
     // Original behavior for single page / specific limit
-    const response: StrapiResponse<T[] | T> = await fetchStrapi(url.pathname + url.search);
+    const response: StrapiResponse<T[] | T> = await fetchStrapi(url.pathname + url.search, init);
     if (Array.isArray(response.data)) {
         return response.data;
     }
@@ -152,7 +152,7 @@ export async function getArticles({
         });
     }
     
-    const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`);
+    const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`, { cache: 'no-store' });
 
     const mappedArticles = (await Promise.all(strapiArticles.map(mapStrapiArticleToArticleDoc))).filter(Boolean) as ArticleDoc[];
     
@@ -165,20 +165,20 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
     params.set('populate', '*');
     params.set('pagination[limit]', '1');
 
-    const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(`/api/articles?${params.toString()}`);
+    const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(`/api/articles?${params.toString()}`, { cache: 'no-store' });
     if (!response.data || response.data.length === 0) return null;
     
     return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
-    const response = await fetchStrapi<StrapiResponse<StrapiArticle>>(`/api/articles/${documentId}?populate=*`);
+    const response = await fetchStrapi<StrapiResponse<StrapiArticle>>(`/api/articles/${documentId}?populate=*`, { cache: 'no-store' });
     if (!response.data) return null;
     return await mapStrapiArticleToArticleDoc(response.data);
 }
 
 export async function getAuthors(): Promise<AuthorDoc[]> {
-    const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1');
+    const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1', { cache: 'no-store' });
     return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
         documentId: String(item.id),
         name: item.Name,
@@ -191,7 +191,7 @@ export async function getAuthors(): Promise<AuthorDoc[]> {
 
 export async function getAuthor(id: string): Promise<AuthorDoc | null> {
     try {
-        const response = await fetchStrapi<StrapiResponse<StrapiAuthor>>(`/api/authors/${id}?populate=*`);
+        const response = await fetchStrapi<StrapiResponse<StrapiAuthor>>(`/api/authors/${id}?populate=*`, { cache: 'no-store' });
         if (!response.data) return null;
         const authorData = response.data;
         return {
@@ -209,7 +209,9 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
 }
 
 export async function getCategories(): Promise<CategoryDoc[]> {
-    const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`);
+    const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, {
+      // Use Next.js default caching (force-cache) for this call as it's in the main layout
+    });
     
     const mapped: Promise<CategoryDoc | null>[] = raw
       .map(async (c: StrapiCategory) => {
@@ -230,7 +232,7 @@ export async function getCategories(): Promise<CategoryDoc[]> {
 }
 
 export async function getCategory(slug: string): Promise<CategoryDoc | null> {
-    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?filters[slug][$eq]=${slug}&populate=*`);
+    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?filters[slug][$eq]=${slug}&populate=*`, { cache: 'no-store' });
     if (!response.data || response.data.length === 0) return null;
     const categoryData = response.data[0];
     return {
@@ -245,7 +247,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
 
 
 export async function getTags(): Promise<TagDoc[]> {
-    const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*&pagination[limit]=-1');
+    const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*&pagination[limit]=-1', { cache: 'no-store' });
     return tags.map(tag => ({
         documentId: String(tag.id),
         name: tag.name,
@@ -256,7 +258,7 @@ export async function getTags(): Promise<TagDoc[]> {
 }
 
 export async function getTag(slug: string): Promise<TagDoc | null> {
-    const response = await fetchStrapi<StrapiResponse<StrapiTag[]>>(`/api/tags?filters[slug][$eq]=${slug}`);
+    const response = await fetchStrapi<StrapiResponse<StrapiTag[]>>(`/api/tags?filters[slug][$eq]=${slug}`, { cache: 'no-store' });
     if (!response.data || response.data.length === 0) return null;
     const tagData = response.data[0];
     return {
@@ -269,7 +271,7 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
 }
 
 export async function getGalleryItems(): Promise<{ id: string; title: string; description: string; imageUrl: string }[]> {
-  const response = await fetchPaginated<StrapiGalleryItem>('/api/Galerias?populate=*&pagination[limit]=-1');
+  const response = await fetchPaginated<StrapiGalleryItem>('/api/Galerias?populate=*&pagination[limit]=-1', { cache: 'no-store' });
 
   const items = await Promise.all(response.map(async (item) => {
     const imageUrl = await getStrapiMediaUrl(item.Imagen?.url);
@@ -288,6 +290,7 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
 export async function getFavoriteArticles(userId: number, jwt: string): Promise<ArticleDoc[]> {
     const response = await fetchStrapi<StrapiUser>(`/api/users/${userId}?populate[favorite_articles][populate]=*`, {
         headers: { Authorization: `Bearer ${jwt}` },
+        cache: 'no-store'
     });
     if (!response || !response.favorite_articles) return [];
     
@@ -298,6 +301,7 @@ export async function getFavoriteArticles(userId: number, jwt: string): Promise<
 export async function getFavoriteTags(userId: number, jwt: string): Promise<TagDoc[]> {
     const response = await fetchStrapi<StrapiUser>(`/api/users/${userId}?populate[favorite_tags]=*`, {
         headers: { Authorization: `Bearer ${jwt}` },
+        cache: 'no-store'
     });
     if (!response || !response.favorite_tags) return [];
     
