@@ -39,7 +39,7 @@ export async function toggleFavoriteAction(articleId: number) {
   console.log(`[TOGGLE_FAVORITE_ACTION] Using token: ${token.substring(0, 15)}...`);
 
 
-  const meUrl = `${API_BASE}/users/me?populate[favorite_articles]=id`;
+  const meUrl = `${API_BASE}/users/me?populate[favorite_articles]=true`;
   console.log(`[TOGGLE_FAVORITE_ACTION] Fetching current user from: ${meUrl}`);
   const meResponse = await fetch(meUrl, {
       headers: { Authorization: `Bearer ${token}` },
@@ -112,7 +112,7 @@ export async function toggleTagFavoriteAction(tagId: number) {
   }
   console.log(`[TOGGLE_TAG_ACTION] Using token: ${token.substring(0, 15)}...`);
   
-  const meUrl = `${API_BASE}/users/me?populate[favorite_tags]=id`;
+  const meUrl = `${API_BASE}/users/me?populate[favorite_tags]=true`;
   console.log(`[TOGGLE_TAG_ACTION] Fetching current user from: ${meUrl}`);
   const meResponse = await fetch(meUrl, {
       headers: { Authorization: `Bearer ${token}` },
