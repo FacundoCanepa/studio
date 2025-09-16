@@ -1,9 +1,10 @@
+
 'use client';
 
 import * as React from 'react';
 import { ArticleList } from '@/components/articles/article-list';
 import { ArticleFilters, Filters } from '@/components/articles/article-filters';
-import type { ArticleDoc, CategoryDoc, AuthorDoc } from '@/lib/firestore-types';
+import type { ArticleDoc, CategoryDoc, AuthorDoc, TagDoc } from '@/lib/firestore-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { AdSlot } from '@/components/marketing/ad-slot';
@@ -18,12 +19,16 @@ const INITIAL_FILTERS: Filters = {
   sort: 'publishedAt:desc',
 };
 
+type PageType = 'category' | 'tag' | 'all';
+
 interface CategoryClientPageProps {
   initialArticles: ArticleDoc[];
   allCategories: CategoryDoc[];
   authors: AuthorDoc[];
   category: CategoryDoc | null;
+  tag?: TagDoc | null;
   slug: string;
+  pageType: PageType;
 }
 
 export default function CategoryClientPage({
@@ -31,25 +36,35 @@ export default function CategoryClientPage({
   allCategories,
   authors,
   category,
+  tag,
   slug,
+  pageType,
 }: CategoryClientPageProps) {
   const [articles, setArticles] = React.useState<ArticleDoc[]>(initialArticles);
   const [loading, setLoading] = React.useState(false);
-  const [filters, setFilters] = React.useState<Filters>({
-    ...INITIAL_FILTERS,
-    category: slug,
-  });
+  
+  const getInitialFilters = () => {
+    if (pageType === 'tag' && tag) {
+      return { ...INITIAL_FILTERS, tags: [tag.name] };
+    }
+    if (pageType === 'category') {
+      return { ...INITIAL_FILTERS, category: slug };
+    }
+    return INITIAL_FILTERS;
+  };
+
+  const [filters, setFilters] = React.useState<Filters>(getInitialFilters());
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
   const handleClearFilters = () => {
-    setFilters({ ...INITIAL_FILTERS, category: slug });
+    setFilters(getInitialFilters());
   };
   
   const filteredArticles = React.useMemo(() => {
-    let filtered = articles;
+    let filtered = initialArticles;
 
     // Filter by query
     if (filters.query) {
@@ -61,6 +76,11 @@ export default function CategoryClientPage({
       );
     }
     
+    // Filter by category
+    if (filters.category !== 'all') {
+      filtered = filtered.filter(article => article.category?.slug === filters.category);
+    }
+
     // Filter by author
     if (filters.author !== 'all') {
       filtered = filtered.filter(article => article.author?.name === filters.author);
@@ -92,7 +112,7 @@ export default function CategoryClientPage({
     });
 
     return filtered;
-  }, [articles, filters]);
+  }, [initialArticles, filters]);
 
   const LoadingSkeleton = () => (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -126,7 +146,10 @@ export default function CategoryClientPage({
     </div>
   );
   
+  const pageTitle = pageType === 'tag' ? `#${tag?.name}` : (category?.name || 'Artículos');
+  const pageDescription = pageType === 'tag' ? `Artículos etiquetados como "${tag?.name}"` : category?.description;
   const heroImage = category?.imageUrl || articles[0]?.coverUrl;
+
   const articlesWithAds = React.useMemo(() => {
     const adFrequency = 4;
     const components: React.ReactNode[] = [];
@@ -151,7 +174,7 @@ export default function CategoryClientPage({
             {heroImage ? (
                 <Image
                     src={heroImage}
-                    alt={`Fondo de la categoría ${category?.name}`}
+                    alt={`Fondo para ${pageTitle}`}
                     fill
                     className="object-cover object-center"
                     priority
@@ -163,11 +186,11 @@ export default function CategoryClientPage({
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
             <div className="relative z-10 p-4">
                 <h1 className="text-5xl md:text-7xl font-headline font-medium tracking-tighter uppercase clamp-text-h1">
-                    {category?.name || 'Categoría'}
+                    {pageTitle}
                 </h1>
-                {category?.description && (
+                {pageDescription && (
                     <p className="mt-3 max-w-xl mx-auto text-lg text-white/80">
-                        {category.description}
+                        {pageDescription}
                     </p>
                 )}
             </div>
@@ -187,7 +210,7 @@ export default function CategoryClientPage({
                         onClearFilters={handleClearFilters}
                     />
                     <main className="flex-1 mt-12 lg:mt-0">
-                         {articlesWithAds.length > 0 ? (
+                         {filteredArticles.length > 0 ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-12">
                                 {articlesWithAds}
                             </div>

@@ -105,6 +105,7 @@ export async function getStrapiMediaUrl(relativePath?: string | null): Promise<s
 
 type GetArticlesParams = {
   categorySlug?: string;
+  tagSlug?: string;
   limit?: number;
   filters?: {
     featured?: boolean;
@@ -116,6 +117,7 @@ type GetArticlesParams = {
 
 export async function getArticles({
   categorySlug,
+  tagSlug,
   limit,
   filters = {},
 }: GetArticlesParams = {}): Promise<ArticleDoc[]> {
@@ -129,6 +131,9 @@ export async function getArticles({
     
     if (categorySlug) {
       params.set('filters[category][slug][$eq]', categorySlug);
+    }
+    if (tagSlug) {
+      params.set('filters[tags][slug][$eq]', tagSlug);
     }
     if (filters.featured !== undefined) {
       params.set('filters[featured][$eq]', String(filters.featured));
@@ -250,6 +255,19 @@ export async function getTags(): Promise<TagDoc[]> {
         createdAt: tag.createdAt,
         updatedAt: tag.updatedAt,
     }));
+}
+
+export async function getTag(slug: string): Promise<TagDoc | null> {
+    const response = await fetchStrapi<StrapiResponse<StrapiTag[]>>(`/api/tags?filters[slug][$eq]=${slug}`);
+    if (!response.data || response.data.length === 0) return null;
+    const tagData = response.data[0];
+    return {
+        documentId: String(tagData.id),
+        name: tagData.name,
+        slug: tagData.slug,
+        createdAt: tagData.createdAt,
+        updatedAt: tagData.updatedAt,
+    };
 }
 
 export async function getGalleryItems(): Promise<{ id: string; title: string; description: string; imageUrl: string }[]> {

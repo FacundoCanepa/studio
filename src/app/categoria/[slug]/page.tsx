@@ -43,6 +43,7 @@ export default async function CategoryPage({ params }: Props) {
       authors={authors}
       category={category}
       slug={slug}
+      pageType="category"
     />
   );
 }

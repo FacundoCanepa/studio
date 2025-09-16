@@ -15,7 +15,7 @@ export const ArticleTags = ({ tags }: ArticleTagsProps) => {
         {tags.map((tag) => (
           <div key={tag.documentId} className="group relative">
             <Link
-              href={`/categoria/${tag.slug}`} 
+              href={`/tag/${tag.slug}`} 
               className="pl-3 pr-4 py-1 bg-secondary text-secondary-foreground rounded-full text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors flex items-center"
             >
               {tag.name}

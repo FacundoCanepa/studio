@@ -22,6 +22,7 @@ export default async function ArticlesPage() {
       authors={authors}
       category={null}
       slug="all"
+      pageType="all"
     />
   );
 }
