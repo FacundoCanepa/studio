@@ -1,10 +1,8 @@
-
 // src/app/api/session/set/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
 import {
   createSessionCookie,
-  mapStrapiError,
   respondWithError,
 } from '@/lib/api-utils';
 import { validateCsrf } from '@/lib/api/csrf';
@@ -30,12 +28,14 @@ export async function POST(request: NextRequest) {
     }
 
     const {token: googleAccessToken} = validated.data;
+    // Construct the URL as a plain string to avoid encoding issues
     const exchangeUrl = `${STRAPI_URL}/api/connect/google?access_token=${googleAccessToken}`;
     
     const strapiRes = await fetch(exchangeUrl, { cache: 'no-store' });
     const strapiData = await strapiRes.json();
     
     if (!strapiRes.ok) {
+        console.error("[API_SESSION_SET_ERROR] Strapi responded with an error:", strapiData);
         const errorMessage = strapiData.error?.message || 'Failed to validate social token with Strapi.';
         const errorCode = strapiData.error?.name === 'UnauthorizedError' ? 'unauthorized' : 'unknown_strapi_error';
         return NextResponse.json({ ok: false, error: { code: errorCode, message: errorMessage } }, { status: strapiRes.status });
