@@ -147,6 +147,7 @@ export async function getArticles({
     const params = new URLSearchParams();
     params.set('populate', '*');
     params.set('sort', 'publishedAt:desc');
+    params.set('publicationState', 'preview'); // Allow fetching drafts
 
     if (limit) {
       params.set('pagination[limit]', String(limit));
@@ -201,7 +202,11 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
 
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
     console.log(`[GET_ARTICLE] Fetching article with ID: ${documentId}`);
-    const response = await fetchStrapi<StrapiResponse<StrapiArticle>>(`/api/articles/${documentId}?populate=*`, { cache: 'no-store' });
+    const params = new URLSearchParams();
+    params.set('populate', '*');
+    params.set('publicationState', 'preview'); // <<< FIX: Allow fetching drafts
+
+    const response = await fetchStrapi<StrapiResponse<StrapiArticle>>(`/api/articles/${documentId}?${params.toString()}`, { cache: 'no-store' });
     if (!response.data) {
         console.warn(`[GET_ARTICLE] No article found for ID: ${documentId}`);
         return null;
@@ -379,3 +384,5 @@ export async function getFavoriteTags(userId: number, jwt: string): Promise<TagD
         updatedAt: tag.updatedAt,
     }));
 }
+
+    
