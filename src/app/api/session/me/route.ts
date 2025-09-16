@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Correctly populate favorite_articles
-    const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true`, {
+    const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true&populate[favorite_tags]=true`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       username: strapiData.username,
       email: strapiData.email,
       favoriteArticles: strapiData.favorite_articles?.map(a => a.id) || [],
+      favoriteTags: strapiData.favorite_tags?.map(t => t.id) || [],
     };
 
     return NextResponse.json({ok: true, data: sanitizedUser});

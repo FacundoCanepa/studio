@@ -1,7 +1,7 @@
 
 'use server';
 
-import { ArticleDoc, AuthorDoc, CategoryDoc } from './firestore-types';
+import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
 import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse, StrapiGalleryItem, StrapiUser } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
@@ -241,7 +241,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
 }
 
 
-export async function getTags(): Promise<CategoryDoc[]> {
+export async function getTags(): Promise<TagDoc[]> {
     const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*');
     return tags.map(tag => ({
         documentId: String(tag.id),
@@ -281,3 +281,17 @@ export async function getFavoriteArticles(userId: number, jwt: string): Promise<
     return mapped.filter(Boolean) as ArticleDoc[];
 }
 
+export async function getFavoriteTags(userId: number, jwt: string): Promise<TagDoc[]> {
+    const response = await fetchStrapi<StrapiUser>(`/api/users/${userId}?populate[favorite_tags]=*`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+    });
+    if (!response || !response.favorite_tags) return [];
+    
+    return response.favorite_tags.map(tag => ({
+        documentId: String(tag.id),
+        name: tag.name,
+        slug: tag.slug,
+        createdAt: tag.createdAt,
+        updatedAt: tag.updatedAt,
+    }));
+}

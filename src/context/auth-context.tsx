@@ -10,6 +10,7 @@ interface User {
   username: string;
   email: string;
   favoriteArticles: number[];
+  favoriteTags: number[];
 }
 
 interface AuthContextType {
@@ -22,6 +23,8 @@ interface AuthContextType {
   resetPassword: (code: string, password: string, passwordConfirmation: string) => Promise<any>;
   toggleFavorite: (articleId: number) => Promise<boolean>;
   isFavorite: (articleId: number) => boolean;
+  toggleTagFavorite: (tagId: number) => Promise<boolean>;
+  isTagFavorite: (tagId: number) => boolean;
 }
 
 export const AuthContext = React.createContext<AuthContextType>({
@@ -34,6 +37,8 @@ export const AuthContext = React.createContext<AuthContextType>({
   resetPassword: async () => {},
   toggleFavorite: async () => false,
   isFavorite: () => false,
+  toggleTagFavorite: async () => false,
+  isTagFavorite: () => false,
 });
 
 const errorMessages: { [key: string]: string } = {
@@ -211,6 +216,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     return newFavoriteList.includes(articleId);
   };
+
+  const isTagFavorite = (tagId: number) => {
+    return user?.favoriteTags?.includes(tagId) ?? false;
+  };
+
+  const toggleTagFavorite = async (tagId: number): Promise<boolean> => {
+    if (!user) {
+        throw new Error('Debes iniciar sesión para guardar favoritos.');
+    }
+    const data = await performRequest('/api/favorites/toggle-tag', {
+        method: 'POST',
+        body: JSON.stringify({ tagId }),
+    }, true);
+
+    const newFavoriteList = data.favoriteTags;
+    setUser(prev => prev ? { ...prev, favoriteTags: newFavoriteList } : null);
+    
+    return newFavoriteList.includes(tagId);
+  };
   
   return (
     <AuthContext.Provider
@@ -224,6 +248,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         resetPassword,
         toggleFavorite,
         isFavorite,
+        toggleTagFavorite,
+        isTagFavorite,
       }}
     >
       {children}
