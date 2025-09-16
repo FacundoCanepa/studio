@@ -50,48 +50,50 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
 }
 
 async function fetchPaginated<T extends StrapiEntity>(endpoint: string): Promise<T[]> {
+  const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
+  const fetchAll = url.searchParams.get('pagination[limit]') === '-1';
+
+  if (fetchAll) {
+    url.searchParams.delete('pagination[limit]');
+    url.searchParams.set('pagination[pageSize]', '100');
+    
     let allResults: T[] = [];
     let page = 1;
     let totalPages = 1;
-    
-    const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
-    
-    const usesPagination = url.searchParams.has('pagination[page]') || url.searchParams.has('pagination[pageSize]');
-    const usesLimit = url.searchParams.has('pagination[limit]');
-
-    if (!usesPagination && !usesLimit) {
-      url.searchParams.set('pagination[pageSize]', '100');
-    }
 
     do {
-        if (!usesPagination && !usesLimit) {
-            url.searchParams.set('pagination[page]', String(page));
+      url.searchParams.set('pagination[page]', String(page));
+      try {
+        const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search);
+        
+        if (response.data && Array.isArray(response.data)) {
+          allResults = allResults.concat(response.data);
         }
 
-        try {
-          const response: StrapiResponse<T[]> = await fetchStrapi(url.pathname + url.search);
-          
-          if (response.data && Array.isArray(response.data)) {
-              allResults = allResults.concat(response.data);
-          }
-
-          if (response.meta?.pagination && !usesPagination && !usesLimit) {
-              totalPages = response.meta.pagination.pageCount;
-          } else {
-             if (response.data && !Array.isArray(response.data)) {
-               allResults.push(response.data as any);
-             }
-            break;
-          }
-
-          page++;
-        } catch (error) {
-          console.error(`[STRAPI][PAGINATION_ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
-          break; // Exit loop on error
+        if (response.meta?.pagination) {
+          totalPages = response.meta.pagination.pageCount;
+        } else {
+          break; // No pagination info, break loop
         }
-    } while (!usesPagination && !usesLimit && page <= totalPages);
+        page++;
+      } catch (error) {
+        console.error(`[STRAPI][PAGINATION_ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
+        break; // Exit loop on error
+      }
+    } while (page <= totalPages);
 
     return allResults;
+  } else {
+    // Original behavior for single page / specific limit
+    const response: StrapiResponse<T[] | T> = await fetchStrapi(url.pathname + url.search);
+    if (Array.isArray(response.data)) {
+        return response.data;
+    }
+    if(response.data) {
+        return [response.data];
+    }
+    return [];
+  }
 }
 
 
@@ -176,7 +178,7 @@ export async function getArticle(documentId: string): Promise<ArticleDoc | null>
 }
 
 export async function getAuthors(): Promise<AuthorDoc[]> {
-    const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*');
+    const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1');
     return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
         documentId: String(item.id),
         name: item.Name,
@@ -207,11 +209,7 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
 }
 
 export async function getCategories(): Promise<CategoryDoc[]> {
-    const response = await fetchStrapi<StrapiResponse<StrapiCategory[]>>(`/api/categories?populate=*&pagination[page]=1&pagination[pageSize]=100&sort=name:asc`);
-    if (!response.data) {
-        return [];
-    }
-    const raw = Array.isArray(response.data) ? response.data : [];
+    const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`);
     
     const mapped: Promise<CategoryDoc | null>[] = raw
       .map(async (c: StrapiCategory) => {
@@ -247,7 +245,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
 
 
 export async function getTags(): Promise<TagDoc[]> {
-    const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*');
+    const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*&pagination[limit]=-1');
     return tags.map(tag => ({
         documentId: String(tag.id),
         name: tag.name,
@@ -271,11 +269,9 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
 }
 
 export async function getGalleryItems(): Promise<{ id: string; title: string; description: string; imageUrl: string }[]> {
-  const response = await fetchStrapi<StrapiResponse<StrapiGalleryItem[]>>('/api/Galerias?populate=*');
-  if (!response.data) {
-    return [];
-  }
-  const items = await Promise.all(response.data.map(async (item) => {
+  const response = await fetchPaginated<StrapiGalleryItem>('/api/Galerias?populate=*&pagination[limit]=-1');
+
+  const items = await Promise.all(response.map(async (item) => {
     const imageUrl = await getStrapiMediaUrl(item.Imagen?.url);
     if (!imageUrl) return null;
     return {
