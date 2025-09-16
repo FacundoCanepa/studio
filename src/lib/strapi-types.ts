@@ -94,6 +94,12 @@ export interface StrapiUser extends StrapiEntity {
     blocked?: boolean;
     favorite_articles?: StrapiArticle[];
     favorite_tags?: StrapiTag[];
+    role?: {
+        id: number;
+        name: string;
+        description: string;
+        type: string;
+    };
 }
 
 

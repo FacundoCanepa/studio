@@ -9,6 +9,7 @@ interface User {
   id: number;
   username: string;
   email: string;
+  role?: string;
   favoriteArticles: number[];
   favoriteTags: number[];
 }
@@ -16,6 +17,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (identifier: string, password: string) => Promise<any>;
   register: (username: string, email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
@@ -30,6 +32,7 @@ interface AuthContextType {
 export const AuthContext = React.createContext<AuthContextType>({
   user: null,
   isLoading: true,
+  isAdmin: false,
   login: async () => {},
   register: async () => {},
   logout: async () => {},
@@ -161,20 +164,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const toggleFavorite = async (articleId: number): Promise<boolean> => {
-    console.log(`[AuthContext] Toggling favorite for articleId: ${articleId} via Server Action. Current user:`, user?.username);
     if (!user) {
-        console.error('[AuthContext] User not logged in. Aborting toggleFavorite.');
         throw new Error('Debes iniciar sesión para guardar favoritos.');
     }
     
     try {
         const data = await toggleFavoriteAction(articleId);
-        console.log('[AuthContext] Server Action response:', data);
-
         const newFavoriteList = data.favoriteArticles;
         setUser(prev => prev ? { ...prev, favoriteArticles: newFavoriteList } : null);
-        console.log('[AuthContext] User state updated. New favorite articles:', newFavoriteList);
-        
         return newFavoriteList.includes(articleId);
     } catch (error: any) {
         console.error('[AuthContext] Error calling toggle favorite action:', error);
@@ -202,11 +199,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   
+  const isAdmin = user?.role === 'Admins';
+  
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
+        isAdmin,
         login,
         register,
         logout,

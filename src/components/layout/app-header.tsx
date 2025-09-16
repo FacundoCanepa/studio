@@ -4,7 +4,7 @@
 import { useState, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Instagram, Menu, X, LogOut, UserCircle, Bookmark } from 'lucide-react';
+import { Instagram, Menu, X, LogOut, UserCircle, Bookmark, Shield } from 'lucide-react';
 import type { CategoryDoc } from '@/lib/firestore-types';
 import Link from 'next/link';
 import { AuthContext } from '@/context/auth-context';
@@ -24,7 +24,7 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, isAdmin } = useContext(AuthContext);
 
   const navLinks = [
     ...categories.map(c => ({ name: c.name, href: `/categoria/${c.slug}` })),
@@ -62,6 +62,14 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {isAdmin && (
+                    <DropdownMenuItem asChild>
+                       <Link href="/admin/dashboard">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Panel</span>
+                       </Link>
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                    <Link href="/guardados">
                         <Bookmark className="mr-2 h-4 w-4" />
@@ -111,6 +119,11 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                    {user && (
                         <Link href="/guardados" onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
                             Mis Guardados
+                        </Link>
+                    )}
+                    {isAdmin && (
+                        <Link href="/admin/dashboard" onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
+                            Admin Panel
                         </Link>
                     )}
                 </nav>
