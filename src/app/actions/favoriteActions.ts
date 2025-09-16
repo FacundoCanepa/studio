@@ -2,8 +2,25 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { API_BASE, getJwtFromCookie } from '@/lib/api-utils';
+import { jwtVerify } from 'jose';
+import { API_BASE, COOKIE_NAME, COOKIE_SECRET } from '@/lib/api-utils';
 import type { StrapiUser } from '@/lib/strapi-types';
+
+async function getJwtFromServerAction(): Promise<string | null> {
+  const cookie = cookies().get(COOKIE_NAME)?.value;
+  if (!cookie) return null;
+
+  try {
+    const { payload } = await jwtVerify(cookie, COOKIE_SECRET);
+    if (typeof payload.token === 'string') {
+      return payload.token;
+    }
+    return null;
+  } catch (error) {
+    console.warn('[JWT_VERIFY_ERROR_ACTION]', (error as Error).message);
+    return null;
+  }
+}
 
 async function performStrapiUpdate(userId: number, token: string, payload: object) {
   const updateUrl = `${API_BASE}/users/${userId}`;
@@ -34,33 +51,14 @@ async function performStrapiUpdate(userId: number, token: string, payload: objec
   return updatedUser;
 }
 
-async function getFavorites(token: string): Promise<{ articleIds: number[], tagIds: number[] }> {
-    const meUrl = `${API_BASE}/users/me?populate[favorite_articles]=id&populate[favorite_tags]=id`;
-    console.log(`[SERVER_ACTION] Fetching current user from Strapi: ${meUrl}`);
-    const meResponse = await fetch(meUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store'
-    });
-
-    if (!meResponse.ok) {
-        throw new Error('Could not fetch user data.');
-    }
-    const user: StrapiUser = await meResponse.json();
-    return {
-        articleIds: user.favorite_articles?.map(a => a.id) || [],
-        tagIds: user.favorite_tags?.map(t => t.id) || [],
-    };
-}
-
-
 export async function toggleFavoriteAction(articleId: number) {
   console.log(`[TOGGLE_FAVORITE_ACTION] Received request for articleId: ${articleId}`);
-  const token = await getJwtFromCookie({ cookies } as any);
+  const token = await getJwtFromServerAction();
   if (!token) {
     throw new Error('Authentication required.');
   }
 
-  const meResponse = await fetch(`${API_BASE}/users/me`, {
+  const meResponse = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=id`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
   });
@@ -85,7 +83,7 @@ export async function toggleFavoriteAction(articleId: number) {
 
 export async function toggleTagFavoriteAction(tagId: number) {
   console.log(`[TOGGLE_TAG_ACTION] Received request for tagId: ${tagId}`);
-  const token = await getJwtFromCookie({ cookies } as any);
+  const token = await getJwtFromServerAction();
   if (!token) {
     throw new Error('Authentication required.');
   }
