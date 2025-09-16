@@ -4,7 +4,7 @@
 import { useState, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Instagram, Menu, X, LogOut, UserCircle, Bookmark, Shield } from 'lucide-react';
+import { Instagram, Menu, LogOut, UserCircle, Bookmark, Shield } from 'lucide-react';
 import type { CategoryDoc } from '@/lib/firestore-types';
 import Link from 'next/link';
 import { AuthContext } from '@/context/auth-context';
@@ -64,7 +64,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                 <DropdownMenuSeparator />
                 {isAdmin && (
                     <DropdownMenuItem asChild>
-                       <Link href="/admin/dashboard">
+                       <Link href="/admin">
                             <Shield className="mr-2 h-4 w-4" />
                             <span>Admin Panel</span>
                        </Link>
@@ -99,7 +99,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                 <span className="sr-only">Abrir menú</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px] pt-safe-top pb-safe-bottom" onClick={() => setSheetOpen(false)}>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px] pt-safe-top pb-safe-bottom">
               <div className="flex h-full flex-col">
                 <div className="flex items-center justify-between p-4 border-b">
                    <Link href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
@@ -118,7 +118,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                         </Link>
                     )}
                     {isAdmin && (
-                        <Link href="/admin/dashboard" onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
+                        <Link href="/admin" onClick={() => setSheetOpen(false)} className="text-lg font-medium transition-colors hover:text-primary">
                             Admin Panel
                         </Link>
                     )}

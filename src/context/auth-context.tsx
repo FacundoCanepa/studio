@@ -20,7 +20,7 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (identifier: string, password: string) => Promise<any>;
   register: (username: string, email: string, password: string) => Promise<any>;
-  logout: () => Promise<void>;
+  logout: () => void;
   forgotPassword: (email: string) => Promise<any>;
   resetPassword: (code: string, password: string, passwordConfirmation: string) => Promise<any>;
   toggleFavorite: (articleId: number) => Promise<boolean>;
@@ -35,7 +35,7 @@ export const AuthContext = React.createContext<AuthContextType>({
   isAdmin: false,
   login: async () => {},
   register: async () => {},
-  logout: async () => {},
+  logout: () => {},
   forgotPassword: async () => {},
   resetPassword: async () => {},
   toggleFavorite: async () => false,
@@ -61,29 +61,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
 
-  const fetchUser = async () => {
+  const fetchUser = React.useCallback(async () => {
     try {
       const res = await fetch('/api/session/me', { cache: 'no-store' });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setUser(data.data);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok) {
+          setUser(data.data);
+        } else {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
     } catch (error) {
       console.error('[AUTH_PROVIDER] Fetch user error:', error);
       setUser(null);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
   React.useEffect(() => {
-    const initializeSession = async () => {
-        setIsLoading(true);
-        await fetchUser();
-        setIsLoading(false);
-    }
-    initializeSession();
-  }, []);
+    fetchUser();
+  }, [fetchUser]);
 
   const performRequest = async (url: string, options: RequestInit = {}) => {
     const headers: HeadersInit = {
@@ -122,7 +123,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     });
-    await fetchUser(); // <-- Force user state refetch after login
+    // After a successful login, refetch the user data to update the context state
+    await fetchUser();
     return data;
   };
   
@@ -134,15 +136,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const logout = async () => {
-    try {
-      await performRequest('/api/session/logout', { method: 'POST' });
-    } catch (error) {
-       console.error("[AUTH_PROVIDER] Logout failed server-side, but clearing client session anyway.", error);
-    } finally {
-      setUser(null);
-      router.push('/');
-      router.refresh();
-    }
+    await performRequest('/api/session/logout', { method: 'POST' });
+    setUser(null);
+    router.push('/');
+    router.refresh();
   };
 
   const forgotPassword = (email: string) => {

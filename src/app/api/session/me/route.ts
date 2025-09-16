@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
       return respondWithError('unauthorized', {details: 'No session cookie.'});
     }
 
-    // Correctly populate favorite_articles
-    const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true&populate[favorite_tags]=true`, {
+    // Correctly populate favorite_articles, favorite_tags, and role
+    const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true&populate[favorite_tags]=true&populate[role]=true`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
       id: strapiData.id,
       username: strapiData.username,
       email: strapiData.email,
+      role: strapiData.role?.name || 'Authenticated',
       favoriteArticles: strapiData.favorite_articles?.map(a => a.id) || [],
       favoriteTags: strapiData.favorite_tags?.map(t => t.id) || [],
     };

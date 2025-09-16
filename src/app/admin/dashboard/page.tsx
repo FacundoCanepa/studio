@@ -57,7 +57,6 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-muted-foreground">+18.1% este mes</p>
           </CardContent>
         </Card>
-        {/* More cards can be added here */}
       </div>
     </div>
   );
