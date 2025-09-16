@@ -107,11 +107,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   React.useEffect(() => {
     const initializeSession = async () => {
         setIsLoading(true);
-        await fetchUser();
+        await Promise.all([fetchUser(), getCsrfToken()]);
         setIsLoading(false);
     }
     initializeSession();
-  }, [fetchUser]);
+  }, [fetchUser, getCsrfToken]);
 
   const performRequest = async (url: string, options: RequestInit = {}, requiresCsrf = false) => {
     const headers: HeadersInit = {
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     }, true);
-    setUser(data);
+    await fetchUser(); // Refetch user to get all data
     return data;
   };
   
