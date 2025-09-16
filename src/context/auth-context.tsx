@@ -62,12 +62,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   const fetchUser = React.useCallback(async () => {
+    setIsLoading(true);
     try {
       const res = await fetch('/api/session/me', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (data.ok) {
-          setUser(data.data);
+        if (data.ok && data.data.id) {
+          setUser({
+            ...data.data,
+            role: data.data.role || 'Authenticated'
+          });
         } else {
           setUser(null);
         }
@@ -123,8 +127,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     });
-    // After a successful login, refetch the user data to update the context state
-    await fetchUser();
+    await fetchUser(); // Re-fetch user to update state globally
     return data;
   };
   
