@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { AdSlot } from '@/components/marketing/ad-slot';
 import { FadeIn } from '@/components/shared/fade-in';
+import { useSearchParams } from 'next/navigation';
 
 const INITIAL_FILTERS: Filters = {
   query: '',
@@ -31,7 +32,17 @@ interface CategoryClientPageProps {
   pageType: PageType;
 }
 
-export default function CategoryClientPage({
+// Wrap the component to be able to use useSearchParams
+function CategoryClientPageWrapper(props: CategoryClientPageProps) {
+    return (
+        <React.Suspense fallback={<LoadingSkeleton />}>
+            <CategoryClientPage {...props} />
+        </React.Suspense>
+    );
+}
+
+
+function CategoryClientPage({
   initialArticles,
   allCategories,
   authors,
@@ -40,20 +51,35 @@ export default function CategoryClientPage({
   slug,
   pageType,
 }: CategoryClientPageProps) {
+  const searchParams = useSearchParams();
+  const tagQueryParam = searchParams.get('tag');
+
   const [articles, setArticles] = React.useState<ArticleDoc[]>(initialArticles);
   const [loading, setLoading] = React.useState(false);
   
-  const getInitialFilters = () => {
+  const getInitialFilters = React.useCallback(() => {
+    const allTags = Array.from(new Set(initialArticles.flatMap(a => a.tags?.map(t => t.slug) || [])));
+    const tagFromParam = tagQueryParam && allTags.includes(tagQueryParam) ? tagQueryParam : null;
+
     if (pageType === 'tag' && tag) {
-      return { ...INITIAL_FILTERS, tags: [tag.name] };
+      return { ...INITIAL_FILTERS, tags: [tag.slug] };
+    }
+    if (tagFromParam) {
+       const tagName = initialArticles.find(a => a.tags?.some(t => t.slug === tagFromParam))
+                                    ?.tags.find(t => t.slug === tagFromParam)?.name;
+       return { ...INITIAL_FILTERS, tags: tagName ? [tagName] : [] };
     }
     if (pageType === 'category') {
       return { ...INITIAL_FILTERS, category: slug };
     }
     return INITIAL_FILTERS;
-  };
+  }, [initialArticles, tagQueryParam, pageType, tag, slug]);
 
   const [filters, setFilters] = React.useState<Filters>(getInitialFilters());
+
+  React.useEffect(() => {
+    setFilters(getInitialFilters());
+  }, [getInitialFilters]);
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -114,38 +140,6 @@ export default function CategoryClientPage({
     return filtered;
   }, [initialArticles, filters]);
 
-  const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="w-full lg:w-80 lg:shrink-0">
-            <div className="space-y-6 p-6">
-                <Skeleton className="h-8 w-1/3" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-                 <div className="space-y-2">
-                    <Skeleton className="h-6 w-1/4" />
-                    <Skeleton className="h-6 w-1/2" />
-                    <Skeleton className="h-6 w-1/3" />
-                </div>
-                <Skeleton className="h-10 w-full" />
-                 <Skeleton className="h-10 w-full" />
-            </div>
-        </div>
-        <div className="md:col-span-3">
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                {[...Array(6)].map((_, i) => (
-                    <div key={i} className="space-y-3">
-                        <Skeleton className="h-48 w-full" />
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                         <Skeleton className="h-4 w-1/4" />
-                    </div>
-                ))}
-            </div>
-        </div>
-    </div>
-  );
-  
   const pageTitle = pageType === 'tag' ? `#${tag?.name}` : (category?.name || 'Artículos');
   const pageDescription = pageType === 'tag' ? `Artículos etiquetados como "${tag?.name}"` : category?.description;
   const heroImage = category?.imageUrl || articles[0]?.coverUrl;
@@ -226,3 +220,37 @@ export default function CategoryClientPage({
     </div>
   );
 }
+
+const LoadingSkeleton = () => (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="w-full lg:w-80 lg:shrink-0">
+            <div className="space-y-6 p-6">
+                <Skeleton className="h-8 w-1/3" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                 <div className="space-y-2">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-6 w-1/3" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+                 <Skeleton className="h-10 w-full" />
+            </div>
+        </div>
+        <div className="md:col-span-3">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="space-y-3">
+                        <Skeleton className="h-48 w-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                         <Skeleton className="h-4 w-1/4" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+  
+export default CategoryClientPageWrapper;

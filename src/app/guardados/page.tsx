@@ -91,7 +91,7 @@ export default async function GuardadosPage() {
                         {favoriteTags.map(tag => (
                              <Link
                                 key={tag.documentId}
-                                href={`/categoria/${tag.slug}`} 
+                                href={`/articulos?tag=${tag.slug}`} 
                                 className="px-4 py-2 bg-secondary text-secondary-foreground rounded-full text-base font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
                             >
                                 {tag.name}

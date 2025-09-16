@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import { getArticles, getCategories, getAuthors } from "@/lib/strapi-client";
 import CategoryClientPage from '../categoria/[slug]/category-client-page';
@@ -16,13 +17,15 @@ export default async function ArticlesPage() {
   ]);
 
   return (
-    <CategoryClientPage 
-      initialArticles={articles}
-      allCategories={categories}
-      authors={authors}
-      category={null}
-      slug="all"
-      pageType="all"
-    />
+    <React.Suspense>
+      <CategoryClientPage 
+        initialArticles={articles}
+        allCategories={categories}
+        authors={authors}
+        category={null}
+        slug="all"
+        pageType="all"
+      />
+    </React.Suspense>
   );
 }
