@@ -30,20 +30,22 @@ export default async function CategoryPage({ params }: Props) {
   const { slug } = params;
   
   const [articles, categories, authors, category] = await Promise.all([
-    getArticles({ categorySlug: slug }),
+    getArticles({ categorySlug: slug, cache: 'no-store' }),
     getCategories(),
-    getAuthors(),
+    getAuthors({ cache: 'no-store' }),
     getCategory(slug)
   ]);
 
   return (
-    <CategoryClientPage 
-      initialArticles={articles}
-      allCategories={categories}
-      authors={authors}
-      category={category}
-      slug={slug}
-      pageType="category"
-    />
+    <React.Suspense>
+      <CategoryClientPage 
+        initialArticles={articles}
+        allCategories={categories}
+        authors={authors}
+        category={category}
+        slug={slug}
+        pageType="category"
+      />
+    </React.Suspense>
   );
 }

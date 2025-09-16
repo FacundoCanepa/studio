@@ -22,7 +22,6 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       ...(STRAPI_TOKEN ? { Authorization: `Bearer ${STRAPI_TOKEN}` } : {}),
     };
 
-    // [FIX]: Allow caller to specify cache behavior. Default to Next.js's default.
     const response = await fetch(url, { 
       method: init?.method ?? 'GET',
       headers, 
@@ -115,6 +114,7 @@ type GetArticlesParams = {
     isNew?: boolean;
     ids?: number[];
   };
+  cache?: RequestCache;
 };
 
 export async function getArticles({
@@ -122,6 +122,7 @@ export async function getArticles({
   tagSlug,
   limit,
   filters = {},
+  cache,
 }: GetArticlesParams = {}): Promise<ArticleDoc[]> {
     const params = new URLSearchParams();
     params.set('populate', '*');
@@ -152,7 +153,7 @@ export async function getArticles({
         });
     }
     
-    const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`, { cache: 'no-store' });
+    const strapiArticles = await fetchPaginated<StrapiArticle>(`/api/articles?${params.toString()}`, { cache: cache ?? 'default' });
 
     const mappedArticles = (await Promise.all(strapiArticles.map(mapStrapiArticleToArticleDoc))).filter(Boolean) as ArticleDoc[];
     
@@ -177,8 +178,8 @@ export async function getArticle(documentId: string): Promise<ArticleDoc | null>
     return await mapStrapiArticleToArticleDoc(response.data);
 }
 
-export async function getAuthors(): Promise<AuthorDoc[]> {
-    const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1', { cache: 'no-store' });
+export async function getAuthors(options: { cache?: RequestCache } = {}): Promise<AuthorDoc[]> {
+    const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1', { cache: options.cache ?? 'default' });
     return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
         documentId: String(item.id),
         name: item.Name,

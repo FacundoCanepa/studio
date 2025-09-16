@@ -11,7 +11,9 @@ export const metadata: Metadata = {
 export default function ResetPasswordPage() {
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[70vh] px-4">
-      <ResetPasswordForm />
+      <React.Suspense>
+        <ResetPasswordForm />
+      </React.Suspense>
     </div>
   );
 }

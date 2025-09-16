@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 
 export default async function ArticlesPage() {
   const [articles, categories, authors] = await Promise.all([
-    getArticles(),
+    getArticles({ cache: 'no-store' }),
     getCategories(),
-    getAuthors(),
+    getAuthors({ cache: 'no-store' }),
   ]);
 
   return (

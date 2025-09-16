@@ -41,7 +41,7 @@ export default async function AuthorPage({ params }: Props) {
 
   // This is not efficient, Strapi doesn't make it easy to filter by author ID on articles.
   // In a real scenario, you'd want a dedicated endpoint or better filtering.
-  const allArticles = await getArticles();
+  const allArticles = await getArticles({ cache: 'no-store' });
   const authorArticles = allArticles.filter(article => article.author?.documentId === author.documentId);
   
   const bioFirstParagraph = author.bioBlocks?.[0]?.children?.[0]?.text || 'Biografía no disponible.';

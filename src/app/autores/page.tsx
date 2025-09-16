@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AutoresPage() {
-  const authors = await getAuthors();
+  const authors = await getAuthors({ cache: 'no-store' });
 
   return (
     <div className="bg-background">
