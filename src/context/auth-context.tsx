@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
 
-  const fetchUser = React.useCallback(async () => {
+  const fetchUser = async () => {
     try {
       const res = await fetch('/api/session/me', { cache: 'no-store' });
       const data = await res.json();
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('[AUTH_PROVIDER] Fetch user error:', error);
       setUser(null);
     }
-  }, []);
+  };
 
   React.useEffect(() => {
     const initializeSession = async () => {
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
     }
     initializeSession();
-  }, [fetchUser]);
+  }, []);
 
   const performRequest = async (url: string, options: RequestInit = {}) => {
     const headers: HeadersInit = {
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     });
-    await fetchUser();
+    await fetchUser(); // <-- Force user state refetch after login
     return data;
   };
   

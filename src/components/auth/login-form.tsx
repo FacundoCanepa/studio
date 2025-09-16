@@ -44,11 +44,8 @@ export const LoginForm = () => {
       toast({
         title: '¡Bienvenido de vuelta!',
       });
-      // Redirige a la página de inicio y luego refresca para asegurar la actualización del estado.
+      // Redirect to home page, the context will handle the user state update.
       router.push('/');
-      setTimeout(() => {
-        router.refresh();
-      }, 100);
     } catch (error: any) {
       toast({
         title: 'Error al iniciar sesión',
