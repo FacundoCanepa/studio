@@ -7,12 +7,8 @@ import {
   mapStrapiError,
   respondWithError,
 } from '@/lib/api-utils';
-import { validateCsrf } from '@/lib/api/csrf';
 
 export async function POST(request: NextRequest) {
-  const csrfError = await validateCsrf(request);
-  if (csrfError) return csrfError;
-
   try {
     const body = await request.json();
     const validated = forgotPasswordSchema.safeParse(body);

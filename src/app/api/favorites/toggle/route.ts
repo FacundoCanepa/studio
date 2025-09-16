@@ -6,13 +6,9 @@ import {
   respondWithError,
   getJwtFromCookie,
 } from '@/lib/api-utils';
-import { validateCsrf } from '@/lib/api/csrf';
 import type { StrapiUser } from '@/lib/strapi-types';
 
 export async function POST(request: NextRequest) {
-  const csrfError = await validateCsrf(request);
-  if (csrfError) return csrfError;
-
   try {
     const token = await getJwtFromCookie(request);
     if (!token) {

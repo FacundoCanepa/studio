@@ -1,14 +1,9 @@
 
 // src/app/api/session/logout/route.ts
-import {NextResponse, type NextRequest} from 'next/server';
+import {NextResponse} from 'next/server';
 import {clearSessionCookie, respondWithError} from '@/lib/api-utils';
-import { validateCsrf } from '@/lib/api/csrf';
 
-
-export async function POST(request: NextRequest) {
-  const csrfError = await validateCsrf(request);
-  if (csrfError) return csrfError;
-
+export async function POST() {
   try {
     const cookie = clearSessionCookie();
     const response = NextResponse.json({

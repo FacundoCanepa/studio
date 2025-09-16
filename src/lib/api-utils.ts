@@ -104,11 +104,7 @@ type ErrorCode =
   | 'username_in_use'
   | 'internal_server_error'
   | 'unknown_strapi_error'
-  | 'csrf_token_invalid'
-  | 'csrf_token_missing'
-  | 'csrf_token_mismatch'
-  | 'rate_limit_exceeded'
-  | 'cors_denied';
+  | 'rate_limit_exceeded';
 
 const errorMap: Record<ErrorCode, {status: number; message: string}> = {
   validation_error: {status: 400, message: 'Datos de entrada inválidos.'},
@@ -118,11 +114,7 @@ const errorMap: Record<ErrorCode, {status: number; message: string}> = {
   username_in_use: {status: 409, message: 'El nombre de usuario ya está en uso.'},
   internal_server_error: {status: 500, message: 'Ocurrió un error en el servidor.'},
   unknown_strapi_error: {status: 500, message: 'Error inesperado de la API externa.'},
-  csrf_token_invalid: {status: 403, message: 'Token de seguridad inválido.'},
-  csrf_token_missing: {status: 403, message: 'Falta token de seguridad.'},
-  csrf_token_mismatch: {status: 403, message: 'El token de seguridad no coincide.'},
   rate_limit_exceeded: {status: 429, message: 'Demasiados intentos.'},
-  cors_denied: {status: 403, message: 'Acceso denegado por política de CORS.'},
 };
 
 export function respondWithError(code: ErrorCode, extra: object = {}) {
