@@ -59,20 +59,6 @@ export default function AdminDashboardPage() {
         </Card>
         {/* More cards can be added here */}
       </div>
-      <div className="mt-8">
-        <Card>
-            <CardHeader>
-                <CardTitle>Próximas Funcionalidades</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <ul className="list-disc pl-5 text-muted-foreground">
-                    <li>Gestión completa (Crear, Editar, Borrar) de Artículos, Categorías, Etiquetas y Autores.</li>
-                    <li>Subida de imágenes y medios.</li>
-                    <li>Visualización de estadísticas detalladas.</li>
-                </ul>
-            </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
