@@ -7,10 +7,13 @@ import { getStrapiMediaUrl } from './strapi-client';
 // Helper function to convert markdown-like text to basic HTML
 function markdownToHtml(text: string | null | undefined): string | undefined {
     if (!text) return undefined;
-    // Replace **bold** with <strong>bold</strong>
-    let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Replace paragraphs (double newline) with <p> tags
-    html = html.split('\\n\\n').map(p => `<p>${p}</p>`).join('');
+    
+    // Process paragraphs first
+    let html = text.split('\\n\\n').map(p => {
+        // Then process bold within each paragraph
+        return `<p>${p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</p>`;
+    }).join('');
+
     return html;
 }
 
