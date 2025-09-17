@@ -31,7 +31,7 @@ const initialState = {
 };
 
 export function ArticleForm({ article, authors, categories }: ArticleFormProps) {
-  const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.id.toString() || null), initialState);
+  const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.documentId || null), initialState);
   const { toast } = useToast();
   const router = useRouter();
   const [pending, setPending] = React.useState(false);

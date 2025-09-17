@@ -68,11 +68,11 @@ async function performStrapiRequest(endpoint: string, options: RequestInit) {
 }
 
 export async function saveArticleAction(
-  id: string | null,
+  documentId: string | null,
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  console.log('[SAVE_ARTICLE_ACTION] Started.', { id });
+  console.log('[SAVE_ARTICLE_ACTION] Started.', { documentId });
   const rawData = Object.fromEntries(formData.entries());
   console.log('[SAVE_ARTICLE_ACTION] Raw form data:', rawData);
 
@@ -143,8 +143,8 @@ export async function saveArticleAction(
       slug,
       excerpt,
       Content: content,
-      category: Number(category),
-      author: Number(author),
+      category: category ? Number(category) : null,
+      author: author ? Number(author) : null,
       featured,
       publishedAt: publishedAt || null, // Strapi accepts null to unpublish
       tags: tagIds,
@@ -166,9 +166,17 @@ export async function saveArticleAction(
 
 
   try {
-    if (id) {
-      console.log(`[SAVE_ARTICLE_ACTION] Updating article with ID: ${id}`);
-      await performStrapiRequest(`/api/articles/${id}`, {
+    if (documentId) {
+      console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
+      // Use the documentId to find the numeric ID first
+      const articleToUpdate = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
+      if (!articleToUpdate.data || articleToUpdate.data.length === 0) {
+        throw new Error(`No se encontró el artículo con documentId ${documentId}`);
+      }
+      const numericId = articleToUpdate.data[0].id;
+      console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
+      
+      await performStrapiRequest(`/api/articles/${numericId}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
@@ -186,7 +194,7 @@ export async function saveArticleAction(
     revalidatePath('/');
 
     return {
-      message: `Artículo ${id ? 'actualizado' : 'creado'} con éxito.`,
+      message: `Artículo ${documentId ? 'actualizado' : 'creado'} con éxito.`,
       success: true,
     };
   } catch (error: any) {

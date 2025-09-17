@@ -17,8 +17,8 @@ export type ArticleDoc = {
   saves?: number;
   type?: 'guia' | 'lista' | 'comparativa';
 
-  category: { documentId: string; name: string; slug: string, description?: string, color?: string } | null;
-  author:   { documentId: string; name: string; avatarUrl?: string } | null;
+  category: { id: number, documentId: string; name: string; slug: string, description?: string, color?: string } | null;
+  author:   { id: number, documentId: string; name: string; avatarUrl?: string } | null;
   tags:     Array<{ documentId: string; name: string; slug: string }>;
   subcategories?: string[];
 
@@ -48,6 +48,7 @@ export type ArticleDoc = {
 }
 
 export type AuthorDoc = {
+  id: number;
   documentId: string;
   name: string;
   avatarUrl?: string;
@@ -57,6 +58,7 @@ export type AuthorDoc = {
 }
 
 export type CategoryDoc = {
+  id: number;
   documentId: string;
   name: string;
   slug: string;
