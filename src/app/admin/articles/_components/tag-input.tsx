@@ -60,11 +60,13 @@ export function TagInput({ name, defaultValue = [], allTags = [] }: TagInputProp
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
+      {/* Hidden inputs for form submission */}
       {selectedTags.map((tag) => (
         <input key={tag} type="hidden" name={name} value={tag} />
       ))}
+
       <div className="space-y-2">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 min-h-[40px] p-2 border rounded-md">
           {selectedTags.map((tag) => (
             <Badge key={tag} variant="secondary">
               {tag}
@@ -116,7 +118,7 @@ export function TagInput({ name, defaultValue = [], allTags = [] }: TagInputProp
                 <CommandItem
                   key={tag}
                   value={tag}
-                  onSelect={(currentValue) => {
+                  onSelect={() => {
                     handleSelect(tag);
                   }}
                 >

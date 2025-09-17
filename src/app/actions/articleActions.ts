@@ -73,8 +73,7 @@ export async function saveArticleAction(
 ): Promise<FormState> {
   console.log('[SAVE_ARTICLE_ACTION] Started.', { documentId });
   const rawData = Object.fromEntries(formData.entries());
-  console.log('[SAVE_ARTICLE_ACTION] Raw form data:', rawData);
-
+  
   const dataToValidate = {
     ...rawData,
     featured: rawData.featured === 'on',
@@ -108,11 +107,12 @@ export async function saveArticleAction(
   if (tags && tags.length > 0) {
       console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
       const allTagsResponse = await performStrapiRequest('/api/tags', { method: 'GET' });
-      const existingTags: StrapiTag[] = allTagsResponse.data;
-      console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t.name));
+      const existingTags: StrapiTag[] = allTagsResponse.data || [];
+      console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t?.name));
 
       for (const tagName of tags) {
-          const existingTag = existingTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+          if (!tagName) continue;
+          const existingTag = existingTags.find(t => t && t.name.toLowerCase() === tagName.toLowerCase());
           if (existingTag) {
               tagIds.push(existingTag.id);
               console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);
