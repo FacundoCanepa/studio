@@ -2,59 +2,51 @@
 
 'use server';
 import type { ArticleDoc } from './firestore-types';
-import type { StrapiArticle, StrapiCategory, StrapiAuthor, StrapiTag, StrapiSeoBlock } from './strapi-types';
+import type { StrapiArticle, StrapiTag } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
-    console.log('[MAPPER] Starting to map Strapi article. ID:', item?.id);
-    if (!item || !item.id) {
-        console.error('[MAPPER] Item is null or has no ID. Aborting map.');
+    if (!item || !item.attributes || !item.attributes.documentId) {
+        console.warn('[MAPPER] Item is null or missing attributes/documentId. Aborting map.', { item });
         return null;
     }
-
-    // Handle inconsistent Strapi response structures. Sometimes data is nested in `attributes`, sometimes not.
-    const rawItem = 'attributes' in item ? item.attributes : item;
-    console.log('[MAPPER_DEBUG] Raw Strapi Item Attributes:', rawItem);
-
-    if (!rawItem) {
-        console.error(`[MAPPER] Raw item data is missing for item ID: ${item.id}`);
-        return null;
-    }
-
+    
+    console.log('[MAPPER] Starting to map Strapi article. DocumentID:', item.attributes.documentId);
+    
+    const rawItem = item.attributes;
+    
     const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
     
-    // Robustly extract category and author, checking for `data` wrapper.
-    const categoryData = rawItem.category?.data ? rawItem.category.data.attributes : rawItem.category;
-    const categoryId = rawItem.category?.data ? rawItem.category.data.id : rawItem.category?.id;
-    const category = categoryData ? {
-        documentId: String(categoryId),
+    const categoryData = rawItem.category?.data?.attributes;
+    const categoryId = rawItem.category?.data?.id;
+    const category = categoryData && categoryId ? {
+        id: categoryId,
+        documentId: categoryData.documentId || String(categoryId),
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
         color: categoryData.color,
     } : null;
-    console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Category:`, JSON.stringify(category, null, 2));
 
-
-    const authorData = rawItem.author?.data ? rawItem.author.data.attributes : rawItem.author;
-    const authorId = rawItem.author?.data ? rawItem.author.data.id : rawItem.author?.id;
-    const author = authorData ? {
-        documentId: String(authorId),
-        name: authorData.Name || authorData.name, // Handle 'Name' and 'name'
+    const authorData = rawItem.author?.data?.attributes;
+    const authorId = rawItem.author?.data?.id;
+    const author = authorData && authorId ? {
+        id: authorId,
+        documentId: authorData.documentId || String(authorId),
+        name: authorData.Name,
         avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
     } : null;
-    console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Author:`, JSON.stringify(author, null, 2));
-
     
     const tags = (rawItem.tags?.data || [])
-        .filter((t): t is StrapiTag => !!t && !!t.id && !!t.attributes.name && !!t.attributes.slug)
+        .filter((t): t is StrapiTag => !!t && !!t.id && !!t.attributes?.name && !!t.attributes?.slug)
         .map(t => ({
-            documentId: String(t.id),
+            id: t.id,
+            documentId: t.attributes.documentId || String(t.id),
             name: t.attributes.name,
             slug: t.attributes.slug,
         }));
     
-    const seoBlock = (rawItem as any).seo || (rawItem as any).Name; // Handle inconsistent SEO block naming
+    const seoBlock = (rawItem as any).seo || (rawItem as any).Name;
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,
@@ -69,7 +61,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
       : [];
 
     const out: ArticleDoc = {
-        documentId: String(item.id),
+        documentId: rawItem.documentId,
         id: item.id,
         title: rawItem.title,
         slug: rawItem.slug,
@@ -95,6 +87,9 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         contentMore: rawItem.ContentMore,
         urlYoutube: rawItem.UrlYoutube,
         carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
+        home: rawItem.home ?? false,
+        isNew: rawItem.New ?? false,
+        tendencias: rawItem.Tendencias ?? false,
     };
     
     return out;

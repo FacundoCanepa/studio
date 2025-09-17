@@ -12,7 +12,6 @@ if (!STRAPI_URL || !STRAPI_TOKEN) {
   throw new Error('STRAPI_URL and STRAPI_API_TOKEN must be configured.');
 }
 
-// Zod schema for article validation
 const articleSchema = z.object({
   title: z.string().min(3, 'El título es requerido.'),
   slug: z.string().min(3, 'El slug es requerido.'),
@@ -23,13 +22,11 @@ const articleSchema = z.object({
   featured: z.boolean().default(false),
   tags: z.array(z.string()).optional(),
   publishedAt: z.string().nullable().optional(),
-  // New fields
   urlYoutube: z.string().optional(),
   contentMore: z.string().optional(),
   home: z.boolean().default(false),
   isNew: z.boolean().default(false),
   tendencias: z.boolean().default(false),
-  // SEO fields
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   canonicalUrl: z.string().optional(),
@@ -106,7 +103,6 @@ export async function saveArticleAction(
   const { title, slug, excerpt, content, category, author, featured, publishedAt, tags, urlYoutube, contentMore, home, isNew, tendencias, metaTitle, metaDescription, canonicalUrl } =
     validation.data;
     
-  // Convert tags from names to IDs, creating them if they don't exist
   let tagIds: number[] = [];
   if (tags && tags.length > 0) {
       console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
@@ -120,7 +116,6 @@ export async function saveArticleAction(
               tagIds.push(existingTag.id);
               console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);
           } else {
-              // Create new tag
               console.log(`[SAVE_ARTICLE_ACTION] Tag '${tagName}' not found. Creating new tag.`);
               const newTagResponse = await performStrapiRequest('/api/tags', {
                   method: 'POST',
@@ -147,14 +142,13 @@ export async function saveArticleAction(
       category: category ? Number(category) : null,
       author: author ? Number(author) : null,
       featured,
-      publishedAt: publishedAt || null, // Strapi accepts null to unpublish
+      publishedAt: publishedAt || null, 
       tags: tagIds,
       UrlYoutube: urlYoutube,
       ContentMore: contentMore,
       home: home,
-      New: isNew, // Field name in Strapi is 'New'
+      New: isNew, 
       Tendencias: tendencias,
-      // SEO component is named 'Name' in your Strapi setup
       Name: {
         metaTitle,
         metaDescription,
@@ -169,7 +163,6 @@ export async function saveArticleAction(
   try {
     if (documentId) {
       console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      // Use the documentId to find the numeric ID first
       const articleToUpdate = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
       if (!articleToUpdate.data || articleToUpdate.data.length === 0) {
         throw new Error(`No se encontró el artículo con documentId ${documentId}`);
@@ -210,7 +203,6 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        // First, find the numeric ID from the documentId
         const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
         if (!articleToDelete.data || articleToDelete.data.length === 0) {
             throw new Error(`No se encontró el artículo con documentId ${documentId}`);

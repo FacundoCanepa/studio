@@ -21,7 +21,7 @@ export const ArticleTags = ({ tags }: ArticleTagsProps) => {
               {tag.name}
             </Link>
             <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <FavoriteTagButton tagId={Number(tag.documentId)} />
+                <FavoriteTagButton tagId={tag.id} />
             </div>
           </div>
         ))}

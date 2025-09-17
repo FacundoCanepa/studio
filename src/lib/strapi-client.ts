@@ -3,7 +3,7 @@
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
-import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiEntity, StrapiResponse, StrapiGalleryItem, StrapiUser } from '@/lib/strapi-types';
+import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiResponse, StrapiGalleryItem, StrapiUser } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
 const STRAPI_BASE_URL = "https://graceful-bear-073b8037ba.strapiapp.com";
@@ -13,15 +13,15 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
   const url = `${STRAPI_BASE_URL}${endpoint}`;
   
   try {
-    if (!STRAPI_TOKEN) {
-      console.warn("[STRAPI] No API token. Proceeding as PUBLIC request.");
-    }
-    
     const headers: Record<string, string> = {
       'Accept': 'application/json',
       ...(init?.headers as Record<string,string>),
-      ...(STRAPI_TOKEN ? { Authorization: `Bearer ${STRAPI_TOKEN}` } : {}),
     };
+    if (STRAPI_TOKEN) {
+        headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
+    } else {
+        console.warn(`[STRAPI] No API token. Proceeding as PUBLIC request.`);
+    }
     
     console.log(`[FETCH_STRAPI] Requesting URL: ${url}`, { cache: init?.cache });
 
@@ -48,16 +48,11 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
   } catch (error: any) {
     const errorModel = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
     console.error('[FETCH_STRAPI][EXCEPTION]', { model: errorModel, url, message: error?.message });
-    // Do not re-throw if it's a build error, let it be handled by Next.js
-    if (process.env.npm_lifecycle_event !== 'build' && !error.message.includes('Dynamic server usage')) {
-      throw error;
-    }
-    // Return empty data for build-time dynamic usage errors to avoid crashes
-    return { data: [], meta: {} } as T;
+    throw error;
   }
 }
 
-async function fetchPaginated<T extends StrapiEntity>(endpoint: string, init?: RequestInit): Promise<T[]> {
+async function fetchPaginated<T extends { id: number; attributes: any; }>(endpoint: string, init?: RequestInit): Promise<T[]> {
   const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
   const params = new URLSearchParams(url.search);
   const fetchAll = params.get('pagination[limit]') === '-1';
@@ -90,26 +85,25 @@ async function fetchPaginated<T extends StrapiEntity>(endpoint: string, init?: R
           totalPages = response.meta.pagination.pageCount;
         } else {
            console.log(`[FETCH_PAGINATED] No pagination info in response. Assuming single page. Breaking loop.`);
-          break; // No pagination info, break loop
+          break; 
         }
         page++;
       } catch (error) {
         console.error(`[FETCH_PAGINATED][ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
-        break; // Exit loop on error
+        break; 
       }
     } while (page <= totalPages);
     
     console.log(`[FETCH_PAGINATED] Finished fetchAll loop. Total items fetched: ${allResults.length}`);
-    return allResults;
+    return allResults.filter(Boolean);
   } else {
-    // Original behavior for single page / specific limit
     console.log(`[FETCH_PAGINATED] Performing single page fetch for ${endpoint}`);
     const response: StrapiResponse<T[] | T> = await fetchStrapi(`${url.pathname}?${params.toString()}`, init);
     if (Array.isArray(response.data)) {
-        return response.data;
+        return response.data.filter(Boolean);
     }
     if(response.data) {
-        return [response.data];
+        return [response.data].filter(Boolean);
     }
     return [];
   }
@@ -121,8 +115,6 @@ export async function getStrapiMediaUrl(relativePath?: string | null): Promise<s
     if (relativePath.startsWith('http')) return relativePath;
     return `${STRAPI_BASE_URL.replace('/api', '')}${relativePath}`;
 }
-
-// --- API Methods ---
 
 type GetArticlesParams = {
   categorySlug?: string;
@@ -206,19 +198,12 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
     return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
-/**
- * Fetches a single article from Strapi by its documentId.
- * This is our "findOne" for articles.
- * @param documentId The alfanumeric documentId of the article.
- * @returns The mapped article document or null if not found.
- */
-export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
-    console.log(`[GET_ARTICLE] Fetching article with documentId: ${documentId}`);
+export async function getArticleByDocumentId(documentId: string): Promise<ArticleDoc | null> {
+    console.log(`[GET_ARTICLE_BY_DOCUMENT_ID] Fetching article with documentId: ${documentId}`);
     const params = new URLSearchParams();
-    // Use the documentId for filtering. This is the correct way for this setup.
-    params.set(`filters[documentId][$eq]`, documentId);
+    params.set('filters[documentId][$eq]', documentId);
     params.set('populate', '*');
-    params.set('publicationState', 'preview'); // Fetch drafts and published
+    params.set('publicationState', 'preview');
 
     const endpoint = `/api/articles?${params.toString()}`;
     
@@ -226,22 +211,27 @@ export async function getArticle(documentId: string): Promise<ArticleDoc | null>
         const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(endpoint, { cache: 'no-store' });
         
         if (!response.data || response.data.length === 0) {
-            console.warn(`[GET_ARTICLE] No article found for documentId: ${documentId}`);
+            console.warn(`[GET_ARTICLE_BY_DOCUMENT_ID] No article found for documentId: ${documentId}`);
             return null;
         }
         
-        console.log(`[GET_ARTICLE] Found article with documentId ${documentId}, mapping...`);
+        if (response.data.length > 1) {
+            console.warn(`[GET_ARTICLE_BY_DOCUMENT_ID] Found multiple articles for documentId: ${documentId}. Returning the first one.`);
+        }
+
+        console.log(`[GET_ARTICLE_BY_DOCUMENT_ID] Found article, mapping...`);
         return await mapStrapiArticleToArticleDoc(response.data[0]);
 
     } catch (error: any) {
          if (error.message.includes('404')) {
-             console.warn(`[GET_ARTICLE] Article with documentId ${documentId} not found.`);
+             console.warn(`[GET_ARTICLE_BY_DOCUMENT_ID] Article with documentId ${documentId} not found.`);
              return null;
          }
-         console.error(`[GET_ARTICLE] Error fetching article with documentId ${documentId}:`, error);
+         console.error(`[GET_ARTICLE_BY_DOCUMENT_ID] Error fetching article with documentId ${documentId}:`, error);
          throw error;
     }
 }
+
 
 export async function getAuthors(options: { cache?: RequestCache } = {}): Promise<AuthorDoc[]> {
     console.log('[GET_AUTHORS] Fetching all authors...');
@@ -249,23 +239,20 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
     console.log(`[GET_AUTHORS] Fetched ${authors.length} authors.`);
     
     const authorDocs = await Promise.all(authors.map(async (item) => {
-        // Handle inconsistent Strapi response structures.
-        const authorData = item.attributes ?? item;
-
-        // Skip if essential data is missing
-        if (!authorData || !item.id) {
+        if (!item || !item.attributes) {
             console.warn('[GET_AUTHORS] Skipping invalid author item from Strapi:', item);
             return null;
         }
-        // Make sure to check for 'Name' which is capitalized in your Strapi model
-        if (!authorData.Name) {
-            console.warn('[GET_AUTHORS] Skipping author with missing Name:', item);
+
+        const authorData = item.attributes;
+        if (!item.id || !authorData.documentId || !authorData.Name) {
+            console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', item);
             return null;
         }
 
         return {
             id: item.id,
-            documentId: String(item.id),
+            documentId: authorData.documentId,
             name: authorData.Name,
             avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
             bioBlocks: authorData.Bio,
@@ -277,19 +264,24 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
     return authorDocs.filter(Boolean) as AuthorDoc[];
 }
 
-export async function getAuthor(id: string): Promise<AuthorDoc | null> {
-    console.log(`[GET_AUTHOR] Fetching author with ID: ${id}`);
+export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
+    console.log(`[GET_AUTHOR] Fetching author with documentId: ${documentId}`);
     try {
-        const response = await fetchStrapi<StrapiResponse<StrapiAuthor>>(`/api/authors/${id}?populate=*`, { cache: 'no-store' });
-        if (!response.data) {
-            console.warn(`[GET_AUTHOR] No author found for ID: ${id}`);
+        const params = new URLSearchParams();
+        params.set('filters[documentId][$eq]', documentId);
+        params.set('populate', '*');
+        const response = await fetchStrapi<StrapiResponse<StrapiAuthor[]>>(`/api/authors?${params.toString()}`, { cache: 'no-store' });
+
+        if (!response.data || response.data.length === 0) {
+            console.warn(`[GET_AUTHOR] No author found for documentId: ${documentId}`);
             return null;
         }
-        const authorData = response.data.attributes;
+        const authorData = response.data[0].attributes;
+        const authorId = response.data[0].id;
         console.log(`[GET_AUTHOR] Found author: ${authorData.Name}`);
         return {
-            id: response.data.id,
-            documentId: String(response.data.id),
+            id: authorId,
+            documentId: authorData.documentId,
             name: authorData.Name,
             avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
             bioBlocks: authorData.Bio,
@@ -297,7 +289,7 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
             updatedAt: authorData.updatedAt,
         };
     } catch (error) {
-        console.error(`[GET_AUTHOR][ERROR] Failed to fetch author with id ${id}`, error);
+        console.error(`[GET_AUTHOR][ERROR] Failed to fetch author with documentId ${documentId}`, error);
         return null;
     }
 }
@@ -308,20 +300,20 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
   console.log(`[GET_CATEGORIES] Fetched ${raw.length} raw categories.`);
 
   const mapped: Promise<CategoryDoc | null>[] = raw.map(async (item: StrapiCategory) => {
-    // Add a check for item and item.attributes
-    if (!item) {
+    if (!item?.attributes) {
       console.warn('[GET_CATEGORIES] Skipping invalid item from Strapi:', item);
       return null;
     }
-    const c = item.attributes ?? item;
+    const c = item.attributes;
     const id = item.id;
 
-    if (!id || !c.name || !c.slug) {
+    if (!id || !c.name || !c.slug || !c.documentId) {
+       console.warn('[GET_CATEGORIES] Skipping category with missing id, name, slug, or documentId:', item);
       return null;
     }
     return {
       id: id,
-      documentId: String(id),
+      documentId: c.documentId,
       name: c.name,
       slug: c.slug,
       description: c.description,
@@ -346,7 +338,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
     console.log(`[GET_CATEGORY] Found category: ${categoryData.name}`);
     return {
         id: response.data[0].id,
-        documentId: String(response.data[0].id),
+        documentId: categoryData.documentId,
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
@@ -360,13 +352,18 @@ export async function getTags(): Promise<TagDoc[]> {
     console.log('[GET_TAGS] Fetching all tags...');
     const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*&pagination[limit]=-1', { cache: 'no-store' });
     console.log(`[GET_TAGS] Fetched ${tags.length} tags.`);
-    return tags.map(tag => ({
-        documentId: String(tag.id),
-        name: tag.attributes.name,
-        slug: tag.attributes.slug,
-        createdAt: tag.attributes.createdAt,
-        updatedAt: tag.attributes.updatedAt,
-    }));
+    const mappedTags = tags.map(tag => {
+        if (!tag || !tag.attributes) return null;
+        return {
+            id: tag.id,
+            documentId: tag.attributes.documentId,
+            name: tag.attributes.name,
+            slug: tag.attributes.slug,
+            createdAt: tag.attributes.createdAt,
+            updatedAt: tag.attributes.updatedAt,
+        }
+    });
+    return mappedTags.filter(Boolean) as TagDoc[];
 }
 
 export async function getTag(slug: string): Promise<TagDoc | null> {
@@ -379,7 +376,8 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
     const tagData = response.data[0].attributes;
     console.log(`[GET_TAG] Found tag: ${tagData.name}`);
     return {
-        documentId: String(response.data[0].id),
+        id: response.data[0].id,
+        documentId: tagData.documentId,
         name: tagData.name,
         slug: tagData.slug,
         createdAt: tagData.createdAt,
@@ -393,16 +391,15 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
   console.log(`[GET_GALLERY_ITEMS] Fetched ${response.length} gallery items.`);
 
   const items = await Promise.all(response.map(async (item) => {
-    // Add a check for item and item.attributes
-    const itemData = item.attributes ?? item;
-    if (!item || !itemData) {
+    if (!item || !item.attributes) {
       console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', item);
       return null;
     }
+    const itemData = item.attributes;
     const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes.url);
     if (!imageUrl) return null;
     return {
-      id: String(item.id),
+      id: itemData.documentId || String(item.id),
       title: itemData.Famoso,
       description: itemData.Nota,
       imageUrl: imageUrl,
@@ -441,7 +438,8 @@ export async function getFavoriteTags(userId: number, jwt: string): Promise<TagD
     
     console.log(`[GET_FAVORITE_TAGS] Found ${response.favorite_tags.length} favorite tags for user ${userId}.`);
     return response.favorite_tags.map(tag => ({
-        documentId: String(tag.id),
+        id: tag.id,
+        documentId: tag.documentId,
         name: tag.name,
         slug: tag.slug,
         createdAt: tag.createdAt,

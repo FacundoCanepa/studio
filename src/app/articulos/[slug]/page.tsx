@@ -100,7 +100,7 @@ export default async function ArticlePage({ params }: Props) {
               
               <aside className="lg:col-span-3 lg:order-last">
                  <div className="sticky top-24 space-y-8">
-                    <FavoriteButton articleId={Number(article.documentId)} />
+                    <FavoriteButton articleId={article.id} />
                     <ShareButtons article={article} />
                     <AdSlot className="w-full h-64" />
                  </div>

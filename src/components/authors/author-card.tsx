@@ -9,7 +9,6 @@ interface AuthorCardProps {
 export const AuthorCard = ({ author }: AuthorCardProps) => {
   if (!author) return null;
 
-  // Extract the first paragraph from the bio blocks for the short bio
   const bioFirstParagraph = author.bioBlocks?.[0]?.children?.[0]?.text || 'Sin biografía disponible.';
 
   return (

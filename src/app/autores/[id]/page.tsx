@@ -39,8 +39,6 @@ export default async function AuthorPage({ params }: Props) {
     notFound();
   }
 
-  // This is not efficient, Strapi doesn't make it easy to filter by author ID on articles.
-  // In a real scenario, you'd want a dedicated endpoint or better filtering.
   const allArticles = await getArticles({ cache: 'no-store' });
   const authorArticles = allArticles.filter(article => article.author?.documentId === author.documentId);
   
@@ -73,7 +71,6 @@ export default async function AuthorPage({ params }: Props) {
                         if (block.type === 'paragraph') {
                             return <p key={index}>{block.children.map((child: any) => child.text).join('')}</p>;
                         }
-                        // Handle other block types from Strapi if needed
                         return null;
                     })}
                 </div>

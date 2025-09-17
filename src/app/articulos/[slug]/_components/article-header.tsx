@@ -23,9 +23,7 @@ export const ArticleHeader = ({ article }: ArticleHeaderProps) => {
             alt=""
             fill
             className="object-cover object-center opacity-10 filter blur-sm scale-110"
-            // [ACCESSIBILITY FIX - /articulos/[slug]]: Hide decorative background image from screen readers.
             aria-hidden="true"
-            // [PERFORMANCE FIX - /articulos/[slug]]: Prioritize hero image as it's likely LCP.
             priority
             sizes="100vw"
           />
@@ -55,7 +53,6 @@ export const ArticleHeader = ({ article }: ArticleHeaderProps) => {
             {article.excerpt}
           </p>
         )}
-        {/* [RESPONSIVE FIX - /articulos/[slug]]: Adjust gap for smaller screens. */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
           {article.author && (
             <div className="flex items-center gap-3">

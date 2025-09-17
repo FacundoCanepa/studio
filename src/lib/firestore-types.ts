@@ -1,9 +1,8 @@
-
 // Firestore Document Types
 
 export type ArticleDoc = {
-  documentId: string;
-  id: number; // Add the numeric ID from Strapi
+  documentId: string; // UUID canónico (PRIMARY KEY en la app)
+  id: number;         // id numérico de Strapi (solo referencia opcional)
   title: string;
   slug: string;
   excerpt?: string;
@@ -19,7 +18,7 @@ export type ArticleDoc = {
 
   category: { id: number, documentId: string; name: string; slug: string, description?: string, color?: string } | null;
   author:   { id: number, documentId: string; name: string; avatarUrl?: string } | null;
-  tags:     Array<{ documentId: string; name: string; slug: string }>;
+  tags:     Array<{ id: number, documentId: string; name: string; slug: string }>;
   subcategories?: string[];
 
   // Denormalized fields for queries
@@ -70,6 +69,7 @@ export type CategoryDoc = {
 }
 
 export type TagDoc = {
+  id: number;
   documentId: string;
   name: string;
   slug: string;

@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { getArticle, getAuthors, getCategories } from '@/lib/strapi-client';
+import { getArticleByDocumentId, getAuthors, getCategories } from '@/lib/strapi-client';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { ArticleForm } from '../../_components/article-form';
@@ -12,7 +12,7 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const article = await getArticle(params.documentId);
+  const article = await getArticleByDocumentId(params.documentId);
   if (!article) {
     return { title: 'Artículo no encontrado' };
   }
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EditArticlePage({ params }: Props) {
   const [article, authors, categories] = await Promise.all([
-    getArticle(params.documentId),
+    getArticleByDocumentId(params.documentId),
     getAuthors(),
     getCategories(),
   ]);

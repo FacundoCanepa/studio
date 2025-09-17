@@ -29,8 +29,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-async function deleteArticle(id: string, toast: any) {
-    const result = await deleteArticleAction(id);
+async function deleteArticle(documentId: string, toast: any) {
+    const result = await deleteArticleAction(documentId);
     toast({
         title: result.success ? 'Éxito' : 'Error',
         description: result.message,

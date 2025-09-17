@@ -15,13 +15,17 @@ export interface StrapiResponse<T> {
 
 export interface StrapiEntity {
     id: number;
-    // Strapi response wraps attributes inside an 'attributes' property
+    attributes: {
+      documentId: string;
+      [key: string]: any;
+    }
 }
 
 
 export interface StrapiMedia {
     id: number;
     attributes: {
+        documentId: string;
         name: string;
         alternativeText?: string;
         caption?: string;
@@ -63,32 +67,35 @@ export interface StrapiMediaFormat {
 
 export type StrapiArticle = {
     id: number;
-    title: string;
-    slug: string;
-    excerpt?: string;
-    Content?: string;
-    ContentMore?: string | null;
-    Cover?: { data: StrapiMedia | null };
-    featured?: boolean;
-    home?: boolean;
-    New?: boolean;
-    Tendencias?: boolean;
-    views?: number;
-    saves?: number;
-    type?: 'guia' | 'lista' | 'comparativa';
-    subcategories?: string[];
-    Informacion?: string | null;
-    UrlYoutube?: string | null;
-    
-    Carosel?: { data: StrapiMedia[] | null };
-    category?: { data: StrapiCategory | null };
-    author?: { data: StrapiAuthor | null };
-    tags?: { data: StrapiTag[] | null };
-    seo?: StrapiSeoBlock | null; 
-    
-    createdAt: string;
-    updatedAt: string;
-    publishedAt?: string;
+    attributes: {
+        documentId: string;
+        title: string;
+        slug: string;
+        excerpt?: string;
+        Content?: string;
+        ContentMore?: string | null;
+        Cover?: { data: StrapiMedia | null };
+        featured?: boolean;
+        home?: boolean;
+        New?: boolean;
+        Tendencias?: boolean;
+        views?: number;
+        saves?: number;
+        type?: 'guia' | 'lista' | 'comparativa';
+        subcategories?: string[];
+        Informacion?: string | null;
+        UrlYoutube?: string | null;
+        
+        Carosel?: { data: StrapiMedia[] | null };
+        category?: { data: StrapiCategory | null };
+        author?: { data: StrapiAuthor | null };
+        tags?: { data: StrapiTag[] | null };
+        seo?: StrapiSeoBlock | null; 
+        
+        createdAt: string;
+        updatedAt: string;
+        publishedAt?: string;
+    }
 }
 
 
@@ -100,7 +107,14 @@ export type StrapiUser = {
     confirmed?: boolean;
     blocked?: boolean;
     favorite_articles?: StrapiArticle[];
-    favorite_tags?: StrapiTag[];
+    favorite_tags?: {
+        id: number;
+        name: string;
+        slug: string;
+        documentId: string;
+        createdAt: string;
+        updatedAt: string;
+    }[];
     role?: {
         id: number;
         name: string;
@@ -113,6 +127,7 @@ export type StrapiUser = {
 export type StrapiAuthor = {
     id: number;
     attributes: {
+        documentId: string;
         Name: string;
         Avatar?: { data: StrapiMedia | null };
         Bio?: any; // JSON content from rich text editor
@@ -125,6 +140,7 @@ export type StrapiAuthor = {
 export type StrapiCategory = {
     id: number;
     attributes: {
+        documentId: string;
         name: string;
         slug: string;
         description?: string;
@@ -140,6 +156,7 @@ export type StrapiCategory = {
 export type StrapiTag = {
    id: number;
    attributes: {
+        documentId: string;
         name: string;
         slug: string;
         createdAt: string;
@@ -151,6 +168,7 @@ export type StrapiTag = {
 export type StrapiGalleryItem = {
     id: number;
     attributes: {
+        documentId: string;
         Nota: string;
         Famoso: string;
         Imagen?: { data: StrapiMedia | null };
