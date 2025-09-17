@@ -164,9 +164,9 @@ export async function deleteArticleAction(documentId: string): Promise<{ success
         if (!articleToDelete) {
              throw new Error(`No se encontró el artículo con document ID ${documentId} para eliminarlo.`);
         }
-        
-        const deleteEndpoint = `/api/articles/${articleToDelete.id}`;
-        console.log(`[DELETE_ARTICLE_ACTION] Deleting at endpoint: ${deleteEndpoint}`);
+
+        const deleteEndpoint = `/api/articles/${documentId}`;
+        console.log(`[DELETE_ARTICLE_ACTION] Deleting using document endpoint: ${deleteEndpoint}`);
 
         await performStrapiRequest(deleteEndpoint, { method: 'DELETE' });
         

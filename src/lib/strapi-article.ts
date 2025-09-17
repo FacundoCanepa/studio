@@ -1,11 +1,10 @@
-
 'use server';
 
 import { performStrapiRequest } from './strapi-api';
 
 /**
  * Updates an article in Strapi using its documentId.
- * First, it finds the numeric ID from the documentId, then performs the update.
+ * Validates the article exists and performs the update directly via its documentId endpoint.
  * @param documentId - The v4 UUID of the article.
  * @param payload - The data to update.
  * @returns The updated article data.
@@ -13,30 +12,28 @@ import { performStrapiRequest } from './strapi-api';
 export async function patchArticleByDocumentId(documentId: string, payload: any): Promise<{ data: any }> {
     console.log(`[strapi-article] patchArticleByDocumentId: Attempting to update article with documentId: ${documentId}`);
     try {
-        // Step 1: Find the numeric ID from the documentId
+        // Validate that the article exists for the provided documentId
         const findParams = new URLSearchParams({ 'filters[documentId][$eq]': documentId });
-        const findResponse = await performStrapiRequest(`/api/articles?${findParams.toString()}`, {
+        const validationResponse = await performStrapiRequest(`/api/articles?${findParams.toString()}`, {
           method: 'GET',
           cache: 'no-store',
         });
 
-        const numericId = findResponse?.data?.[0]?.id;
-
-        if (!numericId) {
-            throw new Error(`Could not find numeric ID for article with documentId ${documentId}.`);
+        if (!validationResponse?.data?.length) {
+            throw new Error(`No article found for documentId ${documentId}.`);
         }
-        
-        console.log(`[strapi-article] Found numeric ID ${numericId} for doc ${documentId}. Proceeding with update.`);
 
-        // Step 2: Use the numeric ID to perform the PUT request
-        const endpoint = `/api/articles/${numericId}?populate=*`;
-        
+        console.log(`[strapi-article] Verified existence for documentId ${documentId}. Updating via documentId endpoint.`);
+
+        // Perform the update directly using the documentId
+        const endpoint = `/api/articles/${documentId}?populate=*`;
+
         const response = await performStrapiRequest(endpoint, {
           method: 'PUT',
           body: JSON.stringify({ data: payload }),
         });
-        
-        console.log(`[strapi-article] Successfully updated article ID ${numericId}.`);
+
+        console.log(`[strapi-article] Successfully updated article with documentId ${documentId}. Strapi responded with status 200.`);
         return response;
 
     } catch (error: any) {
