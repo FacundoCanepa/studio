@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { StrapiTag } from '@/lib/strapi-types';
 import { performStrapiRequest } from '@/lib/strapi-api';
+import { setCoverByDocumentId, setCarouselByDocumentId } from '@/lib/strapi-article';
 
 const articleSchema = z.object({
   title: z.string().min(3, 'El título es requerido.'),
@@ -25,6 +26,9 @@ const articleSchema = z.object({
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   canonicalUrl: z.string().optional(),
+  // Campos para los IDs de media pendientes
+  pendingCoverId: z.string().optional(),
+  pendingCarouselIds: z.string().optional(),
 });
 
 type FormState = {
@@ -38,7 +42,10 @@ export async function saveArticleAction(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  console.log('[SAVE_ARTICLE_ACTION] Started.', { documentId });
+  if (!documentId) {
+      return { success: false, message: 'Error: No se proporcionó un ID de documento para la actualización.' };
+  }
+  console.log('[SAVE_ARTICLE_ACTION] Started for documentId:', documentId);
   
   const rawData = Object.fromEntries(formData.entries());
   
@@ -67,102 +74,86 @@ export async function saveArticleAction(
   
   console.log('[SAVE_ARTICLE_ACTION] Validation successful.');
 
-  const { title, slug, excerpt, content, category, author, featured, publishedAt, tags, urlYoutube, contentMore, home, isNew, tendencias, metaTitle, metaDescription, canonicalUrl } =
-    validation.data;
+  const { 
+    title, slug, excerpt, content, category, author, featured, publishedAt, tags, 
+    urlYoutube, contentMore, home, isNew, tendencias, metaTitle, metaDescription, canonicalUrl,
+    pendingCoverId, pendingCarouselIds 
+  } = validation.data;
     
-  let tagIds: number[] = [];
-  if (tags && tags.length > 0) {
-      console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
-      const allTagsResponse = await performStrapiRequest('/api/tags?pagination[limit]=-1', { method: 'GET' });
-      const existingTags: StrapiTag[] = allTagsResponse.data || [];
-      console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t?.name));
+  try {
+     // --- Step 1: Handle Media Updates ---
+    if (pendingCoverId !== undefined) {
+      const coverId = pendingCoverId === 'null' ? null : Number(pendingCoverId);
+      console.log(`[SAVE_ARTICLE_ACTION] Updating cover for ${documentId} to assetId: ${coverId}`);
+      await setCoverByDocumentId(documentId, coverId);
+    }
 
-      for (const tagName of tags) {
-          if (!tagName) continue;
-          const existingTag = existingTags.find(t => t && t.name && t.name.toLowerCase() === tagName.toLowerCase());
-          if (existingTag) {
-              tagIds.push(existingTag.id);
-              console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);
-          } else {
-              console.log(`[SAVE_ARTICLE_ACTION] Tag '${tagName}' not found. Creating new tag.`);
-              try {
+    if (pendingCarouselIds !== undefined) {
+      const carouselIds = JSON.parse(pendingCarouselIds) as number[];
+      console.log(`[SAVE_ARTICLE_ACTION] Updating carousel for ${documentId} with assetIds:`, carouselIds);
+      await setCarouselByDocumentId(documentId, carouselIds);
+    }
+    
+    // --- Step 2: Handle Tag Creation/Association ---
+    let tagIds: number[] = [];
+    if (tags && tags.length > 0) {
+        console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
+        const allTagsResponse = await performStrapiRequest('/api/tags?pagination[limit]=-1', { method: 'GET' });
+        const existingTags: StrapiTag[] = allTagsResponse.data || [];
+
+        for (const tagName of tags) {
+            if (!tagName) continue;
+            const existingTag = existingTags.find(t => t && t.name && t.name.toLowerCase() === tagName.toLowerCase());
+            if (existingTag) {
+                tagIds.push(existingTag.id);
+            } else {
+                console.log(`[SAVE_ARTICLE_ACTION] Creating new tag '${tagName}'.`);
                 const newTagResponse = await performStrapiRequest('/api/tags', {
                     method: 'POST',
                     body: JSON.stringify({ data: { name: tagName, slug: tagName.toLowerCase().replace(/\s+/g, '-') } }),
                 });
                 if (newTagResponse.data) {
                     tagIds.push(newTagResponse.data.id);
-                    console.log(`[SAVE_ARTICLE_ACTION] Created new tag '${tagName}' with ID ${newTagResponse.data.id}`);
-                } else {
-                    console.error(`[SAVE_ARTICLE_ACTION] Failed to create new tag '${tagName}'`, { response: newTagResponse });
                 }
-              } catch(e: any) {
-                 console.error(`[SAVE_ARTICLE_ACTION] Exception while creating tag '${tagName}'`, e);
-                 return {
-                    message: `Error al crear la etiqueta '${tagName}': ${e.message}`,
-                    success: false,
-                 };
-              }
-          }
-      }
-      console.log('[SAVE_ARTICLE_ACTION] Final tag IDs:', tagIds);
-  }
-
-
-  const payload = {
-    data: {
-      title,
-      slug,
-      excerpt,
-      Content: content,
-      category: category ? Number(category) : null,
-      author: author ? Number(author) : null,
-      featured,
-      publishedAt: publishedAt || null, 
-      tags: tagIds,
-      UrlYoutube: urlYoutube,
-      ContentMore: contentMore,
-      home: home,
-      New: isNew, 
-      Tendencias: tendencias,
-      Name: {
-        metaTitle,
-        metaDescription,
-        canonicalUrl,
-      }
-    },
-  };
-  
-  console.log('[SAVE_ARTICLE_ACTION] Final payload to be sent to Strapi:', JSON.stringify(payload, null, 2));
-
-
-  try {
-    if (documentId) {
-      console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      // Use documentId directly in the URL for PUT request.
-      const updateEndpoint = `/api/articles/${documentId}`;
-      await performStrapiRequest(updateEndpoint, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-      });
-
-      console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
-
-    } else {
-      console.log('[SAVE_ARTICLE_ACTION] Creating new article.');
-      await performStrapiRequest('/api/articles', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+            }
+        }
+        console.log('[SAVE_ARTICLE_ACTION] Final tag IDs:', tagIds);
     }
 
-    console.log('[SAVE_ARTICLE_ACTION] Revalidating paths.');
+
+    // --- Step 3: Handle Article Text/Relation Fields ---
+    const payload = {
+        data: {
+          title, slug, excerpt, Content: content,
+          category: category ? Number(category) : null,
+          author: author ? Number(author) : null,
+          featured, publishedAt: publishedAt || null, 
+          tags: tagIds, UrlYoutube: urlYoutube,
+          ContentMore: contentMore, home: home, New: isNew, 
+          Tendencias: tendencias,
+          Name: { metaTitle, metaDescription, canonicalUrl }
+        },
+    };
+    
+    console.log('[SAVE_ARTICLE_ACTION] Final payload for article text fields:', JSON.stringify(payload, null, 2));
+
+    const articleUpdateEndpoint = `/api/articles/${documentId}`;
+    await performStrapiRequest(articleUpdateEndpoint, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+    });
+
+    console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
+    
+    // --- Step 4: Revalidate Paths ---
     revalidatePath('/admin/articles');
     revalidatePath(`/articulos/${slug}`);
     revalidatePath('/');
+    revalidatePath(`/admin/articles/edit/${documentId}`);
+
 
     return {
-      message: `Artículo ${documentId ? 'actualizado' : 'creado'} con éxito.`,
+      message: 'Artículo actualizado con éxito.',
       success: true,
     };
   } catch (error: any) {

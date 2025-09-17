@@ -18,6 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save } from 'lucide-react';
 import { TagInput } from './tag-input';
+import { CoverUploader, type CoverAsset } from '@/components/media/CoverUploader';
+import { CarouselUploader, type CarouselAsset } from '@/components/media/CarouselUploader';
 
 interface ArticleFormProps {
   article: ArticleDoc | null;
@@ -37,6 +39,10 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
   const { toast } = useToast();
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
+  
+  // States to hold pending media changes
+  const [pendingCoverId, setPendingCoverId] = React.useState<number | null | undefined>(undefined);
+  const [pendingCarouselIds, setPendingCarouselIds] = React.useState<number[] | undefined>(undefined);
 
   React.useEffect(() => {
     if (formState.message) {
@@ -56,8 +62,32 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
     event.preventDefault();
     setPending(true);
     const formData = new FormData(event.currentTarget);
+    
+    // Append pending media IDs to the form data
+    if (pendingCoverId !== undefined) {
+      formData.append('pendingCoverId', pendingCoverId === null ? 'null' : String(pendingCoverId));
+    }
+    if (pendingCarouselIds !== undefined) {
+      formData.append('pendingCarouselIds', JSON.stringify(pendingCarouselIds));
+    }
+    
     formAction(formData);
   }
+  
+  const initialCoverAsset = article?.coverUrl ? {
+      id: article.id, // Placeholder, needs actual media ID if available
+      url: article.coverUrl,
+      name: 'Cover Actual',
+      size: 0 // Strapi doesn't provide size easily in article payload
+  } : undefined;
+
+  const initialCarouselAssets = article?.carousel?.map((url, index) => ({
+      id: index, // Placeholder
+      url: url,
+      name: `Imagen ${index + 1}`,
+      size: 0,
+      isNew: false
+  })) || [];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -119,6 +149,26 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
         </div>
 
         <div className="space-y-8">
+          <Card>
+            <CardHeader>
+                <CardTitle>Imagen de Portada</CardTitle>
+            </CardHeader>
+            <CardContent>
+                 <CoverUploader
+                    documentId={article?.documentId || ''}
+                    initialAsset={initialCoverAsset as CoverAsset | undefined}
+                    onAssetChange={setPendingCoverId}
+                 />
+            </CardContent>
+          </Card>
+
+           <CarouselUploader 
+              documentId={article?.documentId || ''}
+              initialAssets={initialCarouselAssets as CarouselAsset[]}
+              onAssetIdsChange={setPendingCarouselIds}
+              max={8}
+            />
+
           <Card>
             <CardHeader>
               <CardTitle>Metadatos</CardTitle>
