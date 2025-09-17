@@ -26,7 +26,6 @@ const articleSchema = z.object({
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   canonicalUrl: z.string().optional(),
-  // Campos para los IDs de media pendientes
   pendingCoverId: z.string().optional(),
   pendingCarouselIds: z.string().optional(),
 });
@@ -59,7 +58,6 @@ export async function saveArticleAction(
     category: rawData.category || '',
     author: rawData.author || '',
   };
-  console.log('[SAVE_ARTICLE_ACTION] Data to validate:', dataToValidate);
 
   const validation = articleSchema.safeParse(dataToValidate);
 
@@ -81,7 +79,6 @@ export async function saveArticleAction(
   } = validation.data;
     
   try {
-    // --- Step 1: Handle Tag Creation/Association ---
     let tagIds: number[] = [];
     if (tags && tags.length > 0) {
         console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
@@ -107,8 +104,6 @@ export async function saveArticleAction(
         console.log('[SAVE_ARTICLE_ACTION] Final tag IDs:', tagIds);
     }
 
-
-    // --- Step 2: Prepare a single payload with all changes ---
     const payload: Record<string, any> = {
         title, slug, excerpt, Content: content,
         category: category ? Number(category) : null,
@@ -120,23 +115,28 @@ export async function saveArticleAction(
         Name: { metaTitle, metaDescription, canonicalUrl }
     };
 
-    // Add media changes to the payload if they exist
     if (pendingCoverId !== undefined) {
-      payload.Cover = pendingCoverId === 'null' ? null : Number(pendingCoverId);
-    }
-    if (pendingCarouselIds !== undefined) {
-      const carouselIds = JSON.parse(pendingCarouselIds) as number[];
-      payload.Carosel = carouselIds;
+        const coverId = pendingCoverId === 'null' ? null : Number(pendingCoverId);
+        payload.Cover = coverId;
     }
     
-    console.log('[SAVE_ARTICLE_ACTION] Final payload for article update:', JSON.stringify(payload, null, 2));
+    if (pendingCarouselIds !== undefined) {
+        try {
+            const carouselIds = JSON.parse(pendingCarouselIds);
+            if(Array.isArray(carouselIds) && carouselIds.every(id => typeof id === 'number')) {
+                payload.Carosel = carouselIds;
+            }
+        } catch (e) {
+            console.warn('[SAVE_ARTICLE_ACTION] Could not parse pendingCarouselIds');
+        }
+    }
+    
+    console.log(`[SAVE_ARTICLE_ACTION] Final payload for doc ${documentId}:`, JSON.stringify(payload, null, 2));
 
-    // --- Step 3: Perform a single update operation ---
     await patchArticleByDocumentId(documentId, payload);
 
     console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
     
-    // --- Step 4: Revalidate Paths ---
     revalidatePath('/admin/articles');
     revalidatePath(`/articulos/${slug}`);
     revalidatePath('/');
@@ -158,7 +158,6 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        // To delete, we still need the numeric ID. This is a limitation of the current Strapi API design.
         const articleResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
         const articleToDelete = articleResponse.data?.[0];
 
