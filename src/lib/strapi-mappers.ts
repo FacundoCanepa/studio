@@ -3,7 +3,7 @@
 'use server';
 import type { ArticleDoc } from './firestore-types';
 import type { StrapiArticle, StrapiTag, StrapiAuthor, StrapiCategory } from './strapi-types';
-import { getStrapiMediaUrl } from './strapi-client';
+import { getStrapiMediaUrl } from './strapi-api';
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
     const rawItem = item?.attributes ?? item;

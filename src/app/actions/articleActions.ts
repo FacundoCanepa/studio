@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { StrapiTag } from '@/lib/strapi-types';
-import { performStrapiRequest } from '@/lib/strapi-client';
+import { performStrapiRequest } from '@/lib/strapi-api';
 
 const articleSchema = z.object({
   title: z.string().min(3, 'El título es requerido.'),
