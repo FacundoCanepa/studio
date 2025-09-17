@@ -6,19 +6,21 @@ import type { StrapiArticle, StrapiTag } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
-    if (!item || !item.attributes || !item.attributes.documentId) {
-        console.warn('[MAPPER] Item is null or missing attributes/documentId. Aborting map.', { item });
+    // Determine the correct source for the article's raw data.
+    // The Strapi API might return data directly or nested under 'attributes'.
+    const rawItem = item?.attributes ? item.attributes : item;
+
+    if (!rawItem || !rawItem.documentId) {
+        console.warn('[MAPPER] Item is null or missing raw data/documentId. Aborting map.', { item });
         return null;
     }
     
-    console.log('[MAPPER] Starting to map Strapi article. DocumentID:', item.attributes.documentId);
-    
-    const rawItem = item.attributes;
+    console.log('[MAPPER] Starting to map Strapi article. DocumentID:', rawItem.documentId);
     
     const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
     
-    const categoryData = rawItem.category?.data?.attributes;
-    const categoryId = rawItem.category?.data?.id;
+    const categoryData = rawItem.category?.data?.attributes ?? rawItem.category;
+    const categoryId = rawItem.category?.data?.id ?? rawItem.category?.id;
     const category = categoryData && categoryId ? {
         id: categoryId,
         documentId: categoryData.documentId || String(categoryId),
@@ -28,8 +30,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         color: categoryData.color,
     } : null;
 
-    const authorData = rawItem.author?.data?.attributes;
-    const authorId = rawItem.author?.data?.id;
+    const authorData = rawItem.author?.data?.attributes ?? rawItem.author;
+    const authorId = rawItem.author?.data?.id ?? rawItem.author?.id;
     const author = authorData && authorId ? {
         id: authorId,
         documentId: authorData.documentId || String(authorId),
@@ -37,14 +39,18 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
     } : null;
     
-    const tags = (rawItem.tags?.data || [])
-        .filter((t): t is StrapiTag => !!t && !!t.id && !!t.attributes?.name && !!t.attributes?.slug)
-        .map(t => ({
-            id: t.id,
-            documentId: t.attributes.documentId || String(t.id),
-            name: t.attributes.name,
-            slug: t.attributes.slug,
-        }));
+    const tagsSource = rawItem.tags?.data ?? rawItem.tags ?? [];
+    const tags = tagsSource
+        .filter((t: any): t is StrapiTag => !!t && (t.id || t.documentId) && (t.attributes?.name || t.name) && (t.attributes?.slug || t.slug))
+        .map((t: any) => {
+            const tagAttrs = t.attributes ?? t;
+            return {
+                id: t.id,
+                documentId: tagAttrs.documentId || String(t.id),
+                name: tagAttrs.name,
+                slug: tagAttrs.slug,
+            };
+        });
     
     const seoBlock = (rawItem as any).seo || (rawItem as any).Name;
     const seo = seoBlock ? {
@@ -56,13 +62,14 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
 
     const contentHtml = rawItem.Content;
     
-    const carouselImages = rawItem.Carosel?.data && Array.isArray(rawItem.Carosel.data)
-      ? await Promise.all(rawItem.Carosel.data.map(img => getStrapiMediaUrl(img?.attributes.url)))
+    const carouselSource = rawItem.Carosel?.data ?? rawItem.Carosel ?? [];
+    const carouselImages = Array.isArray(carouselSource)
+      ? await Promise.all(carouselSource.map(img => getStrapiMediaUrl(img?.attributes?.url ?? img?.url)))
       : [];
 
     const out: ArticleDoc = {
         documentId: rawItem.documentId,
-        id: item.id,
+        id: item?.id ?? rawItem.id,
         title: rawItem.title,
         slug: rawItem.slug,
         excerpt: rawItem.excerpt,
