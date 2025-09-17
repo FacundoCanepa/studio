@@ -1,6 +1,4 @@
 
-'use server';
-
 import {
   STRAPI_URL,
   STRAPI_API_TOKEN,
