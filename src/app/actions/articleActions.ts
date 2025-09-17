@@ -139,18 +139,9 @@ export async function saveArticleAction(
   try {
     if (documentId) {
       console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      
-      // First, get the numeric ID from the documentId
-      const articleToUpdateResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
-
-      if (!articleToUpdateResponse.data || articleToUpdateResponse.data.length === 0) {
-          throw new Error(`No se encontró el artículo con documentId ${documentId} para actualizar.`);
-      }
-      const numericId = articleToUpdateResponse.data[0].id;
-      console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
-
-      // Now, perform the PUT request using the numeric ID
-      await performStrapiRequest(`/api/articles/${numericId}`, {
+      // Use Strapi's update-by-filter feature by doing a PUT on the collection endpoint
+      const updateEndpoint = `/api/articles?filters[documentId][$eq]=${documentId}`;
+      await performStrapiRequest(updateEndpoint, {
           method: 'PUT',
           body: JSON.stringify(payload),
       });
