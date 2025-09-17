@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
@@ -148,7 +149,7 @@ export async function getArticles({
     params.set('populate', '*');
     params.set('sort', 'publishedAt:desc');
     
-    // For admin panel, we need to see everything
+    // For admin panel, we need to see everything, including drafts
     if (limit === -1) {
         params.set('publicationState', 'preview');
     }
@@ -205,19 +206,39 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
     return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
+/**
+ * Fetches a single article from Strapi using its ID.
+ * This acts as our `findOne` implementation.
+ * @param documentId - The ID of the article to fetch (can be numeric or the alphanumeric documentId).
+ */
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
     console.log(`[GET_ARTICLE] Fetching article with ID: ${documentId}`);
+    
+    // 1. Build the query parameters.
     const params = new URLSearchParams();
+    
+    // 2. Filter by the 'id' field, which corresponds to your documentId in Strapi.
     params.set('filters[id][$eq]', documentId);
+    
+    // 3. Populate all related fields (author, category, tags, images, etc.).
     params.set('populate', '*');
+    
+    // 4. Crucial for the admin panel: get the article even if it's a draft.
     params.set('publicationState', 'preview');
 
+    // 5. Perform the fetch using the collection endpoint with our filters.
+    // Strapi will return an array, even if there's only one match.
     const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(`/api/articles?${params.toString()}`, { cache: 'no-store' });
+    
+    // 6. Check if any article was found.
     if (!response.data || response.data.length === 0) {
         console.warn(`[GET_ARTICLE] No article found for ID: ${documentId}`);
         return null;
     }
+    
     console.log(`[GET_ARTICLE] Found article with ID ${documentId}, mapping...`);
+    
+    // 7. Return the first (and only) result from the array.
     return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
