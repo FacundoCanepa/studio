@@ -1,4 +1,6 @@
 
+require('dotenv').config();
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -38,10 +40,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-  },
-  env: {
-    STRAPI_URL: process.env.STRAPI_URL,
-    STRAPI_API_TOKEN: process.env.STRAPI_API_TOKEN,
   },
 };
 

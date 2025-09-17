@@ -131,19 +131,12 @@ export async function saveArticleAction(
   try {
     if (documentId) {
       console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      const articleToUpdateResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
-      
-      if (!articleToUpdateResponse.data || articleToUpdateResponse.data.length === 0) {
-        throw new Error(`No se encontró el artículo con documentId ${documentId}`);
-      }
-      
-      const numericId = articleToUpdateResponse.data[0].id;
-      console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
-      
-      await performStrapiRequest(`/api/articles/${numericId}`, {
+      // EXPERIMENT: Use documentId directly in the PUT request URL
+      await performStrapiRequest(`/api/articles/${documentId}`, {
         method: 'PUT',
         body: JSON.stringify(payload),
       });
+
     } else {
       console.log('[SAVE_ARTICLE_ACTION] Creating new article.');
       await performStrapiRequest('/api/articles', {
