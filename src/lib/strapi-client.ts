@@ -9,13 +9,13 @@ import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 const STRAPI_BASE_URL = process.env.STRAPI_URL || "https://graceful-bear-073b8037ba.strapiapp.com";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
-if (!STRAPI_TOKEN) {
-  throw new Error("STRAPI_API_TOKEN must be configured in environment variables.");
-}
-
 async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> {
   const url = `${STRAPI_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   
+  if (!STRAPI_TOKEN) {
+    throw new Error('STRAPI_API_TOKEN must be configured in environment variables.');
+  }
+
   try {
     const headers: Record<string, string> = {
       'Accept': 'application/json',
@@ -23,12 +23,15 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       ...(init?.headers as Record<string,string>),
     };
     
-    console.log(`[FETCH_STRAPI] Requesting URL: ${url}`, { cache: init?.cache });
+    if (init?.body) {
+        headers['Content-Type'] = 'application/json';
+    }
+    
+    console.log(`[FETCH_STRAPI] Requesting URL: ${url}`, { cache: init?.cache, method: init?.method });
 
     const response = await fetch(url, { 
-      method: init?.method ?? 'GET',
-      headers, 
       ...init,
+      headers, 
     }); 
     
     if (!response.ok) {
@@ -37,7 +40,6 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
       throw new Error(`Strapi request failed with status ${response.status}: ${errorBody}`);
     }
     
-    // Handle cases where the response might be empty (e.g., DELETE requests)
     if (response.status === 204) {
       return {} as T;
     }
@@ -77,7 +79,7 @@ export async function performStrapiRequest(endpoint: string, options: RequestIni
       params.set('pagination[page]', String(page));
       const currentUrl = `${url.pathname}?${params.toString()}`;
       try {
-        const response = await fetchStrapi<StrapiResponse<any[]>>(currentUrl, options);
+        const response = await fetchStrapi<StrapiResponse<any[]>>(currentUrl, { ...options, body: undefined });
         if (response.data && Array.isArray(response.data)) {
           allResults = allResults.concat(response.data);
         }
@@ -97,7 +99,6 @@ export async function performStrapiRequest(endpoint: string, options: RequestIni
     return { data: allResults };
   }
   
-  // For non-paginated GETs or other methods (POST, PUT, DELETE)
   return fetchStrapi<any>(`${url.pathname}?${params.toString()}`, options);
 }
 

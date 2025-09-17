@@ -85,15 +85,24 @@ export async function saveArticleAction(
               console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);
           } else {
               console.log(`[SAVE_ARTICLE_ACTION] Tag '${tagName}' not found. Creating new tag.`);
-              const newTagResponse = await performStrapiRequest('/api/tags', {
-                  method: 'POST',
-                  body: JSON.stringify({ data: { name: tagName, slug: tagName.toLowerCase().replace(/\s+/g, '-') } }),
-              });
-              if (newTagResponse.data) {
-                  tagIds.push(newTagResponse.data.id);
-                  console.log(`[SAVE_ARTICLE_ACTION] Created new tag '${tagName}' with ID ${newTagResponse.data.id}`);
-              } else {
-                  console.error(`[SAVE_ARTICLE_ACTION] Failed to create new tag '${tagName}'`, { response: newTagResponse });
+              try {
+                const newTagResponse = await performStrapiRequest('/api/tags', {
+                    method: 'POST',
+                    body: JSON.stringify({ data: { name: tagName, slug: tagName.toLowerCase().replace(/\s+/g, '-') } }),
+                });
+                if (newTagResponse.data) {
+                    tagIds.push(newTagResponse.data.id);
+                    console.log(`[SAVE_ARTICLE_ACTION] Created new tag '${tagName}' with ID ${newTagResponse.data.id}`);
+                } else {
+                    console.error(`[SAVE_ARTICLE_ACTION] Failed to create new tag '${tagName}'`, { response: newTagResponse });
+                }
+              } catch(e: any) {
+                 console.error(`[SAVE_ARTICLE_ACTION] Exception while creating tag '${tagName}'`, e);
+                 // Re-throw or handle as a form error
+                 return {
+                    message: `Error al crear la etiqueta '${tagName}': ${e.message}`,
+                    success: false,
+                 };
               }
           }
       }
@@ -130,12 +139,19 @@ export async function saveArticleAction(
 
   try {
     if (documentId) {
-      console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      // EXPERIMENT: Use documentId directly in the PUT request URL
-      await performStrapiRequest(`/api/articles/${documentId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-      });
+        console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
+        const articleToUpdateResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+
+        if (!articleToUpdateResponse.data || articleToUpdateResponse.data.length === 0) {
+            throw new Error(`No se encontró el artículo con documentId ${documentId} para actualizar.`);
+        }
+        const numericId = articleToUpdateResponse.data[0].id;
+        console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
+
+        await performStrapiRequest(`/api/articles/${numericId}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+        });
 
     } else {
       console.log('[SAVE_ARTICLE_ACTION] Creating new article.');
