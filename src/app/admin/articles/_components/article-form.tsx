@@ -42,7 +42,9 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
   
   // States to hold pending media changes
   const [pendingCoverId, setPendingCoverId] = React.useState<number | null | undefined>(undefined);
-  const [pendingCarouselIds, setPendingCarouselIds] = React.useState<number[] | undefined>(undefined);
+  const [pendingCarouselIds, setPendingCarouselIds] = React.useState<number[] | undefined>(
+    article?.carouselMedia?.map(media => media.id)
+  );
 
   React.useEffect(() => {
     if (formState.message) {
@@ -81,13 +83,21 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
       size: 0 // Strapi doesn't provide size easily in article payload
   } : undefined;
 
-  const initialCarouselAssets = article?.carousel?.map((url, index) => ({
-      id: index, // Placeholder
-      url: url,
+  const initialCarouselAssets = article?.carouselMedia?.map((media, index) => ({
+    id: media.id,
+    url: media.url,
       name: `Imagen ${index + 1}`,
       size: 0,
       isNew: false
   })) || [];
+  const handleCarouselIdsChange = React.useCallback((ids: number[]) => {
+    if (!article?.carouselMedia && ids.length === 0) {
+      setPendingCarouselIds(undefined);
+      return;
+    }
+
+    setPendingCarouselIds(ids);
+  }, [article?.carouselMedia, setPendingCarouselIds]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -162,10 +172,10 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
             </CardContent>
           </Card>
 
-           <CarouselUploader 
+          <CarouselUploader
               documentId={article?.documentId || ''}
               initialAssets={initialCarouselAssets as CarouselAsset[]}
-              onAssetIdsChange={setPendingCarouselIds}
+              onAssetIdsChange={handleCarouselIdsChange}
               max={8}
             />
 

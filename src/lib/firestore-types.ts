@@ -38,6 +38,7 @@ export type ArticleDoc = {
   informacion?: string | null;
   contentMore?: string | null;
   urlYoutube?: string | null;
+  carouselMedia?: Array<{ id: number; url: string }>;
   carousel?: string[];
 
   // Boolean flags

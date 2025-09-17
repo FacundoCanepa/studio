@@ -2,7 +2,8 @@
 
 'use server';
 import type { ArticleDoc } from './firestore-types';
-import type { StrapiArticle, StrapiTag, StrapiAuthor, StrapiCategory } from './strapi-types';
+import type { StrapiArticle, StrapiTag, StrapiAuthor, StrapiCategory, StrapiMedia } from './strapi-types';
+
 import { getStrapiMediaUrl } from './strapi-api';
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
@@ -52,9 +53,25 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
     } : undefined;
 
     const contentHtml = rawItem.Content;
-    
-    const carouselSource = Array.isArray(rawItem.Carosel) ? rawItem.Carosel : [];
-    const carouselImages = await Promise.all(carouselSource.map(img => getStrapiMediaUrl(img?.url)));
+    const carouselSource = (Array.isArray(rawItem.Carosel) ? rawItem.Carosel : []) as (StrapiMedia | null | undefined)[];
+    const carouselMediaData = await Promise.all(
+        carouselSource.map(async (media: StrapiMedia | null | undefined) => {
+            if (!media?.id || !media?.url) {
+                return null;
+            }
+
+            const mediaUrl = await getStrapiMediaUrl(media.url);
+            if (!mediaUrl) {
+                return null;
+            }
+
+            return {
+                id: media.id,
+                url: mediaUrl,
+            };
+        })
+    );
+    const carouselMedia = carouselMediaData.filter(Boolean) as Array<{ id: number; url: string }>;
 
     const out: ArticleDoc = {
         documentId: rawItem.documentId,
@@ -81,7 +98,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         informacion: rawItem.Informacion,
         contentMore: rawItem.ContentMore,
         urlYoutube: rawItem.UrlYoutube,
-        carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
+        carouselMedia: carouselMedia.length > 0 ? carouselMedia : undefined,
+        carousel: carouselMedia.map(media => media.url),
         home: rawItem.home ?? false,
         isNew: rawItem.New ?? false,
         tendencias: rawItem.Tendencias ?? false,
