@@ -59,6 +59,7 @@ export const columns: ColumnDef<ArticleDoc>[] = [
     header: "Autor",
     cell: ({ row }) => {
         const authorName = row.original.author?.name;
+        console.log(`[COLUMNS_DEBUG] Row ID ${row.original.documentId} - Author object:`, JSON.stringify(row.original.author, null, 2));
         return authorName || 'N/A';
     }
   },
@@ -67,6 +68,7 @@ export const columns: ColumnDef<ArticleDoc>[] = [
     header: "Categoría",
     cell: ({ row }) => {
         const categoryName = row.original.category?.name;
+        console.log(`[COLUMNS_DEBUG] Row ID ${row.original.documentId} - Category object:`, JSON.stringify(row.original.category, null, 2));
         return categoryName ? <Badge variant="secondary">{categoryName}</Badge> : 'N/A'
     }
   },

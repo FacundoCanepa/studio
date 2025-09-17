@@ -37,7 +37,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
 
     // Strapi can return data in item.attributes or directly in item. This handles both.
     const rawItem = item.attributes ? item.attributes : item;
-    console.log('[MAPPER] Raw Strapi Item Attributes:', JSON.stringify(rawItem, null, 2));
+    // console.log('[MAPPER] Raw Strapi Item Attributes:', JSON.stringify(rawItem, null, 2));
 
     const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
     
@@ -49,6 +49,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         description: categoryData.attributes.description,
         color: categoryData.attributes.color,
     } : null;
+    console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Category:`, JSON.stringify(category, null, 2));
+
 
     const authorData = rawItem.author?.data;
     const author = authorData ? {
@@ -56,6 +58,8 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         name: authorData.attributes.Name,
         avatarUrl: await getStrapiMediaUrl(authorData.attributes.Avatar?.data?.attributes.url),
     } : null;
+    console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Author:`, JSON.stringify(author, null, 2));
+
     
     const tags = (rawItem.tags?.data || [])
         .filter((t): t is StrapiTag => !!t && !!t.id && !!t.attributes.name && !!t.attributes.slug)
@@ -108,7 +112,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
     };
     
-    console.log('[MAPPER] Finished mapping. Resulting ArticleDoc:', JSON.stringify(out, null, 2));
+    // console.log('[MAPPER] Finished mapping. Resulting ArticleDoc:', JSON.stringify(out, null, 2));
 
     return out;
 }
