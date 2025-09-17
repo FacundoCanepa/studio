@@ -1,13 +1,7 @@
-
-import {
-  STRAPI_URL,
-  STRAPI_API_TOKEN,
-  validateImage,
-  type StrapiAsset,
-} from './strapi-media-config';
+import { validateImage } from './strapi-media-config';
 
 /**
- * Uploads a file to Strapi's Media Library.
+ * Uploads a file using the internal API that proxies the request to Strapi.
  * This function uses XMLHttpRequest to support upload progress tracking.
  *
  * @param file The file to upload.
@@ -44,11 +38,13 @@ export function uploadFileToStrapi(
       if (xhr.readyState === 4) {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const response: StrapiAsset[] = JSON.parse(xhr.responseText);
-            if (response && response[0]?.id) {
-              resolve(response[0].id); // 3. Return the ID of the uploaded asset.
+            const response: { id?: number; error?: string } = JSON.parse(xhr.responseText);
+            if (response && typeof response.id === 'number') {
+              resolve(response.id); // 3. Return the ID of the uploaded asset.
+            } else if (response?.error) {
+              reject(new Error(response.error));
             } else {
-              reject(new Error('Respuesta de subida inválida desde Strapi.'));
+              reject(new Error('Respuesta de subida inválida desde el servidor.'));
             }
           } catch (e) {
             reject(new Error('Error al parsear la respuesta de subida.'));
@@ -60,9 +56,10 @@ export function uploadFileToStrapi(
     };
     
     // 4. POST to the Strapi upload endpoint.
-    xhr.open('POST', `${STRAPI_URL}/api/upload`);
-    // 5. Set Authorization header. Content-Type is set automatically by the browser for FormData.
-    xhr.setRequestHeader('Authorization', `Bearer ${STRAPI_API_TOKEN}`);
+
+    // 4. POST to the internal Strapi upload endpoint.
+    xhr.open('POST', '/api/strapi/upload');
+    // 5. Authorization headers are handled on the server; FormData sets Content-Type automatically.
     xhr.send(formData);
   });
 }
