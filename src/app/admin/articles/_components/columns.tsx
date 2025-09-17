@@ -55,15 +55,19 @@ export const columns: ColumnDef<ArticleDoc>[] = [
     cell: ({ row }) => <div className="font-medium">{row.getValue("title")}</div>,
   },
   {
-    accessorKey: "authorName",
+    accessorKey: "author.name",
     header: "Autor",
+    cell: ({ row }) => {
+        const authorName = row.original.author?.name;
+        return authorName || 'N/A';
+    }
   },
   {
     accessorKey: "category.name",
     header: "Categoría",
     cell: ({ row }) => {
-        const category = row.original.category;
-        return category ? <Badge variant="secondary">{category.name}</Badge> : 'N/A'
+        const categoryName = row.original.category?.name;
+        return categoryName ? <Badge variant="secondary">{categoryName}</Badge> : 'N/A'
     }
   },
   {

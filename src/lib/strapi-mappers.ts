@@ -35,11 +35,13 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         return null;
     }
 
-    console.log('[MAPPER] Raw Strapi Item:', JSON.stringify(item, null, 2));
+    // Strapi can return data in item.attributes or directly in item. This handles both.
+    const rawItem = item.attributes ? item.attributes : item;
+    console.log('[MAPPER] Raw Strapi Item Attributes:', JSON.stringify(rawItem, null, 2));
 
-    const coverUrl = await getStrapiMediaUrl(item.Cover?.data?.attributes.url);
+    const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
     
-    const categoryData = item.category?.data;
+    const categoryData = rawItem.category?.data;
     const category = categoryData ? {
         documentId: String(categoryData.id),
         name: categoryData.attributes.name,
@@ -48,22 +50,22 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         color: categoryData.attributes.color,
     } : null;
 
-    const authorData = item.author?.data;
+    const authorData = rawItem.author?.data;
     const author = authorData ? {
         documentId: String(authorData.id),
         name: authorData.attributes.Name,
         avatarUrl: await getStrapiMediaUrl(authorData.attributes.Avatar?.data?.attributes.url),
     } : null;
     
-    const tags = (item.tags?.data || [])
+    const tags = (rawItem.tags?.data || [])
         .filter((t): t is StrapiTag => !!t && !!t.id && !!t.attributes.name && !!t.attributes.slug)
         .map(t => ({
             documentId: String(t.id),
             name: t.attributes.name,
             slug: t.attributes.slug,
         }));
-
-    const seoBlock = item.seo;
+    
+    const seoBlock = (rawItem as any).seo || (rawItem as any).Name; // Handle inconsistent SEO block naming
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,
@@ -72,37 +74,37 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
     } : undefined;
 
     // Use htmlToMarkdown for form defaultValue, and markdownToHtml for display
-    const contentHtml = item.Content;
+    const contentHtml = rawItem.Content;
     
-    const carouselImages = item.Carosel?.data && Array.isArray(item.Carosel.data)
-      ? await Promise.all(item.Carosel.data.map(img => getStrapiMediaUrl(img?.attributes.url)))
+    const carouselImages = rawItem.Carosel?.data && Array.isArray(rawItem.Carosel.data)
+      ? await Promise.all(rawItem.Carosel.data.map(img => getStrapiMediaUrl(img?.attributes.url)))
       : [];
 
     const out: ArticleDoc = {
         documentId: String(item.id),
-        title: item.title,
-        slug: item.slug,
-        excerpt: item.excerpt,
+        title: rawItem.title,
+        slug: rawItem.slug,
+        excerpt: rawItem.excerpt,
         contentHtml: contentHtml, // Store the raw content for editing
         coverUrl,
-        featured: item.featured ?? false,
-        publishedAt: item.publishedAt,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        views: item.views ?? 0,
-        saves: item.saves ?? 0,
-        type: item.type as any,
+        featured: rawItem.featured ?? false,
+        publishedAt: rawItem.publishedAt,
+        createdAt: rawItem.createdAt,
+        updatedAt: rawItem.updatedAt,
+        views: rawItem.views ?? 0,
+        saves: rawItem.saves ?? 0,
+        type: rawItem.type as any,
         category,
         author,
         tags,
-        subcategories: item.subcategories,
+        subcategories: rawItem.subcategories,
         seo,
         categorySlug: category?.slug,
         tagSlugs: tags.map(t => t.slug),
         authorName: author?.name,
-        informacion: item.Informacion,
-        contentMore: item.ContentMore,
-        urlYoutube: item.UrlYoutube,
+        informacion: rawItem.Informacion,
+        contentMore: rawItem.ContentMore,
+        urlYoutube: rawItem.UrlYoutube,
         carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
     };
     
