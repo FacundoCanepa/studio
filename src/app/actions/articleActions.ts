@@ -4,6 +4,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import type { StrapiTag } from '@/lib/strapi-types';
 
 const STRAPI_URL = process.env.STRAPI_URL;
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
@@ -107,11 +108,11 @@ export async function saveArticleAction(
   if (tags && tags.length > 0) {
       console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
       const allTagsResponse = await performStrapiRequest('/api/tags', { method: 'GET' });
-      const existingTags: { id: number, attributes: { name: string } }[] = allTagsResponse.data;
-      console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t.attributes.name));
+      const existingTags: StrapiTag[] = allTagsResponse.data;
+      console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t.name));
 
       for (const tagName of tags) {
-          const existingTag = existingTags.find(t => t.attributes.name.toLowerCase() === tagName.toLowerCase());
+          const existingTag = existingTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
           if (existingTag) {
               tagIds.push(existingTag.id);
               console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);

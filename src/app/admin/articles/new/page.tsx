@@ -1,6 +1,7 @@
 
+
 import * as React from 'react';
-import { getAuthors, getCategories } from '@/lib/strapi-client';
+import { getAuthors, getCategories, getTags } from '@/lib/strapi-client';
 import { Metadata } from 'next';
 import { ArticleForm } from '../_components/article-form';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 };
 
 export default async function NewArticlePage() {
-  const [authors, categories] = await Promise.all([getAuthors(), getCategories()]);
+  const [authors, categories, allTags] = await Promise.all([
+      getAuthors(), 
+      getCategories(),
+      getTags()
+    ]);
 
   return (
     <div className="space-y-8">
@@ -35,6 +40,7 @@ export default async function NewArticlePage() {
       <ArticleForm
         authors={authors}
         categories={categories}
+        allTags={allTags}
         article={null}
       />
     </div>

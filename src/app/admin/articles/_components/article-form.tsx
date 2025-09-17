@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import * as React from 'react';
 import { useFormState } from 'react-dom';
 import { saveArticleAction } from '@/app/actions/articleActions';
-import type { ArticleDoc, AuthorDoc, CategoryDoc } from '@/lib/firestore-types';
+import type { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from '@/lib/firestore-types';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ interface ArticleFormProps {
   article: ArticleDoc | null;
   authors: AuthorDoc[];
   categories: CategoryDoc[];
+  allTags: TagDoc[];
 }
 
 const initialState = {
@@ -30,7 +32,7 @@ const initialState = {
   success: false,
 };
 
-export function ArticleForm({ article, authors, categories }: ArticleFormProps) {
+export function ArticleForm({ article, authors, categories, allTags }: ArticleFormProps) {
   const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.documentId || null), initialState);
   const { toast } = useToast();
   const router = useRouter();
@@ -152,7 +154,11 @@ export function ArticleForm({ article, authors, categories }: ArticleFormProps) 
               </div>
                <div className="space-y-2">
                 <Label htmlFor="tags">Etiquetas</Label>
-                <InputWithBadges name="tags" defaultValue={article?.tags.map(t => t.name) || []} />
+                <InputWithBadges 
+                    name="tags" 
+                    defaultValue={article?.tags.map(t => t.name) || []}
+                    existingTags={allTags.map(t => t.name)}
+                />
               </div>
 
                <div className="space-y-4 pt-4 border-t">

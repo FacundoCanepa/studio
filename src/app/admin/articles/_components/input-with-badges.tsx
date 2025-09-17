@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -9,11 +10,13 @@ import { X } from 'lucide-react';
 interface InputWithBadgesProps {
   name: string;
   defaultValue?: string[];
+  existingTags?: string[];
 }
 
-export const InputWithBadges = ({ name, defaultValue = [] }: InputWithBadgesProps) => {
+export const InputWithBadges = ({ name, defaultValue = [], existingTags = [] }: InputWithBadgesProps) => {
   const [tags, setTags] = React.useState<string[]>(defaultValue);
   const [inputValue, setInputValue] = React.useState('');
+  const dataListId = React.useId();
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if ((event.key === 'Enter' || event.key === ',') && inputValue.trim()) {
@@ -57,7 +60,15 @@ export const InputWithBadges = ({ name, defaultValue = [] }: InputWithBadgesProp
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        list={dataListId}
       />
+      {existingTags.length > 0 && (
+        <datalist id={dataListId}>
+            {existingTags.map(tag => (
+                <option key={tag} value={tag} />
+            ))}
+        </datalist>
+      )}
       <p className="text-xs text-muted-foreground mt-1">
         Presiona Enter o Coma para añadir una etiqueta.
       </p>

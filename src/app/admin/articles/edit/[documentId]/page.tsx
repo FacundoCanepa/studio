@@ -1,6 +1,7 @@
 
+
 import * as React from 'react';
-import { getArticleByDocumentId, getAuthors, getCategories } from '@/lib/strapi-client';
+import { getArticleByDocumentId, getAuthors, getCategories, getTags } from '@/lib/strapi-client';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { ArticleForm } from '../../_components/article-form';
@@ -22,10 +23,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function EditArticlePage({ params }: Props) {
-  const [article, authors, categories] = await Promise.all([
+  const [article, authors, categories, allTags] = await Promise.all([
     getArticleByDocumentId(params.documentId),
     getAuthors(),
     getCategories(),
+    getTags(),
   ]);
 
   if (!article) {
@@ -56,6 +58,7 @@ export default async function EditArticlePage({ params }: Props) {
         article={article}
         authors={authors}
         categories={categories}
+        allTags={allTags}
       />
     </div>
   );
