@@ -164,10 +164,12 @@ export async function saveArticleAction(
   try {
     if (documentId) {
       console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      const articleToUpdate = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
+      const articleToUpdate = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+      
       if (!articleToUpdate.data || articleToUpdate.data.length === 0) {
         throw new Error(`No se encontró el artículo con documentId ${documentId}`);
       }
+      
       const numericId = articleToUpdate.data[0].id;
       console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
       
@@ -204,7 +206,8 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
+        const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+
         if (!articleToDelete.data || articleToDelete.data.length === 0) {
             throw new Error(`No se encontró el artículo con documentId ${documentId}`);
         }
