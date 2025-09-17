@@ -5,13 +5,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { StrapiTag } from '@/lib/strapi-types';
-
-const STRAPI_URL = process.env.STRAPI_URL;
-const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
-
-if (!STRAPI_URL || !STRAPI_TOKEN) {
-  throw new Error('STRAPI_URL and STRAPI_API_TOKEN must be configured.');
-}
+import { performStrapiRequest } from '@/lib/strapi-client';
 
 const articleSchema = z.object({
   title: z.string().min(3, 'El título es requerido.'),
@@ -38,33 +32,6 @@ type FormState = {
   errors?: Record<string, string[]>;
   success: boolean;
 };
-
-async function performStrapiRequest(endpoint: string, options: RequestInit) {
-  const url = `${STRAPI_URL}${endpoint}`;
-  console.log(`[STRAPI_REQUEST] Performing request to: ${url}`, { method: options.method });
-  
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${STRAPI_TOKEN}`,
-      ...options.headers,
-    },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    console.error(`[STRAPI_ERROR] URL: ${url}, Status: ${response.status}`, JSON.stringify(errorBody, null, 2));
-    throw new Error(
-      errorBody.error?.message || `Error en la operación de Strapi: ${response.statusText}`
-    );
-  }
-  
-  const responseData = await response.json();
-  console.log(`[STRAPI_SUCCESS] Successfully performed request to: ${url}`);
-  return responseData;
-}
 
 export async function saveArticleAction(
   documentId: string | null,
@@ -126,7 +93,7 @@ export async function saveArticleAction(
                   tagIds.push(newTagResponse.data.id);
                   console.log(`[SAVE_ARTICLE_ACTION] Created new tag '${tagName}' with ID ${newTagResponse.data.id}`);
               } else {
-                  console.error(`[SAVE_ARTICLE_ACTION] Failed to create new tag '${tagName}'`);
+                  console.error(`[SAVE_ARTICLE_ACTION] Failed to create new tag '${tagName}'`, { response: newTagResponse });
               }
           }
       }
@@ -227,5 +194,3 @@ export async function deleteArticleAction(documentId: string): Promise<{ success
         return { success: false, message: error.message };
     }
 }
-
-    

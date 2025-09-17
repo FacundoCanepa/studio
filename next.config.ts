@@ -39,6 +39,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  env: {
+    STRAPI_URL: process.env.STRAPI_URL,
+    STRAPI_API_TOKEN: process.env.STRAPI_API_TOKEN,
+  },
 };
 
 export default nextConfig;
