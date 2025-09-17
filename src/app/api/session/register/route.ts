@@ -10,7 +10,7 @@ const registerSchema = z.object({
   password: z.string().min(8, {message: 'La contraseña debe tener al menos 8 caracteres.'}),
 });
 
-const STRAPI_URL = process.env.STRAPI_URL;
+const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
 
 export async function POST(request: NextRequest) {
   try {

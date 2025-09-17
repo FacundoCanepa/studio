@@ -1,4 +1,5 @@
 
+
 // src/lib/api-utils.ts
 import {z} from 'zod';
 import {serialize} from 'cookie';
@@ -14,7 +15,7 @@ const requiredEnv = (name: string): string => {
   return value;
 };
 
-export const API_BASE = `${requiredEnv('STRAPI_URL')}/api`;
+export const API_BASE = `${requiredEnv('NEXT_PUBLIC_STRAPI_URL')}/api`;
 export const COOKIE_NAME = requiredEnv('COOKIE_NAME');
 export const COOKIE_SECRET = new TextEncoder().encode(
   requiredEnv('COOKIE_SECRET')

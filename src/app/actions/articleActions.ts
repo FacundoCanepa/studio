@@ -98,7 +98,6 @@ export async function saveArticleAction(
                 }
               } catch(e: any) {
                  console.error(`[SAVE_ARTICLE_ACTION] Exception while creating tag '${tagName}'`, e);
-                 // Re-throw or handle as a form error
                  return {
                     message: `Error al crear la etiqueta '${tagName}': ${e.message}`,
                     success: false,
@@ -139,19 +138,24 @@ export async function saveArticleAction(
 
   try {
     if (documentId) {
-        console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-        const articleToUpdateResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+      console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
+      
+      // First, get the numeric ID from the documentId
+      const articleToUpdateResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
 
-        if (!articleToUpdateResponse.data || articleToUpdateResponse.data.length === 0) {
-            throw new Error(`No se encontró el artículo con documentId ${documentId} para actualizar.`);
-        }
-        const numericId = articleToUpdateResponse.data[0].id;
-        console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
+      if (!articleToUpdateResponse.data || articleToUpdateResponse.data.length === 0) {
+          throw new Error(`No se encontró el artículo con documentId ${documentId} para actualizar.`);
+      }
+      const numericId = articleToUpdateResponse.data[0].id;
+      console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
 
-        await performStrapiRequest(`/api/articles/${numericId}`, {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-        });
+      // Now, perform the PUT request using the numeric ID
+      await performStrapiRequest(`/api/articles/${numericId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+      });
+
+      console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
 
     } else {
       console.log('[SAVE_ARTICLE_ACTION] Creating new article.');

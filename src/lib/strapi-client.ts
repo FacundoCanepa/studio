@@ -6,13 +6,14 @@ import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
 import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiResponse, StrapiGalleryItem, StrapiUser } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 
-const STRAPI_BASE_URL = process.env.STRAPI_URL || "https://graceful-bear-073b8037ba.strapiapp.com";
+const STRAPI_BASE_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "https://graceful-bear-073b8037ba.strapiapp.com";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
 async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> {
   const url = `${STRAPI_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   
   if (!STRAPI_TOKEN) {
+    console.error('STRAPI_API_TOKEN must be configured in environment variables.');
     throw new Error('STRAPI_API_TOKEN must be configured in environment variables.');
   }
 
@@ -99,7 +100,8 @@ export async function performStrapiRequest(endpoint: string, options: RequestIni
     return { data: allResults };
   }
   
-  return fetchStrapi<any>(`${url.pathname}?${params.toString()}`, options);
+  const finalUrl = `${url.pathname}?${params.toString()}`;
+  return fetchStrapi<any>(finalUrl, options);
 }
 
 
