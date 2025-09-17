@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -207,21 +208,17 @@ export async function saveArticleAction(
 }
 
 export async function deleteArticleAction(id: string): Promise<{ success: boolean; message: string }> {
-    console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with ID: ${id}`);
+    console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${id}`);
     try {
-        const response = await fetch(`${STRAPI_URL}/api/articles/${id}`, {
-            method: 'DELETE',
-            headers: {
-                Authorization: `Bearer ${STRAPI_TOKEN}`,
-            },
-            cache: 'no-store',
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({}));
-            console.error('[DELETE_ARTICLE_ACTION] Failed to delete article.', { id, status: response.status, errorBody });
-            throw new Error(errorBody.error?.message || 'No se pudo eliminar el artículo.');
+        // First, find the numeric ID from the documentId
+        const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${id}`, { method: 'GET' });
+        if (!articleToDelete.data || articleToDelete.data.length === 0) {
+            throw new Error(`No se encontró el artículo con documentId ${id}`);
         }
+        const numericId = articleToDelete.data[0].id;
+        console.log(`[DELETE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${id}. Deleting.`);
+
+        await performStrapiRequest(`/api/articles/${numericId}`, { method: 'DELETE' });
         
         console.log(`[DELETE_ARTICLE_ACTION] Successfully deleted article ${id}. Revalidating paths.`);
         revalidatePath('/admin/articles');
@@ -230,7 +227,7 @@ export async function deleteArticleAction(id: string): Promise<{ success: boolea
         return { success: true, message: 'Artículo eliminado con éxito.' };
 
     } catch (error: any) {
-        console.error(`[DELETE_ARTICLE_ACTION] Exception caught for article ID ${id}:`, error);
+        console.error(`[DELETE_ARTICLE_ACTION] Exception caught for article document ID ${id}:`, error);
         return { success: false, message: error.message };
     }
 }

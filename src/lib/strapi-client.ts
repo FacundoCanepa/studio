@@ -206,12 +206,19 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
     return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
+/**
+ * Fetches a single article from Strapi by its documentId.
+ * This is our "findOne" for articles.
+ * @param documentId The alfanumeric documentId of the article.
+ * @returns The mapped article document or null if not found.
+ */
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
     console.log(`[GET_ARTICLE] Fetching article with documentId: ${documentId}`);
     const params = new URLSearchParams();
-    params.set(`filters[id][$eq]`, documentId);
+    // Use the documentId for filtering. This is the correct way for this setup.
+    params.set(`filters[documentId][$eq]`, documentId);
     params.set('populate', '*');
-    params.set('publicationState', 'preview');
+    params.set('publicationState', 'preview'); // Fetch drafts and published
 
     const endpoint = `/api/articles?${params.toString()}`;
     
@@ -246,12 +253,18 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
         const authorData = item.attributes ?? item;
 
         // Skip if essential data is missing
-        if (!authorData || !item.id || !authorData.Name) {
+        if (!authorData || !item.id) {
             console.warn('[GET_AUTHORS] Skipping invalid author item from Strapi:', item);
+            return null;
+        }
+        // Make sure to check for 'Name' which is capitalized in your Strapi model
+        if (!authorData.Name) {
+            console.warn('[GET_AUTHORS] Skipping author with missing Name:', item);
             return null;
         }
 
         return {
+            id: item.id,
             documentId: String(item.id),
             name: authorData.Name,
             avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
@@ -275,6 +288,7 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
         const authorData = response.data.attributes;
         console.log(`[GET_AUTHOR] Found author: ${authorData.Name}`);
         return {
+            id: response.data.id,
             documentId: String(response.data.id),
             name: authorData.Name,
             avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
@@ -306,6 +320,7 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
       return null;
     }
     return {
+      id: id,
       documentId: String(id),
       name: c.name,
       slug: c.slug,
@@ -330,6 +345,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
     const categoryData = response.data[0].attributes;
     console.log(`[GET_CATEGORY] Found category: ${categoryData.name}`);
     return {
+        id: response.data[0].id,
         documentId: String(response.data[0].id),
         name: categoryData.name,
         slug: categoryData.slug,
