@@ -49,8 +49,8 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     const errorModel = endpoint.split('/api/')[1]?.split('?')[0] || 'unknown';
     console.error('[FETCH_STRAPI][EXCEPTION]', { model: errorModel, url, message: error?.message });
     // Do not re-throw if it's a build error, let it be handled by Next.js
-    if (!error.message.includes('Dynamic server usage')) {
-        throw error;
+    if (process.env.npm_lifecycle_event !== 'build' && !error.message.includes('Dynamic server usage')) {
+      throw error;
     }
     // Return empty data for build-time dynamic usage errors to avoid crashes
     return { data: [], meta: {} } as T;
@@ -149,12 +149,12 @@ export async function getArticles({
     params.set('populate', '*');
     params.set('sort', 'publishedAt:desc');
     
-    // For admin panel, we need to see everything, including drafts
     if (limit === -1) {
         params.set('publicationState', 'preview');
+        params.set('pagination[limit]', '-1');
     }
 
-    if (limit) {
+    if (limit && limit !== -1) {
       params.set('pagination[limit]', String(limit));
     }
     
@@ -194,7 +194,7 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
     params.set('filters[slug][$eq]', slug);
     params.set('populate', '*');
     params.set('pagination[limit]', '1');
-    params.set('publicationState', 'preview'); // Allow fetching drafts
+    params.set('publicationState', 'preview');
 
     const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(`/api/articles?${params.toString()}`, { cache: 'no-store' });
     if (!response.data || response.data.length === 0) {
@@ -206,40 +206,34 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
     return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
-/**
- * Fetches a single article from Strapi using its ID.
- * This acts as our `findOne` implementation.
- * @param documentId - The ID of the article to fetch (can be numeric or the alphanumeric documentId).
- */
 export async function getArticle(documentId: string): Promise<ArticleDoc | null> {
-    console.log(`[GET_ARTICLE] Fetching article with ID: ${documentId}`);
-    
-    // 1. Build the query parameters.
+    console.log(`[GET_ARTICLE] Fetching article with documentId: ${documentId}`);
     const params = new URLSearchParams();
-    
-    // 2. Filter by the 'id' field, which corresponds to your documentId in Strapi.
-    params.set('filters[id][$eq]', documentId);
-    
-    // 3. Populate all related fields (author, category, tags, images, etc.).
+    params.set(`filters[id][$eq]`, documentId);
     params.set('populate', '*');
-    
-    // 4. Crucial for the admin panel: get the article even if it's a draft.
     params.set('publicationState', 'preview');
 
-    // 5. Perform the fetch using the collection endpoint with our filters.
-    // Strapi will return an array, even if there's only one match.
-    const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(`/api/articles?${params.toString()}`, { cache: 'no-store' });
+    const endpoint = `/api/articles?${params.toString()}`;
     
-    // 6. Check if any article was found.
-    if (!response.data || response.data.length === 0) {
-        console.warn(`[GET_ARTICLE] No article found for ID: ${documentId}`);
-        return null;
+    try {
+        const response = await fetchStrapi<StrapiResponse<StrapiArticle[]>>(endpoint, { cache: 'no-store' });
+        
+        if (!response.data || response.data.length === 0) {
+            console.warn(`[GET_ARTICLE] No article found for documentId: ${documentId}`);
+            return null;
+        }
+        
+        console.log(`[GET_ARTICLE] Found article with documentId ${documentId}, mapping...`);
+        return await mapStrapiArticleToArticleDoc(response.data[0]);
+
+    } catch (error: any) {
+         if (error.message.includes('404')) {
+             console.warn(`[GET_ARTICLE] Article with documentId ${documentId} not found.`);
+             return null;
+         }
+         console.error(`[GET_ARTICLE] Error fetching article with documentId ${documentId}:`, error);
+         throw error;
     }
-    
-    console.log(`[GET_ARTICLE] Found article with ID ${documentId}, mapping...`);
-    
-    // 7. Return the first (and only) result from the array.
-    return await mapStrapiArticleToArticleDoc(response.data[0]);
 }
 
 export async function getAuthors(options: { cache?: RequestCache } = {}): Promise<AuthorDoc[]> {
@@ -248,11 +242,11 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
     console.log(`[GET_AUTHORS] Fetched ${authors.length} authors.`);
     return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
         documentId: String(item.id),
-        name: item.Name,
-        avatarUrl: await getStrapiMediaUrl(item.Avatar?.url),
-        bioBlocks: item.Bio,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
+        name: item.attributes.Name,
+        avatarUrl: await getStrapiMediaUrl(item.attributes.Avatar?.data?.attributes.url),
+        bioBlocks: item.attributes.Bio,
+        createdAt: item.attributes.createdAt,
+        updatedAt: item.attributes.updatedAt,
     })));
 }
 
@@ -264,12 +258,12 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
             console.warn(`[GET_AUTHOR] No author found for ID: ${id}`);
             return null;
         }
-        const authorData = response.data;
+        const authorData = response.data.attributes;
         console.log(`[GET_AUTHOR] Found author: ${authorData.Name}`);
         return {
-            documentId: String(authorData.id),
+            documentId: String(response.data.id),
             name: authorData.Name,
-            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
+            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
             bioBlocks: authorData.Bio,
             createdAt: authorData.createdAt,
             updatedAt: authorData.updatedAt,
@@ -281,28 +275,35 @@ export async function getAuthor(id: string): Promise<AuthorDoc | null> {
 }
 
 export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> {
-    console.log('[GET_CATEGORIES] Fetching all categories...');
-    const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, init);
-    console.log(`[GET_CATEGORIES] Fetched ${raw.length} raw categories.`);
-    
-    const mapped: Promise<CategoryDoc | null>[] = raw
-      .map(async (c: StrapiCategory) => {
-        if (!c || !c.id || !c.name || !c.slug) {
-          return null;
-        }
-        return {
-          documentId: String(c.id),
-          name: c.name,
-          slug: c.slug,
-          description: c.description,
-          color: c.color,
-          imageUrl: await getStrapiMediaUrl(c.img?.url),
-        };
-      });
+  console.log('[GET_CATEGORIES] Fetching all categories...');
+  const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, init);
+  console.log(`[GET_CATEGORIES] Fetched ${raw.length} raw categories.`);
 
-    const results = (await Promise.all(mapped)).filter(Boolean) as CategoryDoc[];
-    console.log(`[GET_CATEGORIES] Mapped ${results.length} categories.`);
-    return results;
+  const mapped: Promise<CategoryDoc | null>[] = raw.map(async (item: StrapiCategory) => {
+    // Add a check for item and item.attributes
+    if (!item || !item.attributes) {
+      console.warn('[GET_CATEGORIES] Skipping invalid item from Strapi:', item);
+      return null;
+    }
+    const c = item.attributes;
+    const id = item.id;
+
+    if (!id || !c.name || !c.slug) {
+      return null;
+    }
+    return {
+      documentId: String(id),
+      name: c.name,
+      slug: c.slug,
+      description: c.description,
+      color: c.color,
+      imageUrl: await getStrapiMediaUrl(c.img?.data?.attributes.url),
+    };
+  });
+
+  const results = (await Promise.all(mapped)).filter(Boolean) as CategoryDoc[];
+  console.log(`[GET_CATEGORIES] Mapped ${results.length} categories.`);
+  return results;
 }
 
 export async function getCategory(slug: string): Promise<CategoryDoc | null> {
@@ -312,15 +313,15 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
         console.warn(`[GET_CATEGORY] No category found for slug: ${slug}`);
         return null;
     }
-    const categoryData = response.data[0];
+    const categoryData = response.data[0].attributes;
     console.log(`[GET_CATEGORY] Found category: ${categoryData.name}`);
     return {
-        documentId: String(categoryData.id),
+        documentId: String(response.data[0].id),
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
         color: categoryData.color,
-        imageUrl: await getStrapiMediaUrl(categoryData.img?.url),
+        imageUrl: await getStrapiMediaUrl(categoryData.img?.data?.attributes.url),
     };
 }
 
@@ -331,10 +332,10 @@ export async function getTags(): Promise<TagDoc[]> {
     console.log(`[GET_TAGS] Fetched ${tags.length} tags.`);
     return tags.map(tag => ({
         documentId: String(tag.id),
-        name: tag.name,
-        slug: tag.slug,
-        createdAt: tag.createdAt,
-        updatedAt: tag.updatedAt,
+        name: tag.attributes.name,
+        slug: tag.attributes.slug,
+        createdAt: tag.attributes.createdAt,
+        updatedAt: tag.attributes.updatedAt,
     }));
 }
 
@@ -345,10 +346,10 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
         console.warn(`[GET_TAG] No tag found for slug: ${slug}`);
         return null;
     }
-    const tagData = response.data[0];
+    const tagData = response.data[0].attributes;
     console.log(`[GET_TAG] Found tag: ${tagData.name}`);
     return {
-        documentId: String(tagData.id),
+        documentId: String(response.data[0].id),
         name: tagData.name,
         slug: tagData.slug,
         createdAt: tagData.createdAt,
@@ -362,12 +363,17 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
   console.log(`[GET_GALLERY_ITEMS] Fetched ${response.length} gallery items.`);
 
   const items = await Promise.all(response.map(async (item) => {
-    const imageUrl = await getStrapiMediaUrl(item.Imagen?.url);
+    // Add a check for item and item.attributes
+    if (!item || !item.attributes) {
+      console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', item);
+      return null;
+    }
+    const imageUrl = await getStrapiMediaUrl(item.attributes.Imagen?.data?.attributes.url);
     if (!imageUrl) return null;
     return {
       id: String(item.id),
-      title: item.Famoso,
-      description: item.Nota,
+      title: item.attributes.Famoso,
+      description: item.attributes.Nota,
       imageUrl: imageUrl,
     };
   }));

@@ -2,6 +2,7 @@
 
 export type ArticleDoc = {
   documentId: string;
+  id: number; // Add the numeric ID from Strapi
   title: string;
   slug: string;
   excerpt?: string;

@@ -112,7 +112,7 @@ export const columns: ColumnDef<ArticleDoc>[] = [
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
-                    <Link href={`/admin/articles/edit/${article.documentId}`}>Editar</Link>
+                    <Link href={`/admin/articles/edit/${article.id}`}>Editar</Link>
                   </DropdownMenuItem>
                    <DropdownMenuItem asChild>
                     <a href={`/articulos/${article.slug}`} target="_blank" rel="noopener noreferrer">

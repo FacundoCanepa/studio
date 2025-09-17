@@ -1,32 +1,9 @@
 
+
 'use server';
 import type { ArticleDoc } from './firestore-types';
 import type { StrapiArticle, StrapiCategory, StrapiAuthor, StrapiTag, StrapiSeoBlock } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
-
-// Helper function to convert markdown-like text to basic HTML
-function markdownToHtml(text: string | null | undefined): string | undefined {
-    if (!text) return undefined;
-
-    // First, escape any existing HTML to prevent injection
-    // let escapedText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    // Process paragraphs (split by one or more newlines)
-    let html = text.split(/\n\s*\n/).map(paragraph => {
-        // Process bold and italic
-        paragraph = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        paragraph = paragraph.replace(/\*(.*?)\*/g, '<em>$1</em>');
-        return `<p>${paragraph.replace(/\n/g, '<br>')}</p>`;
-    }).join('');
-
-    return html;
-}
-
-function htmlToMarkdown(html: string | null | undefined): string | undefined {
-    if (!html) return undefined;
-    return html.replace(/<p>/g, '').replace(/<\/p>/g, '\n\n').replace(/<br>/g, '\n').trim();
-}
-
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
     console.log('[MAPPER] Starting to map Strapi article. ID:', item?.id);
@@ -35,13 +12,22 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         return null;
     }
 
-    const rawItem = item.attributes ? item.attributes : item;
+    // Handle inconsistent Strapi response structures. Sometimes data is nested in `attributes`, sometimes not.
+    const rawItem = 'attributes' in item ? item.attributes : item;
+    console.log('[MAPPER_DEBUG] Raw Strapi Item Attributes:', rawItem);
+
+    if (!rawItem) {
+        console.error(`[MAPPER] Raw item data is missing for item ID: ${item.id}`);
+        return null;
+    }
 
     const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
     
-    const categoryData = rawItem.category?.data?.attributes;
+    // Robustly extract category and author, checking for `data` wrapper.
+    const categoryData = rawItem.category?.data ? rawItem.category.data.attributes : rawItem.category;
+    const categoryId = rawItem.category?.data ? rawItem.category.data.id : rawItem.category?.id;
     const category = categoryData ? {
-        documentId: String(rawItem.category?.data.id),
+        documentId: String(categoryId),
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
@@ -50,10 +36,11 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
     console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Category:`, JSON.stringify(category, null, 2));
 
 
-    const authorData = rawItem.author?.data?.attributes;
+    const authorData = rawItem.author?.data ? rawItem.author.data.attributes : rawItem.author;
+    const authorId = rawItem.author?.data ? rawItem.author.data.id : rawItem.author?.id;
     const author = authorData ? {
-        documentId: String(rawItem.author?.data.id),
-        name: authorData.Name,
+        documentId: String(authorId),
+        name: authorData.Name || authorData.name, // Handle 'Name' and 'name'
         avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
     } : null;
     console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Author:`, JSON.stringify(author, null, 2));
@@ -75,7 +62,6 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
-    // Use htmlToMarkdown for form defaultValue, and markdownToHtml for display
     const contentHtml = rawItem.Content;
     
     const carouselImages = rawItem.Carosel?.data && Array.isArray(rawItem.Carosel.data)
@@ -84,10 +70,11 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
 
     const out: ArticleDoc = {
         documentId: String(item.id),
+        id: item.id,
         title: rawItem.title,
         slug: rawItem.slug,
         excerpt: rawItem.excerpt,
-        contentHtml: contentHtml, // Store the raw content for editing
+        contentHtml: contentHtml,
         coverUrl,
         featured: rawItem.featured ?? false,
         publishedAt: rawItem.publishedAt,
