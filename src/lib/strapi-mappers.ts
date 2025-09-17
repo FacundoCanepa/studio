@@ -2,13 +2,11 @@
 
 'use server';
 import type { ArticleDoc } from './firestore-types';
-import type { StrapiArticle, StrapiTag } from './strapi-types';
+import type { StrapiArticle, StrapiTag, StrapiAuthor, StrapiCategory } from './strapi-types';
 import { getStrapiMediaUrl } from './strapi-client';
 
 export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): Promise<ArticleDoc | null> {
-    // Determine the correct source for the article's raw data.
-    // The Strapi API might return data directly or nested under 'attributes'.
-    const rawItem = item?.attributes ? item.attributes : item;
+    const rawItem = item?.attributes ?? item;
 
     if (!rawItem || !rawItem.documentId) {
         console.warn('[MAPPER] Item is null or missing raw data/documentId. Aborting map.', { item });
@@ -17,55 +15,46 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
     
     console.log('[MAPPER] Starting to map Strapi article. DocumentID:', rawItem.documentId);
     
-    const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
+    const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.url);
     
-    const categoryData = rawItem.category?.data?.attributes ?? rawItem.category;
-    const categoryId = rawItem.category?.data?.id ?? rawItem.category?.id;
-    const category = categoryData && categoryId ? {
-        id: categoryId,
-        documentId: categoryData.documentId || String(categoryId),
+    const categoryData = rawItem.category;
+    const category = categoryData && categoryData.id ? {
+        id: categoryData.id,
+        documentId: categoryData.documentId || String(categoryData.id),
         name: categoryData.name,
         slug: categoryData.slug,
-        description: categoryData.description,
-        color: categoryData.color,
     } : null;
 
-    const authorData = rawItem.author?.data?.attributes ?? rawItem.author;
-    const authorId = rawItem.author?.data?.id ?? rawItem.author?.id;
-    const author = authorData && authorId ? {
-        id: authorId,
-        documentId: authorData.documentId || String(authorId),
+    const authorData = rawItem.author;
+    const author = authorData && authorData.id ? {
+        id: authorData.id,
+        documentId: authorData.documentId || String(authorData.id),
         name: authorData.Name,
-        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
+        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
     } : null;
     
-    const tagsSource = rawItem.tags?.data ?? rawItem.tags ?? [];
+    const tagsSource: StrapiTag[] = Array.isArray(rawItem.tags) ? rawItem.tags : [];
     const tags = tagsSource
-        .filter((t: any): t is StrapiTag => !!t && (t.id || t.documentId) && (t.attributes?.name || t.name) && (t.attributes?.slug || t.slug))
-        .map((t: any) => {
-            const tagAttrs = t.attributes ?? t;
-            return {
-                id: t.id,
-                documentId: tagAttrs.documentId || String(t.id),
-                name: tagAttrs.name,
-                slug: tagAttrs.slug,
-            };
-        });
+        .filter((t: StrapiTag) => !!t && t.id && t.name && t.slug)
+        .map((t: StrapiTag) => ({
+            id: t.id,
+            documentId: t.documentId || String(t.id),
+            name: t.name,
+            slug: t.slug,
+        }));
     
-    const seoBlock = (rawItem as any).seo || (rawItem as any).Name;
+    const seoBlock = rawItem.Name;
     const seo = seoBlock ? {
         metaTitle: seoBlock.metaTitle,
         metaDescription: seoBlock.metaDescription,
-        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.data?.attributes.url),
+        ogImageUrl: await getStrapiMediaUrl(seoBlock.ogImage?.url),
         canonicalUrl: seoBlock.canonicalUrl,
     } : undefined;
 
     const contentHtml = rawItem.Content;
     
-    const carouselSource = rawItem.Carosel?.data ?? rawItem.Carosel ?? [];
-    const carouselImages = Array.isArray(carouselSource)
-      ? await Promise.all(carouselSource.map(img => getStrapiMediaUrl(img?.attributes?.url ?? img?.url)))
-      : [];
+    const carouselSource = Array.isArray(rawItem.Carosel) ? rawItem.Carosel : [];
+    const carouselImages = await Promise.all(carouselSource.map(img => getStrapiMediaUrl(img?.url)));
 
     const out: ArticleDoc = {
         documentId: rawItem.documentId,
@@ -85,7 +74,6 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         category,
         author,
         tags,
-        subcategories: rawItem.subcategories,
         seo,
         categorySlug: category?.slug,
         tagSlugs: tags.map(t => t.slug),

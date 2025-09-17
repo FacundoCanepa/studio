@@ -1,4 +1,5 @@
 
+
 // --- STRAPI RESPONSE TYPES ---
 
 export interface StrapiResponse<T> {
@@ -15,39 +16,35 @@ export interface StrapiResponse<T> {
 
 export interface StrapiEntity {
     id: number;
-    attributes: {
-      documentId: string;
-      [key: string]: any;
-    }
+    documentId: string;
+    [key: string]: any;
 }
 
 
 export interface StrapiMedia {
     id: number;
-    attributes: {
-        documentId: string;
-        name: string;
-        alternativeText?: string;
-        caption?: string;
-        width?: number;
-        height?: number;
-        formats?: {
-            thumbnail: StrapiMediaFormat;
-            small?: StrapiMediaFormat;
-            medium?: StrapiMediaFormat;
-            large?: StrapiMediaFormat;
-        };
-        hash: string;
-        ext: string;
-        mime: string;
-        size: number;
-        url: string;
-        previewUrl?: string;
-        provider: string;
-        provider_metadata: any;
-        createdAt: string;
-        updatedAt: string;
-    }
+    documentId: string;
+    name: string;
+    alternativeText?: string;
+    caption?: string;
+    width?: number;
+    height?: number;
+    formats?: {
+        thumbnail: StrapiMediaFormat;
+        small?: StrapiMediaFormat;
+        medium?: StrapiMediaFormat;
+        large?: StrapiMediaFormat;
+    };
+    hash: string;
+    ext: string;
+    mime: string;
+    size: number;
+    url: string;
+    previewUrl?: string;
+    provider: string;
+    provider_metadata: any;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface StrapiMediaFormat {
@@ -63,39 +60,35 @@ export interface StrapiMediaFormat {
 }
 
 
-// --- STRAPI COLLECTION TYPES (with attributes property) ---
+// --- STRAPI COLLECTION TYPES (FLAT STRUCTURE) ---
 
-export type StrapiArticle = {
-    id: number;
-    attributes: {
-        documentId: string;
-        title: string;
-        slug: string;
-        excerpt?: string;
-        Content?: string;
-        ContentMore?: string | null;
-        Cover?: { data: StrapiMedia | null };
-        featured?: boolean;
-        home?: boolean;
-        New?: boolean;
-        Tendencias?: boolean;
-        views?: number;
-        saves?: number;
-        type?: 'guia' | 'lista' | 'comparativa';
-        subcategories?: string[];
-        Informacion?: string | null;
-        UrlYoutube?: string | null;
-        
-        Carosel?: { data: StrapiMedia[] | null };
-        category?: { data: StrapiCategory | null };
-        author?: { data: StrapiAuthor | null };
-        tags?: { data: StrapiTag[] | null };
-        seo?: StrapiSeoBlock | null; 
-        
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    }
+export type StrapiArticle = StrapiEntity & {
+    title: string;
+    slug: string;
+    excerpt?: string;
+    Content?: string;
+    ContentMore?: string | null;
+    Cover?: StrapiMedia | null;
+    featured?: boolean;
+    home?: boolean;
+    New?: boolean;
+    Tendencias?: boolean;
+    views?: number;
+    saves?: number;
+    type?: 'guia' | 'lista' | 'comparativa';
+    subcategories?: string[];
+    Informacion?: string | null;
+    UrlYoutube?: string | null;
+    
+    Carosel?: StrapiMedia[] | null;
+    category?: StrapiCategory | null;
+    author?: StrapiAuthor | null;
+    tags?: StrapiTag[] | null;
+    Name?: StrapiSeoBlock | null; 
+    
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
 }
 
 
@@ -107,14 +100,7 @@ export type StrapiUser = {
     confirmed?: boolean;
     blocked?: boolean;
     favorite_articles?: StrapiArticle[];
-    favorite_tags?: {
-        id: number;
-        name: string;
-        slug: string;
-        documentId: string;
-        createdAt: string;
-        updatedAt: string;
-    }[];
+    favorite_tags?: StrapiTag[];
     role?: {
         id: number;
         name: string;
@@ -124,58 +110,42 @@ export type StrapiUser = {
 }
 
 
-export type StrapiAuthor = {
-    id: number;
-    attributes: {
-        documentId: string;
-        Name: string;
-        Avatar?: { data: StrapiMedia | null };
-        Bio?: any; // JSON content from rich text editor
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    }
+export type StrapiAuthor = StrapiEntity & {
+    Name: string;
+    Avatar?: StrapiMedia | null;
+    Bio?: any; // JSON content from rich text editor
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
 }
 
-export type StrapiCategory = {
-    id: number;
-    attributes: {
-        documentId: string;
-        name: string;
-        slug: string;
-        description?: string;
-        color?: string;
-        img?: { data: StrapiMedia | null };
-        articles?: { data: StrapiArticle[] | null };
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    }
+export type StrapiCategory = StrapiEntity & {
+    name: string;
+    slug: string;
+    description?: string;
+    color?: string;
+    img?: StrapiMedia | null;
+    articles?: StrapiArticle[] | null;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
 }
 
-export type StrapiTag = {
-   id: number;
-   attributes: {
-        documentId: string;
-        name: string;
-        slug: string;
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-   }
+export type StrapiTag = StrapiEntity & {
+   name: string;
+   slug: string;
+   createdAt: string;
+   updatedAt: string;
+   publishedAt?: string;
 }
 
-export type StrapiGalleryItem = {
-    id: number;
-    attributes: {
-        documentId: string;
-        Nota: string;
-        Famoso: string;
-        Imagen?: { data: StrapiMedia | null };
-        createdAt: string;
-        updatedAt: string;
-        publishedAt?: string;
-    }
+export type StrapiGalleryItem = StrapiEntity & {
+    Nota: string;
+    Famoso: string;
+    Imagen?: StrapiMedia | null;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
 }
 
 
@@ -185,6 +155,6 @@ export type StrapiSeoBlock = {
     id: number;
     metaTitle?: string;
     metaDescription?: string;
-    ogImage?: { data: StrapiMedia | null };
+    ogImage?: StrapiMedia | null;
     canonicalUrl?: string;
 }

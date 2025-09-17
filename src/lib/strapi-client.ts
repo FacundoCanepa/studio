@@ -19,8 +19,6 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
     };
     if (STRAPI_TOKEN) {
         headers['Authorization'] = `Bearer ${STRAPI_TOKEN}`;
-    } else {
-        console.warn(`[STRAPI] No API token. Proceeding as PUBLIC request.`);
     }
     
     console.log(`[FETCH_STRAPI] Requesting URL: ${url}`, { cache: init?.cache });
@@ -52,7 +50,7 @@ async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> 
   }
 }
 
-async function fetchPaginated<T extends { id: number; attributes: any; }>(endpoint: string, init?: RequestInit): Promise<T[]> {
+async function fetchPaginated<T extends { id: number; }>(endpoint: string, init?: RequestInit): Promise<T[]> {
   const url = new URL(`${STRAPI_BASE_URL}${endpoint}`);
   const params = new URLSearchParams(url.search);
   const fetchAll = params.get('pagination[limit]') === '-1';
@@ -103,7 +101,7 @@ async function fetchPaginated<T extends { id: number; attributes: any; }>(endpoi
         return response.data.filter(Boolean);
     }
     if(response.data) {
-        return [response.data].filter(Boolean);
+        return [response.data].filter(Boolean) as T[];
     }
     return [];
   }
@@ -238,23 +236,17 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
     const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1', { cache: options.cache ?? 'default' });
     console.log(`[GET_AUTHORS] Fetched ${authors.length} authors.`);
     
-    const authorDocs = await Promise.all(authors.map(async (item) => {
-        if (!item || !item.attributes) {
-            console.warn('[GET_AUTHORS] Skipping invalid author item from Strapi:', item);
-            return null;
-        }
-
-        const authorData = item.attributes;
-        if (!item.id || !authorData.documentId || !authorData.Name) {
-            console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', item);
+    const authorDocs = await Promise.all(authors.map(async (authorData) => {
+        if (!authorData || !authorData.documentId || !authorData.Name) {
+            console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', authorData);
             return null;
         }
 
         return {
-            id: item.id,
+            id: authorData.id,
             documentId: authorData.documentId,
             name: authorData.Name,
-            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
+            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
             bioBlocks: authorData.Bio,
             createdAt: authorData.createdAt,
             updatedAt: authorData.updatedAt,
@@ -276,14 +268,13 @@ export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
             console.warn(`[GET_AUTHOR] No author found for documentId: ${documentId}`);
             return null;
         }
-        const authorData = response.data[0].attributes;
-        const authorId = response.data[0].id;
+        const authorData = response.data[0];
         console.log(`[GET_AUTHOR] Found author: ${authorData.Name}`);
         return {
-            id: authorId,
+            id: authorData.id,
             documentId: authorData.documentId,
             name: authorData.Name,
-            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
+            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
             bioBlocks: authorData.Bio,
             createdAt: authorData.createdAt,
             updatedAt: authorData.updatedAt,
@@ -299,26 +290,19 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
   const raw = await fetchPaginated<StrapiCategory>(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, init);
   console.log(`[GET_CATEGORIES] Fetched ${raw.length} raw categories.`);
 
-  const mapped: Promise<CategoryDoc | null>[] = raw.map(async (item: StrapiCategory) => {
-    if (!item?.attributes) {
-      console.warn('[GET_CATEGORIES] Skipping invalid item from Strapi:', item);
-      return null;
-    }
-    const c = item.attributes;
-    const id = item.id;
-
-    if (!id || !c.name || !c.slug || !c.documentId) {
-       console.warn('[GET_CATEGORIES] Skipping category with missing id, name, slug, or documentId:', item);
+  const mapped: Promise<CategoryDoc | null>[] = raw.map(async (c: StrapiCategory) => {
+    if (!c || !c.id || !c.name || !c.slug || !c.documentId) {
+       console.warn('[GET_CATEGORIES] Skipping category with missing id, name, slug, or documentId:', c);
       return null;
     }
     return {
-      id: id,
+      id: c.id,
       documentId: c.documentId,
       name: c.name,
       slug: c.slug,
       description: c.description,
       color: c.color,
-      imageUrl: await getStrapiMediaUrl(c.img?.data?.attributes.url),
+      imageUrl: await getStrapiMediaUrl(c.img?.url),
     };
   });
 
@@ -334,16 +318,16 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
         console.warn(`[GET_CATEGORY] No category found for slug: ${slug}`);
         return null;
     }
-    const categoryData = response.data[0].attributes;
+    const categoryData = response.data[0];
     console.log(`[GET_CATEGORY] Found category: ${categoryData.name}`);
     return {
-        id: response.data[0].id,
+        id: categoryData.id,
         documentId: categoryData.documentId,
         name: categoryData.name,
         slug: categoryData.slug,
         description: categoryData.description,
         color: categoryData.color,
-        imageUrl: await getStrapiMediaUrl(categoryData.img?.data?.attributes.url),
+        imageUrl: await getStrapiMediaUrl(categoryData.img?.url),
     };
 }
 
@@ -353,14 +337,14 @@ export async function getTags(): Promise<TagDoc[]> {
     const tags = await fetchPaginated<StrapiTag>('/api/tags?populate=*&pagination[limit]=-1', { cache: 'no-store' });
     console.log(`[GET_TAGS] Fetched ${tags.length} tags.`);
     const mappedTags = tags.map(tag => {
-        if (!tag || !tag.attributes) return null;
+        if (!tag || !tag.id || !tag.name || !tag.slug || !tag.documentId) return null;
         return {
             id: tag.id,
-            documentId: tag.attributes.documentId,
-            name: tag.attributes.name,
-            slug: tag.attributes.slug,
-            createdAt: tag.attributes.createdAt,
-            updatedAt: tag.attributes.updatedAt,
+            documentId: tag.documentId,
+            name: tag.name,
+            slug: tag.slug,
+            createdAt: tag.createdAt,
+            updatedAt: tag.updatedAt,
         }
     });
     return mappedTags.filter(Boolean) as TagDoc[];
@@ -373,10 +357,10 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
         console.warn(`[GET_TAG] No tag found for slug: ${slug}`);
         return null;
     }
-    const tagData = response.data[0].attributes;
+    const tagData = response.data[0];
     console.log(`[GET_TAG] Found tag: ${tagData.name}`);
     return {
-        id: response.data[0].id,
+        id: tagData.id,
         documentId: tagData.documentId,
         name: tagData.name,
         slug: tagData.slug,
@@ -390,16 +374,15 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
   const response = await fetchPaginated<StrapiGalleryItem>('/api/Galerias?populate=*&pagination[limit]=-1', { cache: 'no-store' });
   console.log(`[GET_GALLERY_ITEMS] Fetched ${response.length} gallery items.`);
 
-  const items = await Promise.all(response.map(async (item) => {
-    if (!item || !item.attributes) {
-      console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', item);
+  const items = await Promise.all(response.map(async (itemData) => {
+    if (!itemData || !itemData.documentId) {
+      console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', itemData);
       return null;
     }
-    const itemData = item.attributes;
-    const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes.url);
+    const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.url);
     if (!imageUrl) return null;
     return {
-      id: itemData.documentId || String(item.id),
+      id: itemData.documentId,
       title: itemData.Famoso,
       description: itemData.Nota,
       imageUrl: imageUrl,
