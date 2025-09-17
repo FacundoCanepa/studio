@@ -119,7 +119,7 @@ export const CoverUploader = ({
         return (
              <div className="text-center p-4">
                 <p className="text-destructive font-semibold">El cover se quitará al guardar.</p>
-                <Button variant="link" size="sm" onClick={() => {
+                <Button type="button" variant="link" size="sm" onClick={() => {
                     setStatus('idle');
                     setCurrentAsset(initialAsset || null);
                     setPreviewUrl(initialAsset?.url || null);
@@ -146,16 +146,16 @@ export const CoverUploader = ({
           {status === 'pending_upload' ? (
              <div className="space-y-2">
                 <p className="text-sm font-semibold text-primary">Hay un cambio pendiente.</p>
-                <Button onClick={handleUpload} className="w-full">
+                <Button type="button" onClick={handleUpload} className="w-full">
                     <Upload className="mr-2 h-4 w-4" />
                     Confirmar y Subir
                 </Button>
-                 <Button variant="ghost" onClick={handleCancelChange} className="w-full">Cancelar Cambio</Button>
+                <Button type="button" variant="ghost" onClick={handleCancelChange} className="w-full">Cancelar Cambio</Button>
             </div>
           ) : (
              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>Reemplazar</Button>
-                <Button variant="destructive" onClick={handleRemoveClick}>Quitar</Button>
+ <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>Reemplazar</Button>
+ <Button type="button" variant="destructive" onClick={handleRemoveClick}>Quitar</Button>
             </div>
           )}
         </div>

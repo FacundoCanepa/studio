@@ -35,6 +35,7 @@ const CarouselItem = ({ item, onRemove }: { item: CarouselAsset; onRemove: (id: 
             <p className="text-muted-foreground">{formatBytes(item.size)}</p>
         </div>
         <Button
+        type="button"
             variant="destructive"
             size="icon"
             className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -147,8 +148,9 @@ export const CarouselUploader = ({
           accept="image/jpeg,image/png,image/webp,image/avif"
           onChange={(e) => handleFileSelect(e.target.files)}
         />
-        <Button 
-            className="w-full mt-6" 
+    <Button
+            type="button"
+            className="w-full mt-6"
             onClick={() => fileInputRef.current?.click()}
             disabled={!canAddMore || isLoading}
         >
