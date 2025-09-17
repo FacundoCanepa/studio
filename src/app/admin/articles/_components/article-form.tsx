@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ const initialState = {
 };
 
 export function ArticleForm({ article, authors, categories }: ArticleFormProps) {
-  const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.documentId || null), initialState);
+  const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.id.toString() || null), initialState);
   const { toast } = useToast();
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
@@ -82,7 +82,35 @@ export function ArticleForm({ article, authors, categories }: ArticleFormProps) 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="content">Contenido (Markdown)</Label>
-                <Textarea id="content" name="content" defaultValue={article?.contentHtml?.replace(/<p>|<\/p>/g, '')} rows={15} />
+                <Textarea id="content" name="content" defaultValue={article?.contentHtml} rows={15} />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="urlYoutube">URL de YouTube</Label>
+                <Input id="urlYoutube" name="urlYoutube" defaultValue={article?.urlYoutube || ''} />
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="contentMore">Contenido Adicional</Label>
+                <Textarea id="contentMore" name="contentMore" defaultValue={article?.contentMore || ''} rows={5} />
+              </div>
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader>
+              <CardTitle>SEO</CardTitle>
+              <CardDescription>Configuración de optimización para motores de búsqueda.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="metaTitle">Meta Título</Label>
+                <Input id="metaTitle" name="metaTitle" defaultValue={article?.seo?.metaTitle || ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="metaDescription">Meta Descripción</Label>
+                <Textarea id="metaDescription" name="metaDescription" defaultValue={article?.seo?.metaDescription || ''} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="canonicalUrl">URL Canónica</Label>
+                <Input id="canonicalUrl" name="canonicalUrl" defaultValue={article?.seo?.canonicalUrl || ''} />
               </div>
             </CardContent>
           </Card>
@@ -96,13 +124,13 @@ export function ArticleForm({ article, authors, categories }: ArticleFormProps) 
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría</Label>
-                <Select name="category" defaultValue={article?.category?.documentId} required>
+                <Select name="category" defaultValue={String(article?.category?.id)} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(cat => (
-                      <SelectItem key={cat.documentId} value={cat.documentId}>{cat.name}</SelectItem>
+                      <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -110,13 +138,13 @@ export function ArticleForm({ article, authors, categories }: ArticleFormProps) 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="author">Autor</Label>
-                <Select name="author" defaultValue={article?.author?.documentId} required>
+                <Select name="author" defaultValue={String(article?.author?.id)} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un autor" />
                   </SelectTrigger>
                   <SelectContent>
                     {authors.map(author => (
-                      <SelectItem key={author.documentId} value={author.documentId}>{author.name}</SelectItem>
+                      <SelectItem key={author.id} value={String(author.id)}>{author.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -126,15 +154,25 @@ export function ArticleForm({ article, authors, categories }: ArticleFormProps) 
                 <Label htmlFor="tags">Etiquetas</Label>
                 <InputWithBadges name="tags" defaultValue={article?.tags.map(t => t.name) || []} />
               </div>
-              <div className="flex items-center justify-between space-x-2">
-                <Label htmlFor="featured" className="flex flex-col space-y-1">
-                  <span>Destacado</span>
-                  <span className="font-normal leading-snug text-muted-foreground">
-                    Marcar para mostrar en la sección de destacados.
-                  </span>
-                </Label>
-                <Switch id="featured" name="featured" defaultChecked={article?.featured} />
-              </div>
+
+               <div className="space-y-4 pt-4 border-t">
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="featured">Destacado</Label>
+                    <Switch id="featured" name="featured" defaultChecked={article?.featured} />
+                  </div>
+                   <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="home">Mostrar en Home</Label>
+                    <Switch id="home" name="home" defaultChecked={article?.home} />
+                  </div>
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="isNew">Marcar como Nuevo</Label>
+                    <Switch id="isNew" name="isNew" defaultChecked={article?.isNew} />
+                  </div>
+                  <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="tendencias">Marcar como Tendencia</Label>
+                    <Switch id="tendencias" name="tendencias" defaultChecked={article?.tendencias} />
+                  </div>
+               </div>
             </CardContent>
           </Card>
 

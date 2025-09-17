@@ -22,6 +22,16 @@ const articleSchema = z.object({
   featured: z.boolean().default(false),
   tags: z.array(z.string()).optional(),
   publishedAt: z.string().nullable().optional(),
+  // New fields
+  urlYoutube: z.string().optional(),
+  contentMore: z.string().optional(),
+  home: z.boolean().default(false),
+  isNew: z.boolean().default(false),
+  tendencias: z.boolean().default(false),
+  // SEO fields
+  metaTitle: z.string().optional(),
+  metaDescription: z.string().optional(),
+  canonicalUrl: z.string().optional(),
 });
 
 type FormState = {
@@ -69,6 +79,9 @@ export async function saveArticleAction(
   const dataToValidate = {
     ...rawData,
     featured: rawData.featured === 'on',
+    home: rawData.home === 'on',
+    isNew: rawData.isNew === 'on',
+    tendencias: rawData.tendencias === 'on',
     tags: formData.getAll('tags'),
     category: rawData.category || '',
     author: rawData.author || '',
@@ -89,7 +102,7 @@ export async function saveArticleAction(
   
   console.log('[SAVE_ARTICLE_ACTION] Validation successful.');
 
-  const { title, slug, excerpt, content, category, author, featured, publishedAt, tags } =
+  const { title, slug, excerpt, content, category, author, featured, publishedAt, tags, urlYoutube, contentMore, home, isNew, tendencias, metaTitle, metaDescription, canonicalUrl } =
     validation.data;
     
   // Convert tags from names to IDs, creating them if they don't exist
@@ -135,6 +148,17 @@ export async function saveArticleAction(
       featured,
       publishedAt: publishedAt || null, // Strapi accepts null to unpublish
       tags: tagIds,
+      UrlYoutube: urlYoutube,
+      ContentMore: contentMore,
+      home: home,
+      New: isNew, // Field name in Strapi is 'New'
+      Tendencias: tendencias,
+      // SEO component is named 'Name' in your Strapi setup
+      Name: {
+        metaTitle,
+        metaDescription,
+        canonicalUrl,
+      }
     },
   };
   

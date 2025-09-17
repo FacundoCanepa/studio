@@ -1,3 +1,4 @@
+
 // Firestore Document Types
 
 export type ArticleDoc = {
@@ -26,7 +27,7 @@ export type ArticleDoc = {
   tagSlugs?: string[];
   authorName?: string;
 
-  // SEO fields
+  // SEO fields from Strapi component
   seo?: {
     metaTitle?: string;
     metaDescription?: string;
@@ -39,6 +40,11 @@ export type ArticleDoc = {
   contentMore?: string | null;
   urlYoutube?: string | null;
   carousel?: string[];
+
+  // Boolean flags
+  home?: boolean;
+  isNew?: boolean; // Mapped from 'New'
+  tendencias?: boolean; // Mapped from 'Tendencias'
 }
 
 export type AuthorDoc = {
