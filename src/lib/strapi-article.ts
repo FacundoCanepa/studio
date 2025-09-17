@@ -17,33 +17,6 @@ function authHeaders() {
 }
 
 /**
- * Fetches a single article from Strapi using its numeric ID.
- * This is now an internal function as we prefer documentId for public operations.
- * @param articleId - The numeric ID of the article.
- * @returns The full article data from Strapi.
- */
-async function getArticleById(articleId: number): Promise<{ data: any }> {
-    const findEndpoint = `/api/articles/${articleId}?populate=*`;
-    try {
-        const response = await performStrapiRequest(findEndpoint, {
-            method: 'GET',
-            headers: authHeaders(),
-            cache: 'no-store',
-        });
-        if (!response.data) {
-             throw new Error(`Article with numeric ID ${articleId} not found.`);
-        }
-        return response;
-    } catch (error: any) {
-         console.error(`[strapi-article] getArticleById: Failed to fetch article for ID ${articleId}.`, {
-            message: error.message,
-        });
-        throw new Error(`Failed to retrieve article: ${error.message}`);
-    }
-}
-
-
-/**
  * Fetches a single article from Strapi using its documentId.
  * @param documentId - The v4 UUID of the article.
  * @returns The full article data from Strapi, or null if not found.
@@ -73,8 +46,8 @@ export async function getArticleByDocumentId(documentId: string): Promise<{ data
     }
 
     console.log(`[strapi-article] getArticleByDocumentId: Found article with numeric ID ${article.id}`);
-    // Once found, we fetch the single type by its numeric ID to ensure we get all data consistently
-    return await getArticleById(article.id);
+    // Wrap the single article in a 'data' object to match Strapi's single-entry response structure
+    return { data: article };
 
   } catch (error: any) {
     console.error(`[strapi-article] getArticleByDocumentId: Failed to fetch article for documentId ${documentId}.`, {

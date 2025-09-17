@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import type { StrapiTag } from '@/lib/strapi-types';
 import { performStrapiRequest } from '@/lib/strapi-api';
-import { setCoverByDocumentId, setCarouselByDocumentId } from '@/lib/strapi-article';
+import { patchArticleByDocumentId } from '@/lib/strapi-article';
 
 const articleSchema = z.object({
   title: z.string().min(3, 'El título es requerido.'),
@@ -81,20 +81,7 @@ export async function saveArticleAction(
   } = validation.data;
     
   try {
-     // --- Step 1: Handle Media Updates ---
-    if (pendingCoverId !== undefined) {
-      const coverId = pendingCoverId === 'null' ? null : Number(pendingCoverId);
-      console.log(`[SAVE_ARTICLE_ACTION] Updating cover for ${documentId} to assetId: ${coverId}`);
-      await setCoverByDocumentId(documentId, coverId);
-    }
-
-    if (pendingCarouselIds !== undefined) {
-      const carouselIds = JSON.parse(pendingCarouselIds) as number[];
-      console.log(`[SAVE_ARTICLE_ACTION] Updating carousel for ${documentId} with assetIds:`, carouselIds);
-      await setCarouselByDocumentId(documentId, carouselIds);
-    }
-    
-    // --- Step 2: Handle Tag Creation/Association ---
+    // --- Step 1: Handle Tag Creation/Association ---
     let tagIds: number[] = [];
     if (tags && tags.length > 0) {
         console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
@@ -121,27 +108,31 @@ export async function saveArticleAction(
     }
 
 
-    // --- Step 3: Handle Article Text/Relation Fields ---
-    const payload = {
-        data: {
-          title, slug, excerpt, Content: content,
-          category: category ? Number(category) : null,
-          author: author ? Number(author) : null,
-          featured, publishedAt: publishedAt || null, 
-          tags: tagIds, UrlYoutube: urlYoutube,
-          ContentMore: contentMore, home: home, New: isNew, 
-          Tendencias: tendencias,
-          Name: { metaTitle, metaDescription, canonicalUrl }
-        },
+    // --- Step 2: Prepare a single payload with all changes ---
+    const payload: Record<string, any> = {
+        title, slug, excerpt, Content: content,
+        category: category ? Number(category) : null,
+        author: author ? Number(author) : null,
+        featured, publishedAt: publishedAt || null, 
+        tags: tagIds, UrlYoutube: urlYoutube,
+        ContentMore: contentMore, home: home, New: isNew, 
+        Tendencias: tendencias,
+        Name: { metaTitle, metaDescription, canonicalUrl }
     };
-    
-    console.log('[SAVE_ARTICLE_ACTION] Final payload for article text fields:', JSON.stringify(payload, null, 2));
 
-    const articleUpdateEndpoint = `/api/articles/${documentId}`;
-    await performStrapiRequest(articleUpdateEndpoint, {
-        method: 'PUT',
-        body: JSON.stringify(payload),
-    });
+    // Add media changes to the payload if they exist
+    if (pendingCoverId !== undefined) {
+      payload.Cover = pendingCoverId === 'null' ? null : Number(pendingCoverId);
+    }
+    if (pendingCarouselIds !== undefined) {
+      const carouselIds = JSON.parse(pendingCarouselIds) as number[];
+      payload.Carosel = carouselIds;
+    }
+    
+    console.log('[SAVE_ARTICLE_ACTION] Final payload for article update:', JSON.stringify(payload, null, 2));
+
+    // --- Step 3: Perform a single update operation ---
+    await patchArticleByDocumentId(documentId, payload);
 
     console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
     
@@ -150,7 +141,6 @@ export async function saveArticleAction(
     revalidatePath(`/articulos/${slug}`);
     revalidatePath('/');
     revalidatePath(`/admin/articles/edit/${documentId}`);
-
 
     return {
       message: 'Artículo actualizado con éxito.',
@@ -168,7 +158,15 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        const deleteEndpoint = `/api/articles/${documentId}`;
+        // To delete, we still need the numeric ID. This is a limitation of the current Strapi API design.
+        const articleResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
+        const articleToDelete = articleResponse.data?.[0];
+
+        if (!articleToDelete) {
+             throw new Error(`No se encontró el artículo con document ID ${documentId} para eliminarlo.`);
+        }
+        
+        const deleteEndpoint = `/api/articles/${articleToDelete.id}`;
         console.log(`[DELETE_ARTICLE_ACTION] Deleting at endpoint: ${deleteEndpoint}`);
 
         await performStrapiRequest(deleteEndpoint, { method: 'DELETE' });
