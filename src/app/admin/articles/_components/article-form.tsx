@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save } from 'lucide-react';
-import { InputWithBadges } from './input-with-badges';
+import { TagInput } from './tag-input';
 
 interface ArticleFormProps {
   article: ArticleDoc | null;
@@ -154,10 +154,10 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
               </div>
                <div className="space-y-2">
                 <Label htmlFor="tags">Etiquetas</Label>
-                <InputWithBadges 
-                    name="tags" 
+                <TagInput 
+                    name="tags"
                     defaultValue={article?.tags.map(t => t.name) || []}
-                    existingTags={allTags.map(t => t.name)}
+                    allTags={allTags.map(t => t.name)}
                 />
               </div>
 
