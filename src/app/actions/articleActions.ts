@@ -72,6 +72,7 @@ export async function saveArticleAction(
   formData: FormData
 ): Promise<FormState> {
   console.log('[SAVE_ARTICLE_ACTION] Started.', { documentId });
+  
   const rawData = Object.fromEntries(formData.entries());
   
   const dataToValidate = {
@@ -85,7 +86,6 @@ export async function saveArticleAction(
     author: rawData.author || '',
   };
   console.log('[SAVE_ARTICLE_ACTION] Data to validate:', dataToValidate);
-
 
   const validation = articleSchema.safeParse(dataToValidate);
 
@@ -106,13 +106,13 @@ export async function saveArticleAction(
   let tagIds: number[] = [];
   if (tags && tags.length > 0) {
       console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
-      const allTagsResponse = await performStrapiRequest('/api/tags', { method: 'GET' });
+      const allTagsResponse = await performStrapiRequest('/api/tags?pagination[limit]=-1', { method: 'GET' });
       const existingTags: StrapiTag[] = allTagsResponse.data || [];
       console.log('[SAVE_ARTICLE_ACTION] Existing tags from Strapi:', existingTags.map(t => t?.name));
 
       for (const tagName of tags) {
           if (!tagName) continue;
-          const existingTag = existingTags.find(t => t && t.name.toLowerCase() === tagName.toLowerCase());
+          const existingTag = existingTags.find(t => t && t.name && t.name.toLowerCase() === tagName.toLowerCase());
           if (existingTag) {
               tagIds.push(existingTag.id);
               console.log(`[SAVE_ARTICLE_ACTION] Found existing tag '${tagName}' with ID ${existingTag.id}`);
@@ -164,13 +164,13 @@ export async function saveArticleAction(
   try {
     if (documentId) {
       console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      const articleToUpdate = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+      const articleToUpdateResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
       
-      if (!articleToUpdate.data || articleToUpdate.data.length === 0) {
+      if (!articleToUpdateResponse.data || articleToUpdateResponse.data.length === 0) {
         throw new Error(`No se encontró el artículo con documentId ${documentId}`);
       }
       
-      const numericId = articleToUpdate.data[0].id;
+      const numericId = articleToUpdateResponse.data[0].id;
       console.log(`[SAVE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Updating.`);
       
       await performStrapiRequest(`/api/articles/${numericId}`, {
@@ -206,12 +206,12 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+        const articleToDeleteResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
 
-        if (!articleToDelete.data || articleToDelete.data.length === 0) {
+        if (!articleToDeleteResponse.data || articleToDeleteResponse.data.length === 0) {
             throw new Error(`No se encontró el artículo con documentId ${documentId}`);
         }
-        const numericId = articleToDelete.data[0].id;
+        const numericId = articleToDeleteResponse.data[0].id;
         console.log(`[DELETE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Deleting.`);
 
         await performStrapiRequest(`/api/articles/${numericId}`, { method: 'DELETE' });
@@ -227,3 +227,5 @@ export async function deleteArticleAction(documentId: string): Promise<{ success
         return { success: false, message: error.message };
     }
 }
+
+    
