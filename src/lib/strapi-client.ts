@@ -240,14 +240,28 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
     console.log('[GET_AUTHORS] Fetching all authors...');
     const authors = await fetchPaginated<StrapiAuthor>('/api/authors?populate=*&pagination[limit]=-1', { cache: options.cache ?? 'default' });
     console.log(`[GET_AUTHORS] Fetched ${authors.length} authors.`);
-    return Promise.all(authors.map(async (item): Promise<AuthorDoc> => ({
-        documentId: String(item.id),
-        name: item.attributes.Name,
-        avatarUrl: await getStrapiMediaUrl(item.attributes.Avatar?.data?.attributes.url),
-        bioBlocks: item.attributes.Bio,
-        createdAt: item.attributes.createdAt,
-        updatedAt: item.attributes.updatedAt,
-    })));
+    
+    const authorDocs = await Promise.all(authors.map(async (item) => {
+        // Handle inconsistent Strapi response structures.
+        const authorData = item.attributes ?? item;
+
+        // Skip if essential data is missing
+        if (!authorData || !item.id || !authorData.Name) {
+            console.warn('[GET_AUTHORS] Skipping invalid author item from Strapi:', item);
+            return null;
+        }
+
+        return {
+            documentId: String(item.id),
+            name: authorData.Name,
+            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
+            bioBlocks: authorData.Bio,
+            createdAt: authorData.createdAt,
+            updatedAt: authorData.updatedAt,
+        };
+    }));
+
+    return authorDocs.filter(Boolean) as AuthorDoc[];
 }
 
 export async function getAuthor(id: string): Promise<AuthorDoc | null> {
@@ -281,11 +295,11 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
 
   const mapped: Promise<CategoryDoc | null>[] = raw.map(async (item: StrapiCategory) => {
     // Add a check for item and item.attributes
-    if (!item || !item.attributes) {
+    if (!item) {
       console.warn('[GET_CATEGORIES] Skipping invalid item from Strapi:', item);
       return null;
     }
-    const c = item.attributes;
+    const c = item.attributes ?? item;
     const id = item.id;
 
     if (!id || !c.name || !c.slug) {
@@ -364,16 +378,17 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
 
   const items = await Promise.all(response.map(async (item) => {
     // Add a check for item and item.attributes
-    if (!item || !item.attributes) {
+    const itemData = item.attributes ?? item;
+    if (!item || !itemData) {
       console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', item);
       return null;
     }
-    const imageUrl = await getStrapiMediaUrl(item.attributes.Imagen?.data?.attributes.url);
+    const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes.url);
     if (!imageUrl) return null;
     return {
       id: String(item.id),
-      title: item.attributes.Famoso,
-      description: item.attributes.Nota,
+      title: itemData.Famoso,
+      description: itemData.Nota,
       imageUrl: imageUrl,
     };
   }));
