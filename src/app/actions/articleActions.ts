@@ -139,8 +139,8 @@ export async function saveArticleAction(
   try {
     if (documentId) {
       console.log(`[SAVE_ARTICLE_ACTION] Updating article with documentId: ${documentId}`);
-      // Use Strapi's update-by-filter feature by doing a PUT on the collection endpoint
-      const updateEndpoint = `/api/articles?filters[documentId][$eq]=${documentId}`;
+      // Use documentId directly in the URL for PUT request.
+      const updateEndpoint = `/api/articles/${documentId}`;
       await performStrapiRequest(updateEndpoint, {
           method: 'PUT',
           body: JSON.stringify(payload),
@@ -177,15 +177,10 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        const articleToDeleteResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}&publicationState=preview`, { method: 'GET' });
+        const deleteEndpoint = `/api/articles/${documentId}`;
+        console.log(`[DELETE_ARTICLE_ACTION] Deleting at endpoint: ${deleteEndpoint}`);
 
-        if (!articleToDeleteResponse.data || articleToDeleteResponse.data.length === 0) {
-            throw new Error(`No se encontró el artículo con documentId ${documentId}`);
-        }
-        const numericId = articleToDeleteResponse.data[0].id;
-        console.log(`[DELETE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Deleting.`);
-
-        await performStrapiRequest(`/api/articles/${numericId}`, { method: 'DELETE' });
+        await performStrapiRequest(deleteEndpoint, { method: 'DELETE' });
         
         console.log(`[DELETE_ARTICLE_ACTION] Successfully deleted article ${documentId}. Revalidating paths.`);
         revalidatePath('/admin/articles');
