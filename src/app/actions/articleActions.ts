@@ -207,27 +207,27 @@ export async function saveArticleAction(
   }
 }
 
-export async function deleteArticleAction(id: string): Promise<{ success: boolean; message: string }> {
-    console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${id}`);
+export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
+    console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
         // First, find the numeric ID from the documentId
-        const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${id}`, { method: 'GET' });
+        const articleToDelete = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
         if (!articleToDelete.data || articleToDelete.data.length === 0) {
-            throw new Error(`No se encontró el artículo con documentId ${id}`);
+            throw new Error(`No se encontró el artículo con documentId ${documentId}`);
         }
         const numericId = articleToDelete.data[0].id;
-        console.log(`[DELETE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${id}. Deleting.`);
+        console.log(`[DELETE_ARTICLE_ACTION] Found numeric ID ${numericId} for documentId ${documentId}. Deleting.`);
 
         await performStrapiRequest(`/api/articles/${numericId}`, { method: 'DELETE' });
         
-        console.log(`[DELETE_ARTICLE_ACTION] Successfully deleted article ${id}. Revalidating paths.`);
+        console.log(`[DELETE_ARTICLE_ACTION] Successfully deleted article ${documentId}. Revalidating paths.`);
         revalidatePath('/admin/articles');
         revalidatePath('/');
 
         return { success: true, message: 'Artículo eliminado con éxito.' };
 
     } catch (error: any) {
-        console.error(`[DELETE_ARTICLE_ACTION] Exception caught for article document ID ${id}:`, error);
+        console.error(`[DELETE_ARTICLE_ACTION] Exception caught for article document ID ${documentId}:`, error);
         return { success: false, message: error.message };
     }
 }
