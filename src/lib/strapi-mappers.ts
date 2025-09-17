@@ -35,28 +35,26 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         return null;
     }
 
-    // Strapi can return data in item.attributes or directly in item. This handles both.
     const rawItem = item.attributes ? item.attributes : item;
-    // console.log('[MAPPER] Raw Strapi Item Attributes:', JSON.stringify(rawItem, null, 2));
 
     const coverUrl = await getStrapiMediaUrl(rawItem.Cover?.data?.attributes.url);
     
-    const categoryData = rawItem.category?.data;
+    const categoryData = rawItem.category?.data?.attributes;
     const category = categoryData ? {
-        documentId: String(categoryData.id),
-        name: categoryData.attributes.name,
-        slug: categoryData.attributes.slug,
-        description: categoryData.attributes.description,
-        color: categoryData.attributes.color,
+        documentId: String(rawItem.category?.data.id),
+        name: categoryData.name,
+        slug: categoryData.slug,
+        description: categoryData.description,
+        color: categoryData.color,
     } : null;
     console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Category:`, JSON.stringify(category, null, 2));
 
 
-    const authorData = rawItem.author?.data;
+    const authorData = rawItem.author?.data?.attributes;
     const author = authorData ? {
-        documentId: String(authorData.id),
-        name: authorData.attributes.Name,
-        avatarUrl: await getStrapiMediaUrl(authorData.attributes.Avatar?.data?.attributes.url),
+        documentId: String(rawItem.author?.data.id),
+        name: authorData.Name,
+        avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes.url),
     } : null;
     console.log(`[MAPPER_DEBUG] Article ID ${item.id} - Extracted Author:`, JSON.stringify(author, null, 2));
 
@@ -112,7 +110,5 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         carousel: (carouselImages.filter(Boolean) as string[]) ?? [],
     };
     
-    // console.log('[MAPPER] Finished mapping. Resulting ArticleDoc:', JSON.stringify(out, null, 2));
-
     return out;
 }
