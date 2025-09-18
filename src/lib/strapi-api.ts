@@ -6,7 +6,7 @@ import type { StrapiResponse } from './strapi-types';
 const STRAPI_BASE_URL = process.env.NEXT_PUBLIC_STRAPI_URL || "https://graceful-bear-073b8037ba.strapiapp.com";
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
 
-async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> {
+export async function fetchStrapi<T>(endpoint: string, init?: RequestInit): Promise<T> {
   const url = `${STRAPI_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   
   if (!STRAPI_TOKEN) {
