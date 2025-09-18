@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleFavoriteAction, toggleTagFavoriteAction } from '@/app/actions/favoriteActions';
-
+import memoFetch, { invalidateMemoFetch } from '@/lib/memo-fetch';
 interface User {
   id: number;
   username: string;
@@ -61,30 +61,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
 
-  const fetchUser = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/session/me', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.ok && data.data.id) {
-          setUser({
-            ...data.data,
-            role: data.data.role || 'Authenticated'
-          });
+
+  const sessionRequestInit = React.useMemo<RequestInit>(() => ({ cache: 'no-store' }), []);
+
+  const fetchUser = React.useCallback(
+    async ({ forceRefresh = false }: { forceRefresh?: boolean } = {}) => {
+      setIsLoading(true);
+      try {
+        const res = await memoFetch(
+          '/api/session/me',
+          sessionRequestInit,
+          { ttl: 60_000, forceRefresh }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && data.data.id) {
+            setUser({
+              ...data.data,
+              role: data.data.role || 'Authenticated'
+            });
+          } else {
+            setUser(null);
+          }
         } else {
           setUser(null);
         }
-      } else {
+      } catch (error) {
+        console.error('[AUTH_PROVIDER] Fetch user error:', error);
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('[AUTH_PROVIDER] Fetch user error:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [sessionRequestInit]
+  );
 
   React.useEffect(() => {
     fetchUser();
@@ -127,7 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     });
-    await fetchUser(); // Re-fetch user to update state globally
+    await fetchUser({ forceRefresh: true }); // Re-fetch user to update state globally/ Re-fetch user to update state globally
     return data;
   };
   
@@ -140,6 +151,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const logout = async () => {
     await performRequest('/api/session/logout', { method: 'POST' });
+    invalidateMemoFetch('/api/session/me', sessionRequestInit);
     setUser(null);
     router.push('/');
     router.refresh();
