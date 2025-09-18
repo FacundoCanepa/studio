@@ -221,7 +221,7 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
 
               <div className="space-y-2">
                 <Label htmlFor="excerpt">Extracto</Label>
-                <Textarea id="excerpt" name="excerpt" defaultValue={article?.excerpt || ''} />
+                <Textarea id="excerpt" name="excerpt" defaultValue={article?.excerpt || ''} required />
               </div>
 
               <div className="space-y-2">
@@ -229,9 +229,9 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
                 <Textarea
                   id="content"
                   name="content"
-                  // Si realmente guardás Markdown, asegurate de usar el campo correcto.
                   defaultValue={article?.contentHtml || ''}
                   rows={15}
+                  required
                 />
               </div>
 
@@ -309,7 +309,7 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría</Label>
                 <input type="hidden" name="category" value={selectedCategory ?? ''} />
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
@@ -329,7 +329,7 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
               <div className="space-y-2">
                 <Label htmlFor="author">Autor</Label>
                 <input type="hidden" name="author" value={selectedAuthor ?? ''} />
-                <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
+                <Select value={selectedAuthor} onValueChange={setSelectedAuthor} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un autor" />
                   </SelectTrigger>
