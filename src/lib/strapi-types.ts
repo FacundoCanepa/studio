@@ -130,7 +130,12 @@ export type StrapiCategory = StrapiEntity & {
     updatedAt: string;
     publishedAt?: string;
 }
-
+export type StrapiIngredient = StrapiEntity & {
+    nombre: string;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
+}
 export type StrapiTag = StrapiEntity & {
    name: string;
    slug: string;
@@ -143,6 +148,19 @@ export type StrapiGalleryItem = StrapiEntity & {
     Nota: string;
     Famoso: string;
     Imagen?: StrapiMedia | null;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt?: string;
+}
+export type StrapiProduct = StrapiEntity & {
+    productName: string;
+    slug: string;
+    price: number;
+    description?: string | null;
+    unidadMedida?: string | null;
+    img?: StrapiMedia | null;
+    category?: StrapiCategory | null;
+    ingredientes?: StrapiIngredient[] | null;
     createdAt: string;
     updatedAt: string;
     publishedAt?: string;
