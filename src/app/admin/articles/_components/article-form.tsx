@@ -33,19 +33,110 @@ const initialState = {
   errors: {},
   success: false,
 };
+const generateSlug = (title: string) =>
+  title
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
+    export function ArticleForm({ article, authors, categories, allTags }: ArticleFormProps) {
+      const [formState, formAction] = useFormState(
+        saveArticleAction.bind(null, article?.documentId || null),
+        initialState
+      );
+      const { toast } = useToast();
+      const router = useRouter();
+    
+      const [pending, setPending] = React.useState(false);
+      const [title, setTitle] = React.useState(() => article?.title ?? '');
+      const [slug, setSlug] = React.useState(() => article?.slug ?? '');
+      const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(() => Boolean(article?.slug));
+    
+      // ⬇️ ESTO ESTABA AFUERA: mover acá
+      const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>(() => {
+        if (article?.category?.id != null) return String(article.category.id);
+        if (categories.length > 0) return String(categories[0]!.id);
+        return undefined;
+      });
+    
+      const [selectedAuthor, setSelectedAuthor] = React.useState<string | undefined>(() => {
+        if (article?.author?.id != null) return String(article.author.id);
+        if (authors.length > 0) return String(authors[0]!.id);
+        return undefined;
+      });
+    
+      React.useEffect(() => {
+        const articleCategoryId = article?.category?.id != null ? String(article.category.id) : undefined;
+        if (articleCategoryId && articleCategoryId !== selectedCategory) {
+          setSelectedCategory(articleCategoryId);
+          return;
+        }
+        if (!articleCategoryId && !selectedCategory && categories.length > 0) {
+          setSelectedCategory(String(categories[0]!.id));
+        }
+      }, [article?.category?.id, categories, selectedCategory]);
+    
+      React.useEffect(() => {
+        const articleAuthorId = article?.author?.id != null ? String(article.author.id) : undefined;
+        if (articleAuthorId && articleAuthorId !== selectedAuthor) {
+          setSelectedAuthor(articleAuthorId);
+          return;
+        }
+        if (!articleAuthorId && !selectedAuthor && authors.length > 0) {
+          setSelectedAuthor(String(authors[0]!.id));
+        }
+      }, [article?.author?.id, authors, selectedAuthor]);
+      // ⬆️ FIN del bloque movido
+    
+      // … el resto de tu componente sigue igual
+    
+   
 export function ArticleForm({ article, authors, categories, allTags }: ArticleFormProps) {
   const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.documentId || null), initialState);
   const { toast } = useToast();
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
-  
+  const [title, setTitle] = React.useState(() => article?.title ?? '');
+  const [slug, setSlug] = React.useState(() => article?.slug ?? '');
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(() => Boolean(article?.slug));
   // States to hold pending media changes
   const [pendingCoverId, setPendingCoverId] = React.useState<number | null | undefined>(undefined);
   const [pendingCarouselIds, setPendingCarouselIds] = React.useState<number[] | undefined>(
     article?.carouselMedia?.map(media => media.id)
   );
 
+  React.useEffect(() => {
+    setTitle(article?.title ?? '');
+
+    if (article?.slug) {
+      setSlug(article.slug);
+      setIsSlugManuallyEdited(true);
+      return;
+    }
+
+    if (article?.title) {
+      setSlug(generateSlug(article.title));
+    } else {
+      setSlug('');
+    }
+
+    setIsSlugManuallyEdited(false);
+  }, [article]);
+
+  const handleTitleChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newTitle = event.target.value;
+      setTitle(newTitle);
+
+      if (!isSlugManuallyEdited) {
+        setSlug(generateSlug(newTitle));
+      }
+    },
+    [isSlugManuallyEdited]
+  );
   React.useEffect(() => {
     if (formState.message) {
       toast({
@@ -110,12 +201,18 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Título</Label>
-                <Input id="title" name="title" defaultValue={article?.title} required />
+                <Input id="title" name="title" value={title} onChange={handleTitleChange} required />
                 {formState.errors?.title && <p className="text-sm text-destructive">{formState.errors.title}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" name="slug" defaultValue={article?.slug} required />
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={slug}
+                  required
+                  readOnly
+                />
                 {formState.errors?.slug && <p className="text-sm text-destructive">{formState.errors.slug}</p>}
               </div>
               <div className="space-y-2">
@@ -186,7 +283,8 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría</Label>
-                <Select name="category" defaultValue={String(article?.category?.id)} required>
+                <input type="hidden" name="category" value={selectedCategory ?? ''} />
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
@@ -200,7 +298,8 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
               </div>
               <div className="space-y-2">
                 <Label htmlFor="author">Autor</Label>
-                <Select name="author" defaultValue={String(article?.author?.id)} required>
+                <input type="hidden" name="author" value={selectedAuthor ?? ''} />
+                <Select value={selectedAuthor} onValueChange={setSelectedAuthor}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un autor" />
                   </SelectTrigger>

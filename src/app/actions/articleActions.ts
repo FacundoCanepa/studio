@@ -41,9 +41,6 @@ export async function saveArticleAction(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  if (!documentId) {
-      return { success: false, message: 'Error: No se proporcionó un ID de documento para la actualización.' };
-  }
   console.log('[SAVE_ARTICLE_ACTION] Started for documentId:', documentId);
   
   const rawData = Object.fromEntries(formData.entries());
@@ -131,19 +128,55 @@ export async function saveArticleAction(
         }
     }
     
-    console.log(`[SAVE_ARTICLE_ACTION] Final payload for doc ${documentId}:`, JSON.stringify(payload, null, 2));
+    console.log(
+      `[SAVE_ARTICLE_ACTION] Final payload for ${documentId ?? 'new article'}:`,
+      JSON.stringify(payload, null, 2)
+    );
 
-    await patchArticleByDocumentId(documentId, payload);
+    let resultingDocumentId = documentId;
 
-    console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
+    if (!documentId) {
+      console.log('[SAVE_ARTICLE_ACTION] No documentId provided. Creating a new article.');
+      const createResponse = await performStrapiRequest('/api/articles', {
+        method: 'POST',
+        body: JSON.stringify({ data: payload }),
+      });
+
+      const createdData = createResponse?.data;
+      const createdDocumentId =
+        createdData?.documentId ??
+        createdData?.data?.documentId ??
+        createdData?.attributes?.documentId ??
+        createdData?.data?.attributes?.documentId ??
+        null;
+
+      if (createdDocumentId) {
+        resultingDocumentId = createdDocumentId;
+      } else {
+        console.warn('[SAVE_ARTICLE_ACTION] Could not determine documentId from creation response.');
+      }
+
+      console.log(
+        `[SAVE_ARTICLE_ACTION] Successfully created article${
+          resultingDocumentId ? ` with documentId ${resultingDocumentId}` : ''
+        }.`
+      );
+    } else {
+      await patchArticleByDocumentId(documentId, payload);
+      console.log(`[SAVE_ARTICLE_ACTION] Successfully updated article with documentId ${documentId}.`);
+    }
+  
     
     revalidatePath('/admin/articles');
     revalidatePath(`/articulos/${slug}`);
     revalidatePath('/');
-    revalidatePath(`/admin/articles/edit/${documentId}`);
+    if (resultingDocumentId) {
+      revalidatePath(`/admin/articles/edit/${resultingDocumentId}`);
+    }
 
+    const successMessage = documentId ? 'Artículo actualizado con éxito.' : 'Artículo creado con éxito.';
     return {
-      message: 'Artículo actualizado con éxito.',
+      message: successMessage,
       success: true,
     };
   } catch (error: any) {
