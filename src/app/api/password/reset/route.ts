@@ -17,7 +17,12 @@ export async function POST(request: NextRequest) {
         issues: validated.error.flatten().fieldErrors,
       });
     }
-
+    if (!API_BASE) {
+      console.error('[API_RESET_PASSWORD_ERROR] NEXT_PUBLIC_STRAPI_URL is not configured.');
+      return respondWithError('internal_server_error', {
+        details: 'Configuración incompleta del servidor: NEXT_PUBLIC_STRAPI_URL no está definida.',
+      });
+    }
     const strapiRes = await fetch(`${API_BASE}/auth/reset-password`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},

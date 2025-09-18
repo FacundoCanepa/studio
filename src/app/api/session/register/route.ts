@@ -2,7 +2,7 @@
 // src/app/api/session/register/route.ts
 import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
-
+import { API_BASE } from '@/lib/api-utils';
 // Esquema de validación con Zod
 const registerSchema = z.object({
   username: z.string().min(3, {message: 'El nombre de usuario debe tener al menos 3 caracteres.'}),
@@ -10,7 +10,6 @@ const registerSchema = z.object({
   password: z.string().min(8, {message: 'La contraseña debe tener al menos 8 caracteres.'}),
 });
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +30,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Enviar la petición de registro a Strapi
-    const strapiRes = await fetch(`${STRAPI_URL}/api/auth/local/register`, {
+    if (!API_BASE) {
+      console.error('[API_REGISTER_ERROR] NEXT_PUBLIC_STRAPI_URL is not configured.');
+      return NextResponse.json({
+        ok: false,
+        error: {
+          code: 'internal_server_error',
+          message: 'Configuración incompleta del servidor: NEXT_PUBLIC_STRAPI_URL no está definida.',
+        },
+      }, { status: 500 });
+    }
+
+    const strapiRes = await fetch(`${API_BASE}/auth/local/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -32,6 +32,10 @@ async function getJwtFromServerAction(): Promise<string | null> {
 
 export async function toggleFavoriteAction(articleId: number) {
   console.log(`[TOGGLE_FAVORITE_ACTION] Received request for articleId: ${articleId}`);
+  if (!API_BASE) {
+    console.error('[TOGGLE_FAVORITE_ACTION] NEXT_PUBLIC_STRAPI_URL is not configured.');
+    throw new Error('Configuración del servidor incompleta: NEXT_PUBLIC_STRAPI_URL no está definida.');
+  }
   const userToken = await getJwtFromServerAction();
   if (!userToken) {
     throw new Error('Authentication required.');
@@ -114,6 +118,10 @@ export async function toggleFavoriteAction(articleId: number) {
 
 export async function toggleTagFavoriteAction(tagId: number) {
   console.log(`[TOGGLE_TAG_ACTION] Received request for tagId: ${tagId}`);
+  if (!API_BASE) {
+    console.error('[TOGGLE_TAG_ACTION] NEXT_PUBLIC_STRAPI_URL is not configured.');
+    throw new Error('Configuración del servidor incompleta: NEXT_PUBLIC_STRAPI_URL no está definida.');
+  }
   const userToken = await getJwtFromServerAction();
   if (!userToken) {
     throw new Error('Authentication required.');

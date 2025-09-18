@@ -15,7 +15,15 @@ const requiredEnv = (name: string): string => {
   return value;
 };
 
-export const API_BASE = `${requiredEnv('NEXT_PUBLIC_STRAPI_URL')}/api`;
+const STRAPI_PUBLIC_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? null;
+
+if (!STRAPI_PUBLIC_URL) {
+  console.warn(
+    '[API WARNING] NEXT_PUBLIC_STRAPI_URL is not set. Strapi-dependent API routes will fail until it is configured.'
+  );
+}
+
+export const API_BASE = STRAPI_PUBLIC_URL ? `${STRAPI_PUBLIC_URL}/api` : null;
 export const COOKIE_NAME = requiredEnv('COOKIE_NAME');
 export const COOKIE_SECRET = new TextEncoder().encode(
   requiredEnv('COOKIE_SECRET')

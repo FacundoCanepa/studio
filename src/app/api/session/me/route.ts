@@ -18,7 +18,12 @@ export async function GET(request: NextRequest) {
     if (!token) {
       return respondWithError('unauthorized', {details: 'No session cookie.'});
     }
-
+    if (!API_BASE) {
+      console.error('[API_ME_ERROR] NEXT_PUBLIC_STRAPI_URL is not configured.');
+      return respondWithError('internal_server_error', {
+        details: 'Configuración incompleta del servidor: NEXT_PUBLIC_STRAPI_URL no está definida.',
+      });
+    }
     // Correctly populate favorite_articles, favorite_tags, and role
     const strapiRes = await fetch(`${API_BASE}/users/me?populate[favorite_articles]=true&populate[favorite_tags]=true&populate[role]=true`, {
       headers: {

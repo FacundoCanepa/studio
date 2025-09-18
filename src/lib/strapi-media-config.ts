@@ -1,11 +1,13 @@
 
 
 // --- Environment Variables & Validation ---
-export const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
+export const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? null;
 export const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 if (!STRAPI_URL) {
-  throw new Error('Missing required environment variable: NEXT_PUBLIC_STRAPI_URL');
+  console.warn(
+    '[MEDIA WARNING] NEXT_PUBLIC_STRAPI_URL is not set. Media uploads will be disabled until it is configured.'
+  );
 }
 
 // At build time, the token might not be available, so we just warn.
@@ -47,6 +49,12 @@ export function validateImage(file: File): { ok: boolean; error?: string } {
   }
   if (!isValidSize(file)) {
     return { ok: false, error: `La imagen supera el tamaño máximo de 3MB.` };
+  }
+  if (!STRAPI_URL) {
+    return {
+      ok: false,
+      error: 'La variable de entorno NEXT_PUBLIC_STRAPI_URL no está configurada. No es posible subir archivos en este momento.',
+    };
   }
   return { ok: true };
 }
