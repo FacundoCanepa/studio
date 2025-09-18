@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import * as React from 'react';
@@ -30,9 +28,10 @@ interface ArticleFormProps {
 
 const initialState = {
   message: '',
-  errors: {},
+  errors: {} as Record<string, string>,
   success: false,
 };
+
 const generateSlug = (title: string) =>
   title
     .normalize('NFD')
@@ -42,72 +41,41 @@ const generateSlug = (title: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-    export function ArticleForm({ article, authors, categories, allTags }: ArticleFormProps) {
-      const [formState, formAction] = useFormState(
-        saveArticleAction.bind(null, article?.documentId || null),
-        initialState
-      );
-      const { toast } = useToast();
-      const router = useRouter();
-    
-      const [pending, setPending] = React.useState(false);
-      const [title, setTitle] = React.useState(() => article?.title ?? '');
-      const [slug, setSlug] = React.useState(() => article?.slug ?? '');
-      const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(() => Boolean(article?.slug));
-    
-      // ⬇️ ESTO ESTABA AFUERA: mover acá
-      const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>(() => {
-        if (article?.category?.id != null) return String(article.category.id);
-        if (categories.length > 0) return String(categories[0]!.id);
-        return undefined;
-      });
-    
-      const [selectedAuthor, setSelectedAuthor] = React.useState<string | undefined>(() => {
-        if (article?.author?.id != null) return String(article.author.id);
-        if (authors.length > 0) return String(authors[0]!.id);
-        return undefined;
-      });
-    
-      React.useEffect(() => {
-        const articleCategoryId = article?.category?.id != null ? String(article.category.id) : undefined;
-        if (articleCategoryId && articleCategoryId !== selectedCategory) {
-          setSelectedCategory(articleCategoryId);
-          return;
-        }
-        if (!articleCategoryId && !selectedCategory && categories.length > 0) {
-          setSelectedCategory(String(categories[0]!.id));
-        }
-      }, [article?.category?.id, categories, selectedCategory]);
-    
-      React.useEffect(() => {
-        const articleAuthorId = article?.author?.id != null ? String(article.author.id) : undefined;
-        if (articleAuthorId && articleAuthorId !== selectedAuthor) {
-          setSelectedAuthor(articleAuthorId);
-          return;
-        }
-        if (!articleAuthorId && !selectedAuthor && authors.length > 0) {
-          setSelectedAuthor(String(authors[0]!.id));
-        }
-      }, [article?.author?.id, authors, selectedAuthor]);
-      // ⬆️ FIN del bloque movido
-    
-      // … el resto de tu componente sigue igual
-    
-   
 export function ArticleForm({ article, authors, categories, allTags }: ArticleFormProps) {
-  const [formState, formAction] = useFormState(saveArticleAction.bind(null, article?.documentId || null), initialState);
+  const [formState, formAction] = useFormState(
+    saveArticleAction.bind(null, article?.documentId || null),
+    initialState
+  );
   const { toast } = useToast();
   const router = useRouter();
+
   const [pending, setPending] = React.useState(false);
+
+  // Title / Slug
   const [title, setTitle] = React.useState(() => article?.title ?? '');
   const [slug, setSlug] = React.useState(() => article?.slug ?? '');
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(() => Boolean(article?.slug));
-  // States to hold pending media changes
+
+  // Media pending
   const [pendingCoverId, setPendingCoverId] = React.useState<number | null | undefined>(undefined);
   const [pendingCarouselIds, setPendingCarouselIds] = React.useState<number[] | undefined>(
-    article?.carouselMedia?.map(media => media.id)
+    article?.carouselMedia?.map((m) => m.id)
   );
 
+  // Category / Author
+  const [selectedCategory, setSelectedCategory] = React.useState<string | undefined>(() => {
+    if (article?.category?.id != null) return String(article.category.id);
+    if (categories.length > 0) return String(categories[0]!.id);
+    return undefined;
+  });
+
+  const [selectedAuthor, setSelectedAuthor] = React.useState<string | undefined>(() => {
+    if (article?.author?.id != null) return String(article.author.id);
+    if (authors.length > 0) return String(authors[0]!.id);
+    return undefined;
+  });
+
+  // Sync article -> title/slug
   React.useEffect(() => {
     setTitle(article?.title ?? '');
 
@@ -117,26 +85,46 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
       return;
     }
 
-    if (article?.title) {
-      setSlug(generateSlug(article.title));
-    } else {
-      setSlug('');
-    }
+    if (article?.title) setSlug(generateSlug(article.title));
+    else setSlug('');
 
     setIsSlugManuallyEdited(false);
   }, [article]);
+
+  // Keep selectedCategory in sync with article/categories
+  React.useEffect(() => {
+    const articleCategoryId = article?.category?.id != null ? String(article.category.id) : undefined;
+    if (articleCategoryId && articleCategoryId !== selectedCategory) {
+      setSelectedCategory(articleCategoryId);
+      return;
+    }
+    if (!articleCategoryId && !selectedCategory && categories.length > 0) {
+      setSelectedCategory(String(categories[0]!.id));
+    }
+  }, [article?.category?.id, categories, selectedCategory]);
+
+  // Keep selectedAuthor in sync with article/authors
+  React.useEffect(() => {
+    const articleAuthorId = article?.author?.id != null ? String(article.author.id) : undefined;
+    if (articleAuthorId && articleAuthorId !== selectedAuthor) {
+      setSelectedAuthor(articleAuthorId);
+      return;
+    }
+    if (!articleAuthorId && !selectedAuthor && authors.length > 0) {
+      setSelectedAuthor(String(authors[0]!.id));
+    }
+  }, [article?.author?.id, authors, selectedAuthor]);
 
   const handleTitleChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const newTitle = event.target.value;
       setTitle(newTitle);
-
-      if (!isSlugManuallyEdited) {
-        setSlug(generateSlug(newTitle));
-      }
+      if (!isSlugManuallyEdited) setSlug(generateSlug(newTitle));
     },
     [isSlugManuallyEdited]
   );
+
+  // Toast + redirect
   React.useEffect(() => {
     if (formState.message) {
       toast({
@@ -154,41 +142,48 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPending(true);
+
     const formData = new FormData(event.currentTarget);
-    
-    // Append pending media IDs to the form data
+
+    // Adjuntar IDs de media pendientes
     if (pendingCoverId !== undefined) {
       formData.append('pendingCoverId', pendingCoverId === null ? 'null' : String(pendingCoverId));
     }
     if (pendingCarouselIds !== undefined) {
       formData.append('pendingCarouselIds', JSON.stringify(pendingCarouselIds));
     }
-    
-    formAction(formData);
-  }
-  
-  const initialCoverAsset = article?.coverUrl ? {
-      id: article.id, // Placeholder, needs actual media ID if available
-      url: article.coverUrl,
-      name: 'Cover Actual',
-      size: 0 // Strapi doesn't provide size easily in article payload
-  } : undefined;
 
-  const initialCarouselAssets = article?.carouselMedia?.map((media, index) => ({
-    id: media.id,
-    url: media.url,
+    formAction(formData);
+  };
+
+  const initialCoverAsset: CoverAsset | undefined = article?.coverUrl
+    ? {
+        id: article.id, // placeholder si no tenés el ID real del media
+        url: article.coverUrl,
+        name: 'Cover Actual',
+        size: 0,
+      }
+    : undefined;
+
+  const initialCarouselAssets: CarouselAsset[] =
+    article?.carouselMedia?.map((media, index) => ({
+      id: media.id,
+      url: media.url,
       name: `Imagen ${index + 1}`,
       size: 0,
-      isNew: false
-  })) || [];
-  const handleCarouselIdsChange = React.useCallback((ids: number[]) => {
-    if (!article?.carouselMedia && ids.length === 0) {
-      setPendingCarouselIds(undefined);
-      return;
-    }
+      isNew: false,
+    })) || [];
 
-    setPendingCarouselIds(ids);
-  }, [article?.carouselMedia, setPendingCarouselIds]);
+  const handleCarouselIdsChange = React.useCallback(
+    (ids: number[]) => {
+      if (!article?.carouselMedia && ids.length === 0) {
+        setPendingCarouselIds(undefined);
+        return;
+      }
+      setPendingCarouselIds(ids);
+    },
+    [article?.carouselMedia]
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -202,8 +197,11 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
               <div className="space-y-2">
                 <Label htmlFor="title">Título</Label>
                 <Input id="title" name="title" value={title} onChange={handleTitleChange} required />
-                {formState.errors?.title && <p className="text-sm text-destructive">{formState.errors.title}</p>}
+                {formState.errors?.title && (
+                  <p className="text-sm text-destructive">{formState.errors.title}</p>
+                )}
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug</Label>
                 <Input
@@ -212,28 +210,49 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
                   value={slug}
                   required
                   readOnly
+                  // Si querés permitir edición manual, sacá readOnly
+                  // y activá esta línea:
+                  // onChange={(e) => { setIsSlugManuallyEdited(true); setSlug(e.target.value); }}
                 />
-                {formState.errors?.slug && <p className="text-sm text-destructive">{formState.errors.slug}</p>}
+                {formState.errors?.slug && (
+                  <p className="text-sm text-destructive">{formState.errors.slug}</p>
+                )}
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="excerpt">Extracto</Label>
-                <Textarea id="excerpt" name="excerpt" defaultValue={article?.excerpt} />
+                <Textarea id="excerpt" name="excerpt" defaultValue={article?.excerpt || ''} />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="content">Contenido (Markdown)</Label>
-                <Textarea id="content" name="content" defaultValue={article?.contentHtml} rows={15} />
+                <Textarea
+                  id="content"
+                  name="content"
+                  // Si realmente guardás Markdown, asegurate de usar el campo correcto.
+                  defaultValue={article?.contentHtml || ''}
+                  rows={15}
+                />
               </div>
-               <div className="space-y-2">
+
+              <div className="space-y-2">
                 <Label htmlFor="urlYoutube">URL de YouTube</Label>
                 <Input id="urlYoutube" name="urlYoutube" defaultValue={article?.urlYoutube || ''} />
               </div>
-               <div className="space-y-2">
+
+              <div className="space-y-2">
                 <Label htmlFor="contentMore">Contenido Adicional</Label>
-                <Textarea id="contentMore" name="contentMore" defaultValue={article?.contentMore || ''} rows={5} />
+                <Textarea
+                  id="contentMore"
+                  name="contentMore"
+                  defaultValue={article?.contentMore || ''}
+                  rows={5}
+                />
               </div>
             </CardContent>
           </Card>
-           <Card>
+
+          <Card>
             <CardHeader>
               <CardTitle>SEO</CardTitle>
               <CardDescription>Configuración de optimización para motores de búsqueda.</CardDescription>
@@ -243,10 +262,16 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
                 <Label htmlFor="metaTitle">Meta Título</Label>
                 <Input id="metaTitle" name="metaTitle" defaultValue={article?.seo?.metaTitle || ''} />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="metaDescription">Meta Descripción</Label>
-                <Textarea id="metaDescription" name="metaDescription" defaultValue={article?.seo?.metaDescription || ''} />
+                <Textarea
+                  id="metaDescription"
+                  name="metaDescription"
+                  defaultValue={article?.seo?.metaDescription || ''}
+                />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="canonicalUrl">URL Canónica</Label>
                 <Input id="canonicalUrl" name="canonicalUrl" defaultValue={article?.seo?.canonicalUrl || ''} />
@@ -258,23 +283,23 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
         <div className="space-y-8">
           <Card>
             <CardHeader>
-                <CardTitle>Imagen de Portada</CardTitle>
+              <CardTitle>Imagen de Portada</CardTitle>
             </CardHeader>
             <CardContent>
-                 <CoverUploader
-                    documentId={article?.documentId || ''}
-                    initialAsset={initialCoverAsset as CoverAsset | undefined}
-                    onAssetChange={setPendingCoverId}
-                 />
+              <CoverUploader
+                documentId={article?.documentId || ''}
+                initialAsset={initialCoverAsset}
+                onAssetChange={setPendingCoverId}
+              />
             </CardContent>
           </Card>
 
           <CarouselUploader
-              documentId={article?.documentId || ''}
-              initialAssets={initialCarouselAssets as CarouselAsset[]}
-              onAssetIdsChange={handleCarouselIdsChange}
-              max={8}
-            />
+            documentId={article?.documentId || ''}
+            initialAssets={initialCarouselAssets}
+            onAssetIdsChange={handleCarouselIdsChange}
+            max={8}
+          />
 
           <Card>
             <CardHeader>
@@ -289,13 +314,18 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
                     <SelectValue placeholder="Selecciona una categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={String(cat.id)}>
+                        {cat.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                 {formState.errors?.category && <p className="text-sm text-destructive">{formState.errors.category}</p>}
+                {formState.errors?.category && (
+                  <p className="text-sm text-destructive">{formState.errors.category}</p>
+                )}
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="author">Autor</Label>
                 <input type="hidden" name="author" value={selectedAuthor ?? ''} />
@@ -304,40 +334,45 @@ export function ArticleForm({ article, authors, categories, allTags }: ArticleFo
                     <SelectValue placeholder="Selecciona un autor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {authors.map(author => (
-                      <SelectItem key={author.id} value={String(author.id)}>{author.name}</SelectItem>
+                    {authors.map((author) => (
+                      <SelectItem key={author.id} value={String(author.id)}>
+                        {author.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                 {formState.errors?.author && <p className="text-sm text-destructive">{formState.errors.author}</p>}
+                {formState.errors?.author && (
+                  <p className="text-sm text-destructive">{formState.errors.author}</p>
+                )}
               </div>
-               <div className="space-y-2">
+
+              <div className="space-y-2">
                 <Label htmlFor="tags">Etiquetas</Label>
-                <TagInput 
-                    name="tags"
-                    defaultValue={article?.tags.map(t => t.name) || []}
-                    allTags={allTags.map(t => t.name)}
+                <TagInput
+                  name="tags"
+                  defaultValue={article?.tags.map((t) => t.name) || []}
+                  allTags={allTags.map((t) => t.name)}
                 />
               </div>
 
-               <div className="space-y-4 pt-4 border-t">
-                  <div className="flex items-center justify-between space-x-2">
-                    <Label htmlFor="featured">Destacado</Label>
-                    <Switch id="featured" name="featured" defaultChecked={article?.featured} />
-                  </div>
-                   <div className="flex items-center justify-between space-x-2">
-                    <Label htmlFor="home">Mostrar en Home</Label>
-                    <Switch id="home" name="home" defaultChecked={article?.home} />
-                  </div>
-                  <div className="flex items-center justify-between space-x-2">
-                    <Label htmlFor="isNew">Marcar como Nuevo</Label>
-                    <Switch id="isNew" name="isNew" defaultChecked={article?.isNew} />
-                  </div>
-                  <div className="flex items-center justify-between space-x-2">
-                    <Label htmlFor="tendencias">Marcar como Tendencia</Label>
-                    <Switch id="tendencias" name="tendencias" defaultChecked={article?.tendencias} />
-                  </div>
-               </div>
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="featured">Destacado</Label>
+                  <Switch id="featured" name="featured" defaultChecked={article?.featured} />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="home">Mostrar en Home</Label>
+                  <Switch id="home" name="home" defaultChecked={article?.home} />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="isNew">Marcar como Nuevo</Label>
+                  <Switch id="isNew" name="isNew" defaultChecked={article?.isNew} />
+                </div>
+                <div className="flex items-center justify-between space-x-2">
+                  <Label htmlFor="tendencias">Marcar como Tendencia</Label>
+                  <Switch id="tendencias" name="tendencias" defaultChecked={article?.tendencias} />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
