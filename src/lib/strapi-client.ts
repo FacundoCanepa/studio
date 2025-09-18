@@ -1,5 +1,3 @@
-
-
 'use server';
 
 import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
