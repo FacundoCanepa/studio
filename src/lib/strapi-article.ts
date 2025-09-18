@@ -1,6 +1,15 @@
 'use server';
 
+import { qs } from './qs';
 import { performStrapiRequest } from './strapi-api';
+import {
+    ARTICLE_FIELDS,
+    AUTHOR_AVATAR_FIELDS,
+    AUTHOR_FIELDS,
+    CATEGORY_FIELDS,
+    COVER_FIELDS,
+    TAG_FIELDS,
+} from './strapi-article-fields';
 
 /**
  * Updates an article in Strapi using its documentId.
@@ -14,9 +23,9 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
     try {
         // Validate that the article exists for the provided documentId
         const findParams = new URLSearchParams({ 'filters[documentId][$eq]': documentId });
-                // enforced pagination to reduce API calls
-                findParams.set('pagination[page]', '1');
-                findParams.set('pagination[pageSize]', '12');
+        // enforced pagination to reduce API calls
+        findParams.set('pagination[page]', '1');
+        findParams.set('pagination[pageSize]', '12');
         const validationResponse = await performStrapiRequest(`/api/articles?${findParams.toString()}`, {
           method: 'GET',
           cache: 'no-store',
@@ -29,7 +38,30 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
         console.log(`[strapi-article] Verified existence for documentId ${documentId}. Updating via documentId endpoint.`);
 
         // Perform the update directly using the documentId
-        const endpoint = `/api/articles/${documentId}?populate=*`;
+        const query = qs({
+          fields: ARTICLE_FIELDS,
+          populate: {
+            Cover: {
+              fields: COVER_FIELDS,
+            },
+            category: {
+              fields: CATEGORY_FIELDS,
+            },
+            author: {
+              fields: AUTHOR_FIELDS,
+              populate: {
+                Avatar: {
+                  fields: AUTHOR_AVATAR_FIELDS,
+                },
+              },
+            },
+            tags: {
+              fields: TAG_FIELDS,
+            },
+          },
+        });
+
+        const endpoint = `/api/articles/${documentId}${query}`; // removed populate=*
 
         const response = await performStrapiRequest(endpoint, {
           method: 'PUT',
@@ -44,3 +76,7 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
         throw error;
     }
 }
+
+// Endpoints touched by this module:
+// - GET /api/articles?filters[documentId][$eq]=:documentId&pagination[page]=1&pagination[pageSize]=12
+// - PUT /api/articles/:documentId (with explicit fields & populate query)

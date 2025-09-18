@@ -2,55 +2,18 @@
 
 import { fetchStrapi } from '@/lib/strapi-api';
 import { qs } from '@/lib/qs';
+import {
+  ARTICLE_FIELDS,
+  AUTHOR_AVATAR_FIELDS,
+  AUTHOR_FIELDS,
+  CATEGORY_FIELDS,
+  COVER_FIELDS,
+  TAG_FIELDS,
+} from '@/lib/strapi-article-fields';
 import type { StrapiArticle, StrapiResponse } from '@/lib/strapi-types';
 
 type ArticlesResponse = StrapiResponse<StrapiArticle[]>;
 
-const ARTICLE_FIELDS: Array<keyof StrapiArticle | string> = [
-  'documentId',
-  'title',
-  'slug',
-  'excerpt',
-  'Content',
-  'ContentMore',
-  'featured',
-  'home',
-  'New',
-  'Tendencias',
-  'views',
-  'saves',
-  'type',
-  'subcategories',
-  'Informacion',
-  'UrlYoutube',
-  'createdAt',
-  'updatedAt',
-  'publishedAt',
-];
-
-const COVER_FIELDS = [
-  'url',
-  'alternativeText',
-  'caption',
-  'width',
-  'height',
-  'formats',
-];
-
-const CATEGORY_FIELDS = ['name', 'slug', 'documentId'];
-
-const AUTHOR_FIELDS = ['Name', 'documentId'];
-
-const AUTHOR_AVATAR_FIELDS = [
-  'url',
-  'alternativeText',
-  'caption',
-  'width',
-  'height',
-  'formats',
-];
-
-const TAG_FIELDS = ['name', 'slug', 'documentId'];
 
 export async function getArticles(page = 1, pageSize = 12): Promise<ArticlesResponse> {
   const query = {
