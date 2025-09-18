@@ -65,7 +65,7 @@ export async function performStrapiRequest(endpoint: string, options: RequestIni
   
   if (options.method === 'GET' && isPaginated) {
     params.delete('pagination[limit]');
-    params.set('pagination[pageSize]', '100');
+    params.set('pagination[pageSize]', '12'); // enforced pagination to reduce API calls
     
     let allResults: any[] = [];
     let page = 1;

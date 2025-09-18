@@ -14,6 +14,9 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
     try {
         // Validate that the article exists for the provided documentId
         const findParams = new URLSearchParams({ 'filters[documentId][$eq]': documentId });
+                // enforced pagination to reduce API calls
+                findParams.set('pagination[page]', '1');
+                findParams.set('pagination[pageSize]', '12');
         const validationResponse = await performStrapiRequest(`/api/articles?${findParams.toString()}`, {
           method: 'GET',
           cache: 'no-store',

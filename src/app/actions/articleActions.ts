@@ -79,7 +79,8 @@ export async function saveArticleAction(
     let tagIds: number[] = [];
     if (tags && tags.length > 0) {
         console.log('[SAVE_ARTICLE_ACTION] Processing tags:', tags);
-        const allTagsResponse = await performStrapiRequest('/api/tags?pagination[limit]=-1', { method: 'GET' });
+           // enforced pagination to reduce API calls
+           const allTagsResponse = await performStrapiRequest('/api/tags?pagination[page]=1&pagination[pageSize]=12', { method: 'GET' });
         const existingTags: StrapiTag[] = allTagsResponse.data || [];
 
         for (const tagName of tags) {
@@ -191,7 +192,8 @@ export async function saveArticleAction(
 export async function deleteArticleAction(documentId: string): Promise<{ success: boolean; message: string }> {
     console.log(`[DELETE_ARTICLE_ACTION] Attempting to delete article with document ID: ${documentId}`);
     try {
-        const articleResponse = await performStrapiRequest(`/api/articles?filters[documentId][$eq]=${documentId}`, { method: 'GET' });
+      const articleFetchEndpoint = `/api/articles?filters[documentId][$eq]=${documentId}&pagination[page]=1&pagination[pageSize]=1`; // enforced pagination to reduce API calls
+      const articleResponse = await performStrapiRequest(articleFetchEndpoint, { method: 'GET' });
         const articleToDelete = articleResponse.data?.[0];
 
         if (!articleToDelete) {

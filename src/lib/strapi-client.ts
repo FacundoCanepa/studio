@@ -56,11 +56,6 @@ export async function getArticles({
         
         if (limit === -1) {
             params.set('publicationState', 'preview');
-            params.set('pagination[limit]', '-1');
-        }
-
-        if (limit && limit !== -1) {
-          params.set('pagination[limit]', String(limit));
         }
         
         if (categorySlug) {
@@ -84,13 +79,39 @@ export async function getArticles({
             });
         }
         
-        const response = await performStrapiRequest(`/api/articles?${params.toString()}`, { method: 'GET', cache: cache ?? 'default' });
-        const strapiArticles: StrapiArticle[] = response.data || [];
-        console.log(`[GET_ARTICLES] Fetched ${strapiArticles.length} raw articles from Strapi.`);
+        const originalLimit = limit;
+        const normalizedLimit = typeof originalLimit === 'number' && originalLimit > 0 ? originalLimit : 12;
+        const pageSize = Math.min(Math.max(normalizedLimit, 6), 12);
+        let currentPage = 1;
+        const strapiArticles: StrapiArticle[] = [];
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(pageSize)); // enforced pagination to reduce API calls
+
+        while (true) {
+            params.set('pagination[page]', String(currentPage));
+            const response = await performStrapiRequest(`/api/articles?${params.toString()}`, { method: 'GET', cache: cache ?? 'default' });
+            const pageData: StrapiArticle[] = response.data || [];
+            strapiArticles.push(...pageData);
+            console.log(`[GET_ARTICLES] Fetched page ${currentPage} with ${pageData.length} raw articles from Strapi.`);
+
+            const hasEnough = originalLimit !== undefined && originalLimit !== -1 && strapiArticles.length >= originalLimit;
+            const needsAll = originalLimit === -1;
+            const needsMoreForLimit = typeof originalLimit === 'number' && originalLimit > pageSize;
+
+            if (pageData.length < pageSize || hasEnough || (!needsAll && !needsMoreForLimit)) {
+                break;
+            }
+
+            currentPage += 1;
+        }
+
+        console.log(`[GET_ARTICLES] Aggregated ${strapiArticles.length} raw articles from Strapi.`);
 
         const mappedArticles = (await Promise.all(strapiArticles.map(mapStrapiArticleToArticleDoc))).filter(Boolean) as ArticleDoc[];
         console.log(`[GET_ARTICLES] Mapped ${mappedArticles.length} articles to ArticleDoc.`);
-        
+        if (originalLimit && originalLimit > 0) {
+            return mappedArticles.slice(0, originalLimit);
+        }
         return mappedArticles;
     } catch (error) {
         console.error('[GET_ARTICLES] Failed to fetch articles:', error);
@@ -105,7 +126,8 @@ export async function getArticleBySlug(slug: string): Promise<ArticleDoc | null>
         const params = new URLSearchParams();
         params.set('filters[slug][$eq]', slug);
         params.set('populate', '*');
-        params.set('pagination[limit]', '1');
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(Math.min(Math.max(1, 6), 12))); // enforced pagination to reduce API calls
         params.set('publicationState', 'preview');
 
         const response = await performStrapiRequest(`/api/articles?${params.toString()}`, { method: 'GET', cache: 'no-store' });
@@ -131,6 +153,8 @@ export async function getArticleByDocumentId(documentId: string): Promise<Articl
         const params = new URLSearchParams();
         params.set('filters[documentId][$eq]', documentId);
         params.set('populate', '*');
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(Math.min(Math.max(1, 6), 12))); // enforced pagination to reduce API calls
         params.set('publicationState', 'preview');
 
         const endpoint = `/api/articles?${params.toString()}`;
@@ -156,9 +180,31 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
     if (!isApiAvailable()) return [];
     try {
         console.log('[GET_AUTHORS] Fetching all authors...');
-        const response = await performStrapiRequest('/api/authors?populate=*&pagination[limit]=-1', { method: 'GET', cache: options.cache ?? 'default' });
-        const authors: StrapiAuthor[] = response.data || [];
-        console.log(`[GET_AUTHORS] Fetched ${authors.length} authors.`);
+        const params = new URLSearchParams();
+        params.set('populate', '*');
+        const pageSize = Math.min(Math.max(12, 6), 12);
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(pageSize)); // enforced pagination to reduce API calls
+
+        const authors: StrapiAuthor[] = [];
+        let currentPage = 1;
+        const requestOptions = { method: 'GET', cache: (options.cache ?? 'default') as RequestCache };
+
+        while (true) {
+            params.set('pagination[page]', String(currentPage));
+            const response = await performStrapiRequest(`/api/authors?${params.toString()}`, requestOptions);
+            const pageData: StrapiAuthor[] = response.data || [];
+            authors.push(...pageData);
+            console.log(`[GET_AUTHORS] Fetched page ${currentPage} with ${pageData.length} authors.`);
+
+            if (pageData.length < pageSize) {
+                break;
+            }
+
+            currentPage += 1;
+        }
+
+        console.log(`[GET_AUTHORS] Aggregated ${authors.length} authors.`);
         
         const authorDocs = await Promise.all(authors.map(async (authorData) => {
             if (!authorData || !authorData.documentId || !authorData.Name) {
@@ -191,6 +237,8 @@ export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
         const params = new URLSearchParams();
         params.set('filters[documentId][$eq]', documentId);
         params.set('populate', '*');
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(Math.min(Math.max(1, 6), 12))); // enforced pagination to reduce API calls
         const response = await performStrapiRequest(`/api/authors?${params.toString()}`, { method: 'GET', cache: 'no-store' });
         const authorData = response.data?.[0];
 
@@ -218,9 +266,32 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
   if (!isApiAvailable()) return [];
   try {
     console.log('[GET_CATEGORIES] Fetching all categories...');
-    const response = await performStrapiRequest(`/api/categories?populate=*&pagination[limit]=-1&sort=name:asc`, { method: 'GET', ...init });
-    const raw: StrapiCategory[] = response.data || [];
-    console.log(`[GET_CATEGORIES] Fetched ${raw.length} raw categories.`);
+    const params = new URLSearchParams();
+    params.set('populate', '*');
+    params.set('sort', 'name:asc');
+    const pageSize = Math.min(Math.max(12, 6), 12);
+    params.set('pagination[page]', '1');
+    params.set('pagination[pageSize]', String(pageSize)); // enforced pagination to reduce API calls
+
+    const requestInit = { method: 'GET', ...(init ?? {}) } as RequestInit;
+    const raw: StrapiCategory[] = [];
+    let currentPage = 1;
+
+    while (true) {
+      params.set('pagination[page]', String(currentPage));
+      const response = await performStrapiRequest(`/api/categories?${params.toString()}`, requestInit);
+      const pageData: StrapiCategory[] = response.data || [];
+      raw.push(...pageData);
+      console.log(`[GET_CATEGORIES] Fetched page ${currentPage} with ${pageData.length} raw categories.`);
+
+      if (pageData.length < pageSize) {
+        break;
+      }
+
+      currentPage += 1;
+    }
+
+    console.log(`[GET_CATEGORIES] Aggregated ${raw.length} raw categories.`);
 
     const mapped: Promise<CategoryDoc | null>[] = raw.map(async (c: StrapiCategory) => {
       if (!c || !c.id || !c.name || !c.slug || !c.documentId) {
@@ -251,7 +322,12 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
     if (!isApiAvailable()) return null;
     try {
         console.log(`[GET_CATEGORY] Fetching category with slug: ${slug}`);
-        const response = await performStrapiRequest(`/api/categories?filters[slug][$eq]=${slug}&populate=*`, { method: 'GET', cache: 'no-store' });
+        const params = new URLSearchParams();
+        params.set('filters[slug][$eq]', slug);
+        params.set('populate', '*');
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(Math.min(Math.max(1, 6), 12))); // enforced pagination to reduce API calls
+        const response = await performStrapiRequest(`/api/categories?${params.toString()}`, { method: 'GET', cache: 'no-store' });
         const categoryData = response.data?.[0];
 
         if (!categoryData) {
@@ -280,9 +356,30 @@ export async function getTags(): Promise<TagDoc[]> {
     if (!isApiAvailable()) return [];
     try {
         console.log('[GET_TAGS] Fetching all tags...');
-        const response = await performStrapiRequest('/api/tags?populate=*&pagination[limit]=-1', { method: 'GET', cache: 'no-store' });
-        const tags: StrapiTag[] = response.data || [];
-        console.log(`[GET_TAGS] Fetched ${tags.length} tags.`);
+        const params = new URLSearchParams();
+        params.set('populate', '*');
+        const pageSize = Math.min(Math.max(12, 6), 12);
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(pageSize)); // enforced pagination to reduce API calls
+
+        const tags: StrapiTag[] = [];
+        let currentPage = 1;
+
+        while (true) {
+            params.set('pagination[page]', String(currentPage));
+            const response = await performStrapiRequest(`/api/tags?${params.toString()}`, { method: 'GET', cache: 'no-store' });
+            const pageData: StrapiTag[] = response.data || [];
+            tags.push(...pageData);
+            console.log(`[GET_TAGS] Fetched page ${currentPage} with ${pageData.length} tags.`);
+
+            if (pageData.length < pageSize) {
+                break;
+            }
+
+            currentPage += 1;
+        }
+
+        console.log(`[GET_TAGS] Aggregated ${tags.length} tags.`);
         const mappedTags = tags.map(tag => {
             if (!tag || !tag.id || !tag.name || !tag.slug || !tag.documentId) return null;
             return {
@@ -305,7 +402,11 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
     if (!isApiAvailable()) return null;
     try {
         console.log(`[GET_TAG] Fetching tag with slug: ${slug}`);
-        const response = await performStrapiRequest(`/api/tags?filters[slug][$eq]=${slug}`, { method: 'GET', cache: 'no-store' });
+        const params = new URLSearchParams();
+        params.set('filters[slug][$eq]', slug);
+        params.set('pagination[page]', '1');
+        params.set('pagination[pageSize]', String(Math.min(Math.max(1, 6), 12))); // enforced pagination to reduce API calls
+        const response = await performStrapiRequest(`/api/tags?${params.toString()}`, { method: 'GET', cache: 'no-store' });
         const tagData = response.data?.[0];
         if (!tagData) {
             console.warn(`[GET_TAG] No tag found for slug: ${slug}`);
@@ -330,9 +431,30 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
   if (!isApiAvailable()) return [];
   try {
     console.log('[GET_GALLERY_ITEMS] Fetching gallery items...');
-    const response = await performStrapiRequest('/api/Galerias?populate=*&pagination[limit]=-1', { method: 'GET', cache: 'no-store' });
-    const galleryItems: StrapiGalleryItem[] = response.data || [];
-    console.log(`[GET_GALLERY_ITEMS] Fetched ${galleryItems.length} gallery items.`);
+    const params = new URLSearchParams();
+    params.set('populate', '*');
+    const pageSize = Math.min(Math.max(12, 6), 12);
+    params.set('pagination[page]', '1');
+    params.set('pagination[pageSize]', String(pageSize)); // enforced pagination to reduce API calls
+
+    const galleryItems: StrapiGalleryItem[] = [];
+    let currentPage = 1;
+
+    while (true) {
+      params.set('pagination[page]', String(currentPage));
+      const response = await performStrapiRequest(`/api/Galerias?${params.toString()}`, { method: 'GET', cache: 'no-store' });
+      const pageData: StrapiGalleryItem[] = response.data || [];
+      galleryItems.push(...pageData);
+      console.log(`[GET_GALLERY_ITEMS] Fetched page ${currentPage} with ${pageData.length} gallery items.`);
+
+      if (pageData.length < pageSize) {
+        break;
+      }
+
+      currentPage += 1;
+    }
+
+    console.log(`[GET_GALLERY_ITEMS] Aggregated ${galleryItems.length} gallery items.`);
 
     const items = await Promise.all(galleryItems.map(async (itemData) => {
       if (!itemData || !itemData.documentId) {
