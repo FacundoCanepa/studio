@@ -14,7 +14,21 @@ export type StrapiFetchOptions = RequestInit & {
 };
 
 const MIN_REVALIDATE_SECONDS = 3600;
+function parseOptimizationEnabled(): boolean {
+  const rawValue = process.env.STRAPI_OPTIMIZATION_ENABLED;
+  if (typeof rawValue === 'string') {
+    const normalized = rawValue.trim().toLowerCase();
+    if (['false', '0', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+  }
+  return true;
+}
 
+export const STRAPI_OPTIMIZATION_ENABLED = parseOptimizationEnabled();
 function parseRevalidateSeconds(): number {
   const envValue = process.env.STRAPI_REVALIDATE_SECONDS;
   if (envValue) {
@@ -43,13 +57,29 @@ export async function fetchStrapi<T>(endpoint: string, init: StrapiFetchOptions 
     if (typeof init?.body === 'string') {
       headers.set('Content-Type', 'application/json');
     }
-
+    if (!STRAPI_OPTIMIZATION_ENABLED) {
+      headers.delete('if-none-match');
+      headers.delete('If-None-Match');
+    }
     console.log(`[FETCH_STRAPI] Requesting URL: ${url}`, { cache: init?.cache, method: init?.method });
 
-    const response = await fetch(url, {
+    const fetchOptionsWithHeaders: StrapiFetchOptions = {
       ...init,
       headers,
-    });
+    };
+
+    let requestInit: RequestInit & { next?: { revalidate?: number; tags?: string[] } } = fetchOptionsWithHeaders;
+
+    if (!STRAPI_OPTIMIZATION_ENABLED) {
+      const { next: _ignoredNext, ...rest } = fetchOptionsWithHeaders;
+      requestInit = {
+        ...rest,
+        cache: 'no-store',
+      };
+      // anti-spam guard
+    }
+
+    const response = await fetch(url, requestInit);
     
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');

@@ -12,6 +12,16 @@ interface CacheEntry {
 
 const memoizedFetchMap = new Map<string, CacheEntry>();
 
+const RATE_LIMIT_WINDOW_MS = 5_000;
+const RATE_LIMIT_THRESHOLD = 3;
+const RATE_LIMIT_BLOCK_MS = 30_000;
+
+type RateLimitEntry = {
+  timestamps: number[];
+  blockedUntil?: number;
+};
+
+const rateLimitMap = new Map<string, RateLimitEntry>();
 interface CacheKeyResult {
   key: string;
   canCache: boolean;
@@ -97,12 +107,52 @@ const normalizeInit = (init?: RequestInit): { normalized: Record<string, unknown
 
   return { normalized, canCache };
 };
+const resolveRequestUrl = (input: RequestInfo | URL): string => {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.toString();
+  if (hasUrl(input)) return input.url;
+  return String(input);
+};
 
 const createCacheKey = (input: RequestInfo | URL, init?: RequestInit): CacheKeyResult => {
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : hasUrl(input) ? input.url : String(input);
+  const url = resolveRequestUrl(input);
   const { normalized, canCache } = normalizeInit(init);
   const key = JSON.stringify({ url, init: normalized });
   return { key, canCache };
+};
+const enforceClientRateLimit = (input: RequestInfo | URL) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const url = resolveRequestUrl(input);
+  const now = Date.now();
+  const entry = rateLimitMap.get(url) ?? { timestamps: [] };
+
+  if (entry.blockedUntil && entry.blockedUntil > now) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[memoFetch][rate-limit] Blocked excessive fetches for ${url} until ${new Date(entry.blockedUntil).toISOString()}.`);
+    }
+    // anti-spam guard
+    throw new Error(`Rate limit exceeded for ${url}`);
+  }
+
+  entry.timestamps = entry.timestamps.filter((timestamp) => now - timestamp <= RATE_LIMIT_WINDOW_MS);
+  entry.timestamps.push(now);
+
+  if (entry.timestamps.length > RATE_LIMIT_THRESHOLD) {
+    entry.blockedUntil = now + RATE_LIMIT_BLOCK_MS;
+    entry.timestamps = [];
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[memoFetch][rate-limit] Temporarily blocking fetches for ${url} for ${RATE_LIMIT_BLOCK_MS}ms.`);
+    }
+    // anti-spam guard
+    rateLimitMap.set(url, entry);
+    throw new Error(`Rate limit exceeded for ${url}`);
+  }
+
+  entry.blockedUntil = undefined;
+  rateLimitMap.set(url, entry);
 };
 
 export const invalidateMemoFetch = (input?: RequestInfo | URL, init?: RequestInit) => {
@@ -120,6 +170,7 @@ export const memoFetch = async (
   init?: RequestInit,
   options: MemoFetchOptions = {}
 ): Promise<Response> => {
+  enforceClientRateLimit(input);
   const { ttl = DEFAULT_TTL, forceRefresh = false } = options;
   const { key, canCache } = createCacheKey(input, init);
 
