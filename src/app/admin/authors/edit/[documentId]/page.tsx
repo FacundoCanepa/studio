@@ -13,6 +13,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import type { AuthorDoc } from '@/lib/strapi-authors';
+import { mapStrapiAuthorToAuthorDoc } from '@/lib/strapi-author-mapper';
 
 type Props = {
   params: { documentId: string };
@@ -20,35 +21,14 @@ type Props = {
 
 // Helper function to safely map Strapi data to our AuthorDoc type
 function mapStrapiDataToAuthorDoc(strapiData: any): AuthorDoc | null {
-    if (!strapiData) return null;
-
-    const attrs = strapiData.attributes;
-    if (!attrs?.documentId) {
-        return null;
-    }
-
-    return {
-        documentId: attrs.documentId,
-        name: attrs.name,
-        slug: attrs.slug,
-        bio: attrs.bio,
-        role: attrs.role,
-        avatarUrl: attrs.avatarUrl,
-        instagram: attrs.instagram,
-        tiktok: attrs.tiktok,
-        youtube: attrs.youtube,
-        website: attrs.website,
-        isActive: attrs.isActive,
-        featured: attrs.featured,
-        createdAt: attrs.createdAt,
-        updatedAt: attrs.updatedAt,
-    };
+  return mapStrapiAuthorToAuthorDoc(strapiData);
 }
 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const authorData = await getAuthor(params.documentId);
-  const authorName = authorData?.data?.attributes?.name;
+  const mappedAuthor = mapStrapiDataToAuthorDoc(authorData?.data);
+  const authorName = mappedAuthor?.name;
 
   if (!authorName) {
     return { title: 'Autor no encontrado' };

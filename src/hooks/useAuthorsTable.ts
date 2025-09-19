@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { listAuthors } from '@/lib/strapi-authors';
 import { useDebounce } from '@/hooks/use-debounce';
+import { mapStrapiAuthorToAuthorDoc } from '@/lib/strapi-author-mapper';
 import type { AuthorDoc } from '@/lib/strapi-authors';
 
 interface AuthorsTableState {
@@ -20,26 +21,9 @@ interface AuthorsTableState {
 
 // Helper to map raw Strapi data to AuthorDoc
 function mapToAuthorDocs(data: any[]): AuthorDoc[] {
-    return data.map(item => {
-        const attrs = item.attributes;
-        if (!attrs) return null; // Add a guard clause
-        return {
-            documentId: attrs.documentId,
-            name: attrs.name,
-            slug: attrs.slug,
-            bio: attrs.bio,
-            role: attrs.role,
-            avatarUrl: attrs.avatarUrl,
-            instagram: attrs.instagram,
-            tiktok: attrs.tiktok,
-            youtube: attrs.youtube,
-            website: attrs.website,
-            isActive: attrs.isActive,
-            featured: attrs.featured,
-            createdAt: attrs.createdAt,
-            updatedAt: attrs.updatedAt,
-        };
-    }).filter((item): item is AuthorDoc => item !== null); // Filter out null items
+  return data
+    .map((item) => mapStrapiAuthorToAuthorDoc(item))
+    .filter((item): item is AuthorDoc => item !== null);
 }
 
 interface UseAuthorsTableProps {
