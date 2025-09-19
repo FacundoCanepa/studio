@@ -4,7 +4,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, Users, Tag, GanttChartSquare } from 'lucide-react';
+import { Home, Newspaper, Users, GanttChartSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthContext } from '@/context/auth-context';
 
@@ -12,7 +12,6 @@ const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
   { href: '/admin/articles', label: 'Artículos', icon: Newspaper },
   { href: '/admin/categories', label: 'Categorías', icon: GanttChartSquare },
-  { href: '/admin/tags', label: 'Etiquetas', icon: Tag },
   { href: '/admin/authors', label: 'Autores', icon: Users },
 ];
 
