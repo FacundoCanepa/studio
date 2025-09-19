@@ -13,10 +13,46 @@ import {
 import type { StrapiArticle, StrapiResponse } from '@/lib/strapi-types';
 
 type ArticlesResponse = StrapiResponse<StrapiArticle[]>;
+export type GetArticlesOptions = {
+  category?: string;
+  tag?: string;
+  search?: string;
+  featured?: boolean;
+};
 
 
-export async function getArticles(page = 1, pageSize = 12): Promise<ArticlesResponse> {
-  const query = {
+export async function getArticles(
+  page = 1,
+  pageSize = 12,
+  options: GetArticlesOptions = {}
+): Promise<ArticlesResponse> {
+  const filters: Record<string, unknown> = {};
+
+  if (options.category) {
+    filters.category = {slug: {$eq: options.category}};
+  }
+
+  if (options.tag) {
+    filters.tags = {slug: {$eq: options.tag}};
+  }
+
+  if (options.search) {
+    const trimmedSearch = options.search.trim();
+
+    if (trimmedSearch) {
+      filters.$or = [
+        {title: {$containsi: trimmedSearch}},
+        {excerpt: {$containsi: trimmedSearch}},
+        {Content: {$containsi: trimmedSearch}},
+      ];
+    }
+  }
+
+  if (options.featured !== undefined) {
+    filters.featured = {$eq: options.featured};
+  }
+
+  const query: Record<string, unknown> = {
     sort: ['publishedAt:desc'],
     pagination: {
       page,
@@ -43,7 +79,9 @@ export async function getArticles(page = 1, pageSize = 12): Promise<ArticlesResp
       },
     },
   };
-
+  if (Object.keys(filters).length > 0) {
+    query.filters = filters;
+  }
   const queryString = qs(query);
   return fetchStrapi<ArticlesResponse>(`/api/articles${queryString}`);
 }

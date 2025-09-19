@@ -22,13 +22,16 @@ const CATEGORY_FIELDS = ['documentId', 'name', 'slug'];
 const INGREDIENT_FIELDS = ['documentId', 'nombre'];
 
 export async function getProducts(
-  page = 1,
-  pageSize = 12
+  page?: number,
+  pageSize?: number,
+  filtersQuery?: string
 ): Promise<ProductsResponse> {
+  const normalizedPage = page ?? 1;
+  const normalizedPageSize = Math.min(pageSize ?? 12, 12);
   const query = {
     pagination: {
-      page,
-      pageSize: Math.min(pageSize, 12),
+      page: normalizedPage,
+      pageSize: normalizedPageSize,
     },
     fields: PRODUCT_FIELDS,
     populate: {
