@@ -4,12 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { performStrapiRequest } from '@/lib/strapi-api';
 import { toStrapiSlug } from '@/lib/strapiSlug';
-import type { StrapiCategory } from '@/lib/strapi-types';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es requerido.'),
   slug: z.string().min(1, 'El slug es requerido.'),
-  description: z.string().optional(),
 });
 
 type FormState = {
@@ -39,7 +37,50 @@ export async function saveCategoryAction(
   }
 
   const payload = validation.data;
-  console.log('[SAVE_CATEGORY_ACTION] Validation successful. Payload:', payload);
+
+  const sanitizedName = payload.name.trim();
+  const sanitizedSlug = toStrapiSlug(payload.slug.trim());
+
+  const postValidationErrors: Record<string, string[]> = {};
+
+  if (!sanitizedName) {
+    postValidationErrors.name = ['El nombre es requerido.'];
+  }
+
+  if (!sanitizedSlug) {
+    postValidationErrors.slug = ['El slug es requerido.'];
+  }
+
+  if (Object.keys(postValidationErrors).length > 0) {
+    console.error('[SAVE_CATEGORY_ACTION] Sanitization failed:', postValidationErrors);
+    return {
+      message: 'Error de validación. Por favor, revisa los campos.',
+      errors: postValidationErrors,
+      success: false,
+    };
+  }
+
+  const rawImgValue = formData.get('imgId') ?? formData.get('img');
+  let imgId: number | string | undefined;
+
+  if (typeof rawImgValue === 'string') {
+    const trimmedImg = rawImgValue.trim();
+    if (trimmedImg) {
+      if (/^\d+$/.test(trimmedImg)) {
+        imgId = Number.parseInt(trimmedImg, 10);
+      } else {
+        imgId = trimmedImg;
+      }
+    }
+  }
+
+  const strapiPayload = {
+    name: sanitizedName,
+    slug: sanitizedSlug,
+    ...(imgId !== undefined ? { img: imgId } : {}),
+  };
+
+  console.log('[SAVE_CATEGORY_ACTION] Validation successful. Payload:', strapiPayload);
 
   try {
     let resultingDocumentId = documentId;
@@ -48,13 +89,13 @@ export async function saveCategoryAction(
       console.log(`[SAVE_CATEGORY_ACTION] Updating category with documentId ${documentId}.`);
       await performStrapiRequest(`/api/categories/${documentId}`, {
         method: 'PUT',
-        body: JSON.stringify({ data: payload }),
+        body: JSON.stringify({ data: strapiPayload }),
       });
     } else {
       console.log('[SAVE_CATEGORY_ACTION] Creating new category.');
       const response = await performStrapiRequest('/api/categories', {
         method: 'POST',
-        body: JSON.stringify({ data: payload }),
+        body: JSON.stringify({ data: strapiPayload }),
       });
       resultingDocumentId = response.data?.documentId;
       console.log(`[SAVE_CATEGORY_ACTION] Created new category with documentId ${resultingDocumentId}.`);
@@ -62,7 +103,7 @@ export async function saveCategoryAction(
 
     revalidatePath('/admin/categories');
     if (resultingDocumentId) {
-        revalidatePath(`/admin/categories/edit/${resultingDocumentId}`);
+      revalidatePath(`/admin/categories/edit/${resultingDocumentId}`);
     }
 
     return {
