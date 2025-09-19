@@ -11,7 +11,6 @@ export const ARTICLE_FIELDS: Array<keyof StrapiArticle | string> = [
   'home',
   'New',
   'Tendencias',
-  'saves',
   'type',
   'subcategories',
   'Informacion',

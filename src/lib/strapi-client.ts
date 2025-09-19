@@ -21,7 +21,6 @@ const ARTICLE_FIELDS = [
     'home',
     'New',
     'Tendencias',
-    'saves',
     'type',
     'Informacion',
     'UrlYoutube',
