@@ -627,15 +627,18 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
     }
 }
 
-export async function getCategory(slug: string): Promise<CategoryDoc | null> {
+export async function getCategory(identifier: string): Promise<CategoryDoc | null> {
     if (!isApiAvailable()) return null;
     try {
-        console.log(`[GET_CATEGORY] Fetching category with slug: ${slug}`);
+        console.log(`[GET_CATEGORY] Fetching category with identifier: ${identifier}`);
         const paginationSize = Math.min(Math.max(1, 6), 12);
         const fetchCategoryData = async (fields: readonly CategoryField[]) => {
             const query = {
                 filters: {
-                    slug: { $eq: slug },
+                    $or: [
+                        { slug: { $eq: identifier } },
+                        { documentId: { $eq: identifier } },
+                    ],
                 },
                 ...(fields.length > 0 ? { fields: Array.from(fields) } : {}),
                 populate: CATEGORY_POPULATE, // removed populate=*
@@ -662,7 +665,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
 
                 const removedLabel = retry.removed.join(', ') || 'unknown';
                 console.warn(
-                    `[GET_CATEGORY] Retrying without invalid category fields (${removedLabel}) for slug: ${slug}.`,
+                    `[GET_CATEGORY] Retrying without invalid category fields (${removedLabel}) for identifier: ${identifier}.`,
                 );
                 return fetchCategoryWithRetry(retry.fields);
             }
@@ -671,7 +674,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
         const categoryData = await fetchCategoryWithRetry(CATEGORY_REQUEST_FIELDS);
 
         if (!categoryData) {
-            console.warn(`[GET_CATEGORY] No category found for slug: ${slug}`);
+            console.warn(`[GET_CATEGORY] No category found for identifier: ${identifier}`);
             return null;
         }
 
@@ -686,7 +689,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
             imageUrl: await getStrapiMediaUrl(categoryData.img?.url),
         };
     } catch(error) {
-        console.error(`[GET_CATEGORY] Failed to fetch category for slug ${slug}:`, error);
+        console.error(`[GET_CATEGORY] Failed to fetch category for identifier ${identifier}:`, error);
         return null;
     }
 }
