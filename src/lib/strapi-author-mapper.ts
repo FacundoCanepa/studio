@@ -3,23 +3,6 @@ import type { AuthorDoc } from './strapi-authors';
 
 type UnknownRecord = Record<string, any> | null | undefined;
 
-function pickString(source: UnknownRecord, keys: string[]): string | undefined {
-  if (!source) return undefined;
-  for (const key of keys) {
-    if (!(key in (source as Record<string, any>))) continue;
-    const value = (source as Record<string, any>)[key];
-    if (value == null) continue;
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-  }
-  return undefined;
-}
-
 function extractBio(source: UnknownRecord): string | undefined {
   const rawBio = (source as Record<string, any> | undefined)?.Bio;
   if (typeof rawBio === 'string') {
@@ -59,23 +42,24 @@ export function mapStrapiAuthorToAuthorDoc(input: unknown): AuthorDoc | null {
 
   const createdAt = raw.createdAt ?? '';
   const updatedAt = raw.updatedAt ?? createdAt;
+  
+  const articles = Array.isArray(raw.articles?.data)
+    ? raw.articles.data.map((article: any) => ({
+        id: article.id,
+        title: article.attributes?.title ?? 'Título no disponible',
+      }))
+    : [];
 
   const author: AuthorDoc = {
+    id: entity.id,
     documentId,
     name,
     slug: raw.slug ?? '',
     bio: extractBio(raw),
     createdAt,
     updatedAt,
-    // Defaulting missing fields
-    role: raw.role,
-    avatarUrl: raw.Avatar?.url,
-    instagram: undefined,
-    tiktok: undefined,
-    youtube: undefined,
-    website: undefined,
-    isActive: raw.isActive ?? true,
-    featured: raw.featured ?? false,
+    avatarUrl: raw.Avatar?.data?.attributes?.url,
+    articles: articles,
   };
 
   return author;

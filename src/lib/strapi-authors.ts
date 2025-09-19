@@ -13,23 +13,22 @@ import { qs } from './qs';
  */
 
 export type AuthorPayload = {
+  Name: string;
+  slug: string;
+  Bio?: string;
+  Avatar?: number | null;
+};
+
+export type AuthorDoc = {
+  id: number;
+  documentId: string;
   name: string;
   slug: string;
   bio?: string;
-};
-
-export type AuthorDoc = AuthorPayload & {
-  documentId: string;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
-  role?: string;
-  avatarUrl?: string;
-  instagram?: string;
-  tiktok?: string;
-  youtube?: string;
-  website?: string;
-  isActive: boolean;
-  featured: boolean;
+  articles?: Array<{ id: number; title: string }>;
 };
 
 interface ListAuthorsParams {
@@ -65,7 +64,7 @@ export async function listAuthors({ page = 1, pageSize = 20, search = '' }: List
  * Gets a single author by their documentId.
  */
 export async function getAuthor(documentId: string) {
-    const queryString = qs({ populate: '*' });
+    const queryString = qs({ populate: '*,articles,Avatar' });
     return fetchStrapi<any>(`/api/authors/${documentId}${queryString}`);
 }
 

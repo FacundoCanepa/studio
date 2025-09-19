@@ -1,4 +1,3 @@
-
 // src/lib/validation/author-schema.ts
 import { z } from 'zod';
 
@@ -24,15 +23,7 @@ export const authorSchema = z.object({
   slug: z.string().min(3, 'El slug debe tener al menos 3 caracteres.')
     .transform(value => toKebabCase(value)),
   bio: z.string().optional(),
-  // Campos que ya no existen en la API se eliminan de la validación
-  // role: z.string().optional(),
-  // avatarUrl: z.string().url('La URL del avatar debe ser válida.').optional().or(z.literal('')),
-  // instagram: z.string().optional(),
-  // tiktok: z.string().optional(),
-  // youtube: z.string().optional(),
-  // website: z.string().url('La URL del sitio web debe ser válida.').optional().or(z.literal('')),
-  // isActive: z.boolean().default(true),
-  // featured: z.boolean().default(false),
+  pendingCoverId: z.string().optional(),
 });
 
 export type AuthorFormData = z.infer<typeof authorSchema>;
@@ -48,6 +39,7 @@ export function normalizeAuthorForm(values: Record<string, any>): Partial<Author
     if (typeof values.name === 'string') normalized.name = values.name.trim();
     if (typeof values.slug === 'string') normalized.slug = toKebabCase(values.slug);
     if (typeof values.bio === 'string') normalized.bio = values.bio.trim();
+    if (values.pendingCoverId !== undefined) normalized.pendingCoverId = values.pendingCoverId;
 
     return normalized;
 }

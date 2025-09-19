@@ -21,13 +21,15 @@ type Props = {
 
 // Helper function to safely map Strapi data to our AuthorDoc type
 function mapStrapiDataToAuthorDoc(strapiData: any): AuthorDoc | null {
-  return mapStrapiAuthorToAuthorDoc(strapiData);
+  if (!strapiData) return null;
+  // The actual data is nested inside 'data' and then 'attributes' or just 'data'
+  return mapStrapiAuthorToAuthorDoc(strapiData.data || strapiData);
 }
 
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const authorData = await getAuthor(params.documentId);
-  const mappedAuthor = mapStrapiDataToAuthorDoc(authorData?.data);
+  const mappedAuthor = mapStrapiDataToAuthorDoc(authorData);
   const authorName = mappedAuthor?.name;
 
   if (!authorName) {
@@ -40,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EditAuthorPage({ params }: Props) {
   const authorResponse = await getAuthor(params.documentId);
-  const author = mapStrapiDataToAuthorDoc(authorResponse?.data);
+  const author = mapStrapiDataToAuthorDoc(authorResponse);
   
   if (!author) {
     notFound();

@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createAuthor, updateAuthor, deleteAuthor } from '@/lib/strapi-authors';
+import { createAuthor, updateAuthor, deleteAuthor, AuthorPayload } from '@/lib/strapi-authors';
 import { authorSchema, normalizeAuthorForm, AuthorFormData } from '@/lib/validation/author-schema';
 import type { FormState } from './types';
 
@@ -18,7 +18,6 @@ export async function saveAuthorAction(
   
   const rawData = Object.fromEntries(formData.entries());
   
-  // Normaliza los datos antes de validar (ej: convierte 'on' a boolean)
   const normalizedData = normalizeAuthorForm(rawData);
   
   const validation = authorSchema.safeParse(normalizedData);
@@ -34,7 +33,17 @@ export async function saveAuthorAction(
   }
   
   console.log('[SAVE_AUTHOR_ACTION] Validation successful.');
-  const payload: AuthorFormData = validation.data;
+  const { name, slug, bio, pendingCoverId } = validation.data;
+
+  const payload: Partial<AuthorPayload> = {
+    Name: name,
+    slug,
+    Bio: bio,
+  };
+  
+  if (pendingCoverId !== undefined) {
+      payload.Avatar = pendingCoverId === 'null' ? null : Number(pendingCoverId);
+  }
 
   try {
     if (documentId) {
@@ -42,7 +51,7 @@ export async function saveAuthorAction(
       await updateAuthor(documentId, payload);
     } else {
       console.log('[SAVE_AUTHOR_ACTION] Creating new author.');
-      await createAuthor(payload);
+      await createAuthor(payload as AuthorPayload);
     }
 
     console.log('[SAVE_AUTHOR_ACTION] Done. Revalidating paths.');
