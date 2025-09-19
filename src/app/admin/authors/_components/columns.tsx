@@ -24,13 +24,24 @@ import { es } from "date-fns/locale";
 import { DeleteConfirm } from "@/components/admin/DeleteConfirm";
 
 async function deleteAuthor(documentId: string, toast: any) {
-    const result = await deleteAuthorAction(documentId);
-    toast({
-        title: result.success ? 'Éxito' : 'Error',
-        description: result.message,
-        variant: result.success ? 'default' : 'destructive',
-    });
+    console.log(`[ADMIN_AUTHORS] Deleting author with documentId: ${documentId}`);
+    try {
+        const result = await deleteAuthorAction(documentId);
+        toast({
+            title: result.success ? 'Éxito' : 'Error',
+            description: result.message,
+            variant: result.success ? 'default' : 'destructive',
+        });
+    } catch (error: any) {
+        console.error(`[ADMIN_AUTHORS][DELETE_ERROR]`, error);
+        toast({
+            title: 'Error Inesperado',
+            description: 'No se pudo eliminar el autor.',
+            variant: 'destructive',
+        });
+    }
 }
+
 
 const SocialLink = ({ href, Icon }: { href: string; Icon: ElementType }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
@@ -44,10 +55,11 @@ export const columns: ColumnDef<AuthorDoc>[] = [
     header: "",
     cell: ({ row }) => {
       const author = row.original;
+      const authorName = author.name || '';
       return (
         <Avatar className="h-9 w-9">
-          <AvatarImage src={author.avatarUrl} alt={author.name} />
-          <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
+          <AvatarImage src={author.avatarUrl} alt={authorName} />
+          <AvatarFallback>{authorName ? authorName.charAt(0).toUpperCase() : 'A'}</AvatarFallback>
         </Avatar>
       );
     },
