@@ -12,46 +12,56 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import type { AuthorDoc } from '@/lib/strapi-authors';
 
 type Props = {
   params: { documentId: string };
 };
 
+// Helper function to safely map Strapi data to our AuthorDoc type
+function mapStrapiDataToAuthorDoc(strapiData: any): AuthorDoc | null {
+    if (!strapiData?.attributes?.documentId) {
+        return null;
+    }
+    const attrs = strapiData.attributes;
+    return {
+        documentId: attrs.documentId,
+        name: attrs.name,
+        slug: attrs.slug,
+        bio: attrs.bio,
+        role: attrs.role,
+        avatarUrl: attrs.avatarUrl,
+        instagram: attrs.instagram,
+        tiktok: attrs.tiktok,
+        youtube: attrs.youtube,
+        website: attrs.website,
+        isActive: attrs.isActive,
+        featured: attrs.featured,
+        createdAt: attrs.createdAt,
+        updatedAt: attrs.updatedAt,
+    };
+}
+
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const author = await getAuthor(params.documentId);
-  if (!author) {
+  const authorData = await getAuthor(params.documentId);
+  const authorName = authorData?.data?.attributes?.name;
+
+  if (!authorName) {
     return { title: 'Autor no encontrado' };
   }
   return {
-    title: `Editar: ${author.name} - Admin Panel`,
+    title: `Editar: ${authorName} - Admin Panel`,
   };
 }
 
 export default async function EditAuthorPage({ params }: Props) {
-  const authorData = await getAuthor(params.documentId);
-
-  if (!authorData || !authorData.data) {
+  const authorResponse = await getAuthor(params.documentId);
+  const author = mapStrapiDataToAuthorDoc(authorResponse?.data);
+  
+  if (!author) {
     notFound();
   }
-
-  // Mapeamos los datos de Strapi a la estructura de AuthorDoc
-  const author = {
-    documentId: authorData.data.documentId,
-    name: authorData.data.name,
-    slug: authorData.data.slug,
-    bio: authorData.data.bio,
-    role: authorData.data.role,
-    avatarUrl: authorData.data.avatarUrl,
-    instagram: authorData.data.instagram,
-    tiktok: authorData.data.tiktok,
-    youtube: authorData.data.youtube,
-    website: authorData.data.website,
-    isActive: authorData.data.isActive,
-    featured: authorData.data.featured,
-    createdAt: authorData.data.createdAt,
-    updatedAt: authorData.data.updatedAt,
-  };
-
 
   return (
     <div className="space-y-8">
