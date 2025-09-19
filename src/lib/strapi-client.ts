@@ -31,11 +31,11 @@ const ARTICLE_FIELDS = [
 
 const ARTICLE_SEO_FIELDS = ['metaTitle', 'metaDescription', 'canonicalUrl'] as const;
 
-const CATEGORY_BASE_FIELDS = ['documentId', 'name', 'slug', 'color'] as const;
-const CATEGORY_OPTIONAL_FIELDS = ['description'] as const;
-const CATEGORY_SUMMARY_FIELDS = [...CATEGORY_BASE_FIELDS, ...CATEGORY_OPTIONAL_FIELDS] as const;
-const CATEGORY_FALLBACK_FIELDS = CATEGORY_BASE_FIELDS;
-
+const CATEGORY_REQUIRED_FIELDS = ['documentId', 'name', 'slug'] as const;
+const CATEGORY_OPTIONAL_FIELDS = ['color', 'description'] as const;
+const CATEGORY_SUMMARY_FIELDS = [...CATEGORY_REQUIRED_FIELDS, ...CATEGORY_OPTIONAL_FIELDS] as const;
+const CATEGORY_FALLBACK_FIELDS = CATEGORY_REQUIRED_FIELDS;
+type CategoryField = (typeof CATEGORY_SUMMARY_FIELDS)[number];
 
 const AUTHOR_SUMMARY_FIELDS = ['documentId', 'Name'] as const;
 const AUTHOR_DETAIL_FIELDS = ['documentId', 'Name', 'Bio', 'createdAt', 'updatedAt'] as const;
@@ -400,17 +400,89 @@ export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
         return null;
     }
 }
-function shouldRetryCategoryFields(error: unknown): boolean {
+function parseInvalidCategoryFields(error: unknown): CategoryField[] {
+    const invalidFields = new Set<CategoryField>();
+
     if (!(error instanceof Error)) {
-        return false;
+        return [];
     }
 
-    const normalizedMessage = (error.message || '').toLowerCase();
-    if (!normalizedMessage) {
-        return false;
+    const message = error.message ?? '';
+    if (!message) {
+        return [];
     }
 
-    return normalizedMessage.includes('invalid key description') || normalizedMessage.includes('invalid key descripcion');
+    const jsonStartIndex = message.indexOf('{');
+    if (jsonStartIndex !== -1) {
+        const jsonPayload = message.slice(jsonStartIndex);
+        try {
+            const parsed = JSON.parse(jsonPayload);
+            const detailsKey = parsed?.error?.details?.key;
+            if (typeof detailsKey === 'string') {
+                const normalizedKey = detailsKey.toLowerCase();
+                if (normalizedKey === 'color') {
+                    invalidFields.add('color');
+                }
+                if (normalizedKey === 'description' || normalizedKey === 'descripcion') {
+                    invalidFields.add('description');
+                }
+            }
+        } catch {
+            // Ignore JSON parsing errors and fall back to string matching.
+        }
+    }
+
+    const normalizedMessage = message.toLowerCase();
+    if (normalizedMessage.includes('invalid key color') || normalizedMessage.includes('"key":"color"')) {
+        invalidFields.add('color');
+    }
+    if (
+        normalizedMessage.includes('invalid key description') ||
+        normalizedMessage.includes('invalid key descripcion') ||
+        normalizedMessage.includes('"key":"description"') ||
+        normalizedMessage.includes('"key":"descripcion"')
+    ) {
+        invalidFields.add('description');
+    }
+
+    return Array.from(invalidFields);
+}
+
+function resolveCategoryFieldRetry(
+    attemptedFields: readonly CategoryField[],
+    error: unknown,
+): { fields: CategoryField[]; removed: CategoryField[] } | null {
+    const invalidFields = parseInvalidCategoryFields(error);
+    if (invalidFields.length === 0) {
+        return null;
+    }
+
+    const attemptedSet = new Set<CategoryField>(Array.from(attemptedFields));
+    const removed = invalidFields.filter((field) => attemptedSet.has(field));
+
+    let nextFields: CategoryField[];
+    if (removed.length > 0) {
+        nextFields = attemptedFields.filter((field): field is CategoryField => !removed.includes(field));
+    } else {
+        nextFields = Array.from(CATEGORY_FALLBACK_FIELDS) as CategoryField[];
+    }
+
+    if (nextFields.length === 0) {
+        nextFields = Array.from(CATEGORY_FALLBACK_FIELDS) as CategoryField[];
+    }
+
+    const isSameFields =
+        nextFields.length === attemptedFields.length &&
+        nextFields.every((field, index) => field === attemptedFields[index]);
+
+    if (isSameFields) {
+        return null;
+    }
+
+    return {
+        fields: nextFields,
+        removed: removed.length > 0 ? removed : invalidFields,
+    };
 }
 export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> {
     if (!isApiAvailable()) return [];
@@ -436,7 +508,7 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
                       },
                   }),
         };
-        const fetchAllPages = async (fields: readonly string[]): Promise<StrapiCategory[]> => {
+        const fetchAllPages = async (fields: readonly CategoryField[]): Promise<StrapiCategory[]> => {
             const accumulated: StrapiCategory[] = [];
             let currentPage = 1;
 
@@ -465,17 +537,22 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
             return accumulated;
         };
 
-        let raw: StrapiCategory[];
-        try {
-            raw = await fetchAllPages(CATEGORY_SUMMARY_FIELDS);
-        } catch (error) {
-            if (shouldRetryCategoryFields(error)) {
-                console.warn('[GET_CATEGORIES] Retrying without optional category fields due to invalid key error.');
-                raw = await fetchAllPages(CATEGORY_FALLBACK_FIELDS);
-            } else {
-                throw error;
+        const fetchCategoriesWithRetry = async (fields: readonly CategoryField[]): Promise<StrapiCategory[]> => {
+            try {
+                return await fetchAllPages(fields);
+            } catch (error) {
+                const retry = resolveCategoryFieldRetry(fields, error);
+                if (!retry) {
+                    throw error;
+                }
+
+                const removedLabel = retry.removed.join(', ') || 'unknown';
+                console.warn(`[GET_CATEGORIES] Retrying without invalid category fields: ${removedLabel}.`);
+                return fetchCategoriesWithRetry(retry.fields);
             }
-        }
+        };
+
+        const raw = await fetchCategoriesWithRetry(CATEGORY_SUMMARY_FIELDS);
 
         console.log(`[GET_CATEGORIES] Aggregated ${raw.length} raw categories.`);
 
@@ -509,7 +586,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
     try {
         console.log(`[GET_CATEGORY] Fetching category with slug: ${slug}`);
         const paginationSize = Math.min(Math.max(1, 6), 12);
-        const fetchCategoryData = async (fields: readonly string[]) => {
+        const fetchCategoryData = async (fields: readonly CategoryField[]) => {
             const query = {
                 filters: {
                     slug: { $eq: slug },
@@ -526,17 +603,26 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
             return response.data?.[0] as StrapiCategory | undefined;
         };
 
-        let categoryData: StrapiCategory | undefined;
-        try {
-            categoryData = await fetchCategoryData(CATEGORY_SUMMARY_FIELDS);
-        } catch (error) {
-            if (shouldRetryCategoryFields(error)) {
-                console.warn(`[GET_CATEGORY] Retrying without optional category fields for slug: ${slug}.`);
-                categoryData = await fetchCategoryData(CATEGORY_FALLBACK_FIELDS);
-            } else {
-                throw error;
+        const fetchCategoryWithRetry = async (
+            fields: readonly CategoryField[],
+        ): Promise<StrapiCategory | undefined> => {
+            try {
+                return await fetchCategoryData(fields);
+            } catch (error) {
+                const retry = resolveCategoryFieldRetry(fields, error);
+                if (!retry) {
+                    throw error;
+                }
+
+                const removedLabel = retry.removed.join(', ') || 'unknown';
+                console.warn(
+                    `[GET_CATEGORY] Retrying without invalid category fields (${removedLabel}) for slug: ${slug}.`,
+                );
+                return fetchCategoryWithRetry(retry.fields);
             }
-        }
+        };
+
+        const categoryData = await fetchCategoryWithRetry(CATEGORY_SUMMARY_FIELDS);
 
         if (!categoryData) {
             console.warn(`[GET_CATEGORY] No category found for slug: ${slug}`);
