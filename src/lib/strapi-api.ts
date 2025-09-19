@@ -1,5 +1,5 @@
 // src/lib/strapi-api.ts
-'use server';
+import 'server-only';
 
 import type { StrapiResponse } from './strapi-types';
 
@@ -80,7 +80,7 @@ export async function fetchStrapi<T>(endpoint: string, init: StrapiFetchOptions 
     }
 
     const response = await fetch(url, requestInit);
-    
+
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
       console.error(`[FETCH_STRAPI][ERROR_RESPONSE]`, { url, status: response.status, body: errorBody });
