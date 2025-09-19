@@ -20,10 +20,13 @@ type Props = {
 
 // Helper function to safely map Strapi data to our AuthorDoc type
 function mapStrapiDataToAuthorDoc(strapiData: any): AuthorDoc | null {
-    if (!strapiData?.attributes?.documentId) {
+    if (!strapiData) return null;
+
+    const attrs = strapiData.attributes;
+    if (!attrs?.documentId) {
         return null;
     }
-    const attrs = strapiData.attributes;
+
     return {
         documentId: attrs.documentId,
         name: attrs.name,

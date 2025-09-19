@@ -18,10 +18,27 @@ interface AuthorsTableState {
   } | null;
 }
 
-interface UseAuthorsTableProps {
-  initialPage?: number;
-  pageSize?: number;
-  initialSearch?: string;
+// Helper to map raw Strapi data to AuthorDoc
+function mapToAuthorDocs(data: any[]): AuthorDoc[] {
+    return data.map(item => {
+        const attrs = item.attributes;
+        return {
+            documentId: attrs.documentId,
+            name: attrs.name,
+            slug: attrs.slug,
+            bio: attrs.bio,
+            role: attrs.role,
+            avatarUrl: attrs.avatarUrl,
+            instagram: attrs.instagram,
+            tiktok: attrs.tiktok,
+            youtube: attrs.youtube,
+            website: attrs.website,
+            isActive: attrs.isActive,
+            featured: attrs.featured,
+            createdAt: attrs.createdAt,
+            updatedAt: attrs.updatedAt,
+        };
+    });
 }
 
 export function useAuthorsTable({ 
@@ -47,7 +64,7 @@ export function useAuthorsTable({
         pageSize,
         search: debouncedSearch,
       });
-      setData({ items: response.data, meta: response.meta });
+      setData({ items: mapToAuthorDocs(response.data), meta: response.meta });
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error al cargar los autores.');
       setData(null);

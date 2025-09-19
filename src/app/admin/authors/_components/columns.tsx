@@ -43,11 +43,14 @@ async function deleteAuthor(documentId: string, toast: any) {
 }
 
 
-const SocialLink = ({ href, Icon }: { href: string; Icon: ElementType }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-        <Icon className="h-4 w-4" />
-    </a>
-);
+const SocialLink = ({ href, Icon }: { href: string | undefined; Icon: ElementType }) => {
+    if (!href) return null;
+    return (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+            <Icon className="h-4 w-4" />
+        </a>
+    );
+};
 
 export const columns: ColumnDef<AuthorDoc>[] = [
   {
@@ -93,9 +96,9 @@ export const columns: ColumnDef<AuthorDoc>[] = [
       const author = row.original;
       return (
         <div className="flex items-center space-x-2">
-            {author.instagram && <SocialLink href={author.instagram} Icon={Instagram} />}
-            {author.youtube && <SocialLink href={author.youtube} Icon={Youtube} />}
-            {author.website && <SocialLink href={author.website} Icon={Globe} />}
+            <SocialLink href={author.instagram} Icon={Instagram} />
+            <SocialLink href={author.youtube} Icon={Youtube} />
+            <SocialLink href={author.website} Icon={Globe} />
         </div>
       );
     },
@@ -121,6 +124,7 @@ export const columns: ColumnDef<AuthorDoc>[] = [
     ),
     cell: ({ row }) => {
         const date = row.getValue("updatedAt") as string;
+        if (!date) return 'N/A';
         return <span>{format(new Date(date), "dd MMM, yyyy", { locale: es })}</span>;
     },
   },
