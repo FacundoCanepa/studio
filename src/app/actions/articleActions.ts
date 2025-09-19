@@ -7,6 +7,7 @@ import { z } from 'zod';
 import type { StrapiTag } from '@/lib/strapi-types';
 import { performStrapiRequest } from '@/lib/strapi-api';
 import { patchArticleByDocumentId } from '@/lib/strapi-article';
+import { toStrapiSlug } from '@/lib/strapiSlug';
 
 const articleSchema = z.object({
   title: z.string().min(3, 'El título es requerido.'),
@@ -92,7 +93,7 @@ export async function saveArticleAction(
                 console.log(`[SAVE_ARTICLE_ACTION] Creating new tag '${tagName}'.`);
                 const newTagResponse = await performStrapiRequest('/api/tags', {
                     method: 'POST',
-                    body: JSON.stringify({ data: { name: tagName, slug: tagName.toLowerCase().replace(/\s+/g, '-') } }),
+                    body: JSON.stringify({ data: { name: tagName, slug: toStrapiSlug(tagName) } }),
                 });
                 if (newTagResponse.data) {
                     tagIds.push(newTagResponse.data.id);
