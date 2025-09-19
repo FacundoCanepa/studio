@@ -8,14 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 
 import { saveCategoryAction } from '@/app/actions/categoryActions';
-import type { CategoryDoc } from '@/lib/firestore-types';
+import type { CategoryDoc } from '@/lib/firestore-types'; <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
 import { toStrapiSlug } from '@/lib/strapiSlug';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FormDescription } from '@/components/ui/form';
+
 
 
 interface CategoryFormProps {
@@ -90,7 +90,7 @@ export function CategoryForm({ category }: CategoryFormProps) {
               placeholder="Ej: Estilo de Vida"
             />
             {formState.errors?.name && (
-                <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
+               <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
             )}
           </div>
           
@@ -107,10 +107,12 @@ export function CategoryForm({ category }: CategoryFormProps) {
               required
               placeholder="Ej: estilo-de-vida"
             />
-             {formState.errors?.slug && (
-                <p className="text-sm text-destructive">{formState.errors.slug[0]}</p>
+            {formState.errors?.slug && (
+              <p className="text-sm text-destructive">{formState.errors.slug[0]}</p>
             )}
-             <FormDescription>Esta es la URL amigable para la categoría.</FormDescription>
+            <p className="text-sm text-muted-foreground">
+              Esta es la URL amigable para la categoría.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -121,8 +123,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
               defaultValue={category?.description || ''}
               placeholder="Una breve descripción sobre de qué trata esta categoría."
             />
-             {formState.errors?.description && (
-                <p className="text-sm text-destructive">{formState.errors.description[0]}</p>
+            {formState.errors?.description && (
+              <p className="text-sm text-destructive">{formState.errors.description[0]}</p>
             )}
           </div>
         </CardContent>
