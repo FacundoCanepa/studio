@@ -89,13 +89,13 @@ export async function saveCategoryAction(
       console.log(`[SAVE_CATEGORY_ACTION] Updating category with documentId ${documentId}.`);
       await performStrapiRequest(`/api/categories/${documentId}`, {
         method: 'PUT',
-        body: JSON.stringify({ data: strapiPayload }),
+        body: { data: strapiPayload },
       });
     } else {
       console.log('[SAVE_CATEGORY_ACTION] Creating new category.');
       const response = await performStrapiRequest('/api/categories', {
         method: 'POST',
-        body: JSON.stringify({ data: strapiPayload }),
+        body: { data: strapiPayload },
       });
       resultingDocumentId = response.data?.documentId;
       console.log(`[SAVE_CATEGORY_ACTION] Created new category with documentId ${resultingDocumentId}.`);
@@ -112,9 +112,9 @@ export async function saveCategoryAction(
     };
   } catch (error: any) {
     console.error('[SAVE_CATEGORY_ACTION] Error during Strapi operation:', error);
-    const errorMessage = error.response?.data?.error?.message || error.message || 'Error desconocido.';
+    const errorMessage = (error instanceof Error && error.message) ? error.message : 'Error desconocido.';
     return {
-      message: `Error al guardar la categoría: ${errorMessage}`,
+      message: errorMessage,
       success: false,
     };
   }

@@ -93,7 +93,7 @@ export async function saveArticleAction(
                 console.log(`[SAVE_ARTICLE_ACTION] Creating new tag '${tagName}'.`);
                 const newTagResponse = await performStrapiRequest('/api/tags', {
                     method: 'POST',
-                    body: JSON.stringify({ data: { name: tagName, slug: toStrapiSlug(tagName) } }),
+                    body: { data: { name: tagName, slug: toStrapiSlug(tagName) } },
                 });
                 if (newTagResponse.data) {
                     tagIds.push(newTagResponse.data.id);
@@ -141,7 +141,7 @@ export async function saveArticleAction(
       console.log('[SAVE_ARTICLE_ACTION] No documentId provided. Creating a new article.');
       const createResponse = await performStrapiRequest('/api/articles', {
         method: 'POST',
-        body: JSON.stringify({ data: payload }),
+        body: { data: payload },
       });
 
       const createdData = createResponse?.data;
@@ -183,8 +183,9 @@ export async function saveArticleAction(
     };
   } catch (error: any) {
     console.error('[SAVE_ARTICLE_ACTION] Error during Strapi operation:', error);
+    const errorMessage = (error instanceof Error && error.message) ? error.message : 'Error al guardar el artículo.';
     return {
-      message: `Error al guardar el artículo: ${error.message}`,
+      message: errorMessage,
       success: false,
     };
   }

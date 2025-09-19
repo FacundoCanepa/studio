@@ -44,7 +44,7 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
         const updateEndpoint = `/api/articles/${documentId}`;
         await performStrapiRequest(updateEndpoint, {
           method: 'PUT',
-          body: JSON.stringify({ data: payload }),
+          body: { data: payload },
         });
         const query = qs({
           fields: ARTICLE_FIELDS,
