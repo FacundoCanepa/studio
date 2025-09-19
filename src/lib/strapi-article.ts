@@ -37,7 +37,15 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
 
         console.log(`[strapi-article] Verified existence for documentId ${documentId}. Updating via documentId endpoint.`);
 
-        // Perform the update directly using the documentId
+           // Perform the update directly using the documentId. Strapi's document update
+        // endpoint does not support passing fields/populate parameters alongside the
+        // PUT request body, so we first send the update and then fetch the hydrated
+        // entity in a separate call.
+        const updateEndpoint = `/api/articles/${documentId}`;
+        await performStrapiRequest(updateEndpoint, {
+          method: 'PUT',
+          body: JSON.stringify({ data: payload }),
+        });
         const query = qs({
           fields: ARTICLE_FIELDS,
           populate: {
@@ -61,15 +69,14 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
           },
         });
 
-        const endpoint = `/api/articles/${documentId}${query}`; // removed populate=*
 
-        const response = await performStrapiRequest(endpoint, {
-          method: 'PUT',
-          body: JSON.stringify({ data: payload }),
+        const fetchEndpoint = `/api/articles/${documentId}${query}`;
+        const response = await performStrapiRequest(fetchEndpoint, {
+          method: 'GET',
+          cache: 'no-store',
         });
 
-        console.log(`[strapi-article] Successfully updated article with documentId ${documentId}. Strapi responded with status 200.`);
-        return response;
+        console.log(`[strapi-article] Successfully updated article with documentId ${documentId}.`);
 
     } catch (error: any) {
         console.error(`[strapi-article] patchArticleByDocumentId: An error occurred for documentId ${documentId}.`, error);
@@ -79,4 +86,5 @@ export async function patchArticleByDocumentId(documentId: string, payload: any)
 
 // Endpoints touched by this module:
 // - GET /api/articles?filters[documentId][$eq]=:documentId&pagination[page]=1&pagination[pageSize]=12
-// - PUT /api/articles/:documentId (with explicit fields & populate query)
+// - PUT /api/articles/:documentId
+// - GET /api/articles/:documentId (with explicit fields & populate query)
