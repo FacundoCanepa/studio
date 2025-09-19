@@ -2,13 +2,13 @@
 'use client';
 
 import * as React from 'react';
-import { useFormState } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 
 import { saveCategoryAction } from '@/app/actions/categoryActions';
-import type { CategoryDoc } from '@/lib/firestore-types'; <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
+import type { CategoryDoc } from '@/lib/firestore-types';
 import { toStrapiSlug } from '@/lib/strapiSlug';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +35,6 @@ export function CategoryForm({ category }: CategoryFormProps) {
   );
   const { toast } = useToast();
   const router = useRouter();
-  const [pending, setPending] = React.useState(false);
 
   // Title / Slug
   const [name, setName] = React.useState(category?.name || '');
@@ -58,19 +57,11 @@ export function CategoryForm({ category }: CategoryFormProps) {
       if (formState.success) {
         router.push('/admin/categories');
       }
-      setPending(false);
     }
   }, [formState, toast, router]);
-  
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setPending(true);
-    const formData = new FormData(event.currentTarget);
-    formAction(formData);
-  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form action={formAction} className="space-y-8">
       <Card>
         <CardHeader>
           <CardTitle>Detalles de la Categoría</CardTitle>
@@ -90,7 +81,7 @@ export function CategoryForm({ category }: CategoryFormProps) {
               placeholder="Ej: Estilo de Vida"
             />
             {formState.errors?.name && (
-               <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
+                <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
             )}
           </div>
           
@@ -130,10 +121,18 @@ export function CategoryForm({ category }: CategoryFormProps) {
         </CardContent>
       </Card>
       
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-        {category ? 'Actualizar Categoría' : 'Crear Categoría'}
-      </Button>
+      <SubmitButton isEditing={Boolean(category)} />
     </form>
+  );
+}
+
+function SubmitButton({ isEditing }: { isEditing: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending}>
+      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+      {isEditing ? 'Actualizar Categoría' : 'Crear Categoría'}
+    </Button>
   );
 }
