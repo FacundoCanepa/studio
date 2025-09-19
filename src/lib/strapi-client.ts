@@ -21,7 +21,6 @@ const ARTICLE_FIELDS = [
     'home',
     'New',
     'Tendencias',
-    'views',
     'saves',
     'type',
     'Informacion',
