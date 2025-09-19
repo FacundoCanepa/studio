@@ -8,16 +8,18 @@ import { Loader2 } from 'lucide-react';
 import { AdminSidebar } from './_components/admin-sidebar';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isAdmin } = React.useContext(AuthContext);
+  const { user, isLoading, isAdmin, isEmployee } = React.useContext(AuthContext);
   const router = useRouter();
 
+  const hasAccess = isAdmin || isEmployee;
+
   React.useEffect(() => {
-    if (!isLoading && !isAdmin) {
+    if (!isLoading && !hasAccess) {
       router.push('/'); // O a una página de "acceso denegado"
     }
-  }, [user, isLoading, isAdmin, router]);
+  }, [isLoading, hasAccess, router]);
 
-  if (isLoading || !isAdmin) {
+  if (isLoading || !hasAccess) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

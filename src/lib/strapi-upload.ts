@@ -33,7 +33,13 @@ export function uploadFileToStrapi(
         }
       };
     }
+    Aplicar el mismo guard ya usado en /admin/articles y /admin/categories:
 
+    Solo roles Administrador o Empleado acceden a /admin/authors, /new, /edit/[documetId].
+    
+    Si no cumple, redirigir o mostrar “Acceso restringido”.
+    
+    Centralizar en layout o middleware para no duplicar.
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
         if (xhr.status >= 200 && xhr.status < 300) {

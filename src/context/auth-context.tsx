@@ -18,6 +18,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isEmployee: boolean;
   login: (identifier: string, password: string) => Promise<any>;
   register: (username: string, email: string, password: string) => Promise<any>;
   logout: () => void;
@@ -33,6 +34,7 @@ export const AuthContext = React.createContext<AuthContextType>({
   user: null,
   isLoading: true,
   isAdmin: false,
+  isEmployee: false,
   login: async () => {},
   register: async () => {},
   logout: () => {},
@@ -212,6 +214,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   
   const isAdmin = user?.role === 'Admins';
+  const isEmployee = user?.role === 'Empleado';
   
   return (
     <AuthContext.Provider
@@ -219,6 +222,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         user,
         isLoading,
         isAdmin,
+        isEmployee,
         login,
         register,
         logout,
