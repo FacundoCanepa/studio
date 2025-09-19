@@ -22,6 +22,7 @@ interface AuthorsTableState {
 function mapToAuthorDocs(data: any[]): AuthorDoc[] {
     return data.map(item => {
         const attrs = item.attributes;
+        if (!attrs) return null; // Add a guard clause
         return {
             documentId: attrs.documentId,
             name: attrs.name,
@@ -38,7 +39,13 @@ function mapToAuthorDocs(data: any[]): AuthorDoc[] {
             createdAt: attrs.createdAt,
             updatedAt: attrs.updatedAt,
         };
-    });
+    }).filter((item): item is AuthorDoc => item !== null); // Filter out null items
+}
+
+interface UseAuthorsTableProps {
+  initialPage?: number;
+  pageSize?: number;
+  initialSearch?: string;
 }
 
 export function useAuthorsTable({ 
