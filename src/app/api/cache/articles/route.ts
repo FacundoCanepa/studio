@@ -1,7 +1,7 @@
 import type {NextRequest} from 'next/server';
 
 import {getArticles, type GetArticlesOptions} from '@/service/articles';
-
+import { STRAPI_REVALIDATE_SECONDS } from '@/lib/strapi-api';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   const isNew = parseBoolean(searchParams.get('isNew'));
   const home = parseBoolean(searchParams.get('home'));
-  
+
   const filters: GetArticlesOptions = {};
 
   if (category) {
@@ -48,10 +48,12 @@ export async function GET(request: NextRequest) {
 
   const data = await getArticles(page, pageSize, filters);
 
-
+  const sMaxage = STRAPI_REVALIDATE_SECONDS;
+  const staleWhileRevalidate = STRAPI_REVALIDATE_SECONDS * 2;
+  
   return Response.json(data, {
     headers: {
-      'Cache-Control': 's-maxage=900, stale-while-revalidate=3600',
+      'Cache-Control': `s-maxage=${sMaxage}, stale-while-revalidate=${staleWhileRevalidate}`, // high revalidate: read-mostly
     },
   });
 }

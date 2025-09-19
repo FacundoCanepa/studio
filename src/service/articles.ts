@@ -1,6 +1,6 @@
 'use server';
 
-import { fetchStrapi } from '@/lib/strapi-api';
+import { fetchStrapi, STRAPI_REVALIDATE_SECONDS } from '@/lib/strapi-api';
 import { qs } from '@/lib/qs';
 import {
   ARTICLE_FIELDS,
@@ -92,5 +92,9 @@ export async function getArticles(
     query.filters = filters;
   }
   const queryString = qs(query);
-  return fetchStrapi<ArticlesResponse>(`/api/articles${queryString}`);
+  return fetchStrapi<ArticlesResponse>(`/api/articles${queryString}`, {
+    next: {
+      revalidate: STRAPI_REVALIDATE_SECONDS, // high revalidate: read-mostly
+    },
+  });
 }

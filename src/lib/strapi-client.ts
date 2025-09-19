@@ -3,7 +3,7 @@
 import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
 import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiGalleryItem } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
-import { performStrapiRequest, getStrapiMediaUrl } from './strapi-api';
+import { performStrapiRequest, getStrapiMediaUrl, STRAPI_REVALIDATE_SECONDS, type StrapiFetchOptions } from './strapi-api';
 import { qs } from './qs';
 
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN;
@@ -299,7 +299,18 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
 
         const authors: StrapiAuthor[] = [];
         let currentPage = 1;
-        const requestOptions = { method: 'GET', cache: (options.cache ?? 'default') as RequestCache };
+        const cacheMode = (options.cache ?? 'default') as RequestCache;
+        const requestOptions: StrapiFetchOptions = {
+            method: 'GET',
+            cache: cacheMode,
+            ...(cacheMode === 'no-store'
+                ? {}
+                : {
+                    next: {
+                        revalidate: STRAPI_REVALIDATE_SECONDS, // high revalidate: read-mostly
+                    },
+                }),
+        };
 
         while (true) {
             const query = {
@@ -399,7 +410,20 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
       populate: CATEGORY_POPULATE, // removed populate=*
     };
 
-    const requestInit = { method: 'GET', ...(init ?? {}) } as RequestInit;
+    const baseRequest = { method: 'GET', ...(init ?? {}) } as StrapiFetchOptions;
+    const cacheMode = baseRequest.cache ?? 'default';
+    const requestInit: StrapiFetchOptions = {
+      ...baseRequest,
+      cache: cacheMode,
+      ...(cacheMode === 'no-store'
+        ? {}
+        : {
+            next: {
+              ...(baseRequest.next ?? {}),
+              revalidate: STRAPI_REVALIDATE_SECONDS, // high revalidate: read-mostly
+            },
+          }),
+    };
     const raw: StrapiCategory[] = [];
     let currentPage = 1;
 

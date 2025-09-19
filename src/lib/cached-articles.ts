@@ -3,6 +3,7 @@
 import type { ArticleDoc } from './firestore-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 import type { StrapiArticle, StrapiResponse } from './strapi-types';
+import { STRAPI_REVALIDATE_SECONDS } from './strapi-api';
 
 export type CachedArticlesParams = {
   page?: number;
@@ -27,7 +28,7 @@ export type CachedArticlesResult = {
   meta: StrapiResponse<StrapiArticle[]>['meta'];
 };
 
-const DEFAULT_REVALIDATE_SECONDS = 900;
+const DEFAULT_REVALIDATE_SECONDS = STRAPI_REVALIDATE_SECONDS; // high revalidate: read-mostly
 
 function resolveBaseUrl(): string {
   const envUrl =
