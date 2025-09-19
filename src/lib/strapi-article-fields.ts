@@ -11,9 +11,8 @@ export const ARTICLE_FIELDS: Array<keyof StrapiArticle | string> = [
   'home',
   'New',
   'Tendencias',
-  // NOTE: The Strapi API rejects requests for the "type" attribute with
-  // "Invalid key type". We skip it here because the field is optional for the app.
-  'subcategories',
+  // NOTE: The Strapi API rejects requests for the "subcategories" attribute with
+  // "Invalid key subcategories". We skip it here because the field is optional for the app.
   'Informacion',
   'UrlYoutube',
   'createdAt',
