@@ -64,9 +64,13 @@ const CATEGORY_OPTIONAL_FIELDS_SET = new Set(
 
 const CATEGORY_DESCRIPTION_FIELD_KEYS = ['description', 'descripcion', 'descripción'] as const;
 
-export const CATEGORY_HAS_DESCRIPTION_FIELD = CATEGORY_DESCRIPTION_FIELD_KEYS.some((field) =>
+const CATEGORY_HAS_DESCRIPTION_FIELD_VALUE = CATEGORY_DESCRIPTION_FIELD_KEYS.some((field) =>
     CATEGORY_OPTIONAL_FIELDS_SET.has(field),
 );
+
+export async function getCategoryHasDescriptionField(): Promise<boolean> {
+    return CATEGORY_HAS_DESCRIPTION_FIELD_VALUE;
+}
 const AUTHOR_SUMMARY_FIELDS = ['documentId', 'Name'] as const;
 const AUTHOR_DETAIL_FIELDS = ['documentId', 'Name', 'Bio', 'createdAt', 'updatedAt'] as const;
 
