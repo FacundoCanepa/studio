@@ -16,6 +16,12 @@ export type AuthorPayload = {
   name: string;
   slug: string;
   bio?: string;
+};
+
+export type AuthorDoc = AuthorPayload & {
+  documentId: string;
+  createdAt: string;
+  updatedAt: string;
   role?: string;
   avatarUrl?: string;
   instagram?: string;
@@ -23,13 +29,7 @@ export type AuthorPayload = {
   youtube?: string;
   website?: string;
   isActive: boolean;
-  featured?: boolean;
-};
-
-export type AuthorDoc = AuthorPayload & {
-  documentId: string;
-  createdAt: string;
-  updatedAt: string;
+  featured: boolean;
 };
 
 interface ListAuthorsParams {
@@ -51,7 +51,7 @@ export async function listAuthors({ page = 1, pageSize = 20, search = '' }: List
     if (search) {
         queryParams.filters = {
             $or: [
-                { name: { $containsi: search } },
+                { Name: { $containsi: search } },
                 { slug: { $containsi: search } },
             ],
         };

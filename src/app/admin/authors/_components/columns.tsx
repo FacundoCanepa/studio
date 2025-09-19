@@ -42,16 +42,6 @@ async function deleteAuthor(documentId: string, toast: any) {
     }
 }
 
-
-const SocialLink = ({ href, Icon }: { href: string | undefined; Icon: ElementType }) => {
-    if (!href) return null;
-    return (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-            <Icon className="h-4 w-4" />
-        </a>
-    );
-};
-
 export const columns: ColumnDef<AuthorDoc>[] = [
   {
     accessorKey: "avatarUrl",
@@ -82,35 +72,8 @@ export const columns: ColumnDef<AuthorDoc>[] = [
     cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
   },
   {
-    accessorKey: "role",
-    header: "Rol",
-    cell: ({ row }) => row.getValue("role") ? <Badge variant="secondary">{row.getValue("role")}</Badge> : 'N/A',
-  },
-  {
     accessorKey: "slug",
     header: "Slug",
-  },
-  {
-    header: "Redes",
-    cell: ({ row }) => {
-      const author = row.original;
-      return (
-        <div className="flex items-center space-x-2">
-            <SocialLink href={author.instagram} Icon={Instagram} />
-            <SocialLink href={author.youtube} Icon={Youtube} />
-            <SocialLink href={author.website} Icon={Globe} />
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "isActive",
-    header: "Estado",
-    cell: ({ row }) => (
-      <Badge variant={row.getValue("isActive") ? "default" : "outline"}>
-        {row.getValue("isActive") ? "Activo" : "Inactivo"}
-      </Badge>
-    ),
   },
   {
     accessorKey: "updatedAt",
