@@ -1,6 +1,7 @@
 
 "use client";
 
+import type { ElementType } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import type { AuthorDoc } from "@/lib/strapi-authors";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,7 @@ async function deleteAuthor(documentId: string, toast: any) {
     });
 }
 
-const SocialLink = ({ href, Icon }: { href: string; Icon: React.ElementType }) => (
+const SocialLink = ({ href, Icon }: { href: string; Icon: ElementType }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
         <Icon className="h-4 w-4" />
     </a>
