@@ -58,7 +58,15 @@ const CATEGORY_REQUEST_FIELDS: readonly (CategoryRequiredField | string)[] = [
 ];
 const CATEGORY_FALLBACK_FIELDS = CATEGORY_REQUIRED_FIELDS;
 type CategoryField = CategoryRequiredField | string;
+const CATEGORY_OPTIONAL_FIELDS_SET = new Set(
+    CATEGORY_OPTIONAL_FIELDS.map((field) => field.toLowerCase()),
+);
 
+const CATEGORY_DESCRIPTION_FIELD_KEYS = ['description', 'descripcion', 'descripción'] as const;
+
+export const CATEGORY_HAS_DESCRIPTION_FIELD = CATEGORY_DESCRIPTION_FIELD_KEYS.some((field) =>
+    CATEGORY_OPTIONAL_FIELDS_SET.has(field),
+);
 const AUTHOR_SUMMARY_FIELDS = ['documentId', 'Name'] as const;
 const AUTHOR_DETAIL_FIELDS = ['documentId', 'Name', 'Bio', 'createdAt', 'updatedAt'] as const;
 
@@ -607,6 +615,8 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
                 console.warn('[GET_CATEGORIES] Skipping category with missing id, name, slug, or documentId:', c);
                 return null;
             }
+
+            const imageUrl = await getStrapiMediaUrl(c.img?.url);
             return {
                 id: c.id,
                 documentId: c.documentId,
@@ -614,7 +624,14 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
                 slug: c.slug,
                 description: (c as any)?.description ?? (c as any)?.Descripcion ?? (c as any)?.descripcion,
                 color: c.color,
-                imageUrl: await getStrapiMediaUrl(c.img?.url),
+                imageId: c.img?.id,
+                imageUrl,
+                img: c.img
+                    ? {
+                          id: c.img.id,
+                          url: imageUrl,
+                      }
+                    : null,
             };
         });
 
@@ -679,6 +696,7 @@ export async function getCategory(identifier: string): Promise<CategoryDoc | nul
         }
 
         console.log(`[GET_CATEGORY] Found category: ${categoryData.name}`);
+        const imageUrl = await getStrapiMediaUrl(categoryData.img?.url);
         return {
             id: categoryData.id,
             documentId: categoryData.documentId,
@@ -686,7 +704,14 @@ export async function getCategory(identifier: string): Promise<CategoryDoc | nul
             slug: categoryData.slug,
             description: (categoryData as any)?.description ?? (categoryData as any)?.Descripcion ?? (categoryData as any)?.descripcion,
             color: categoryData.color,
-            imageUrl: await getStrapiMediaUrl(categoryData.img?.url),
+            imageId: categoryData.img?.id,
+            imageUrl,
+            img: categoryData.img
+                ? {
+                      id: categoryData.img.id,
+                      url: imageUrl,
+                  }
+                : null,
         };
     } catch(error) {
         console.error(`[GET_CATEGORY] Failed to fetch category for identifier ${identifier}:`, error);

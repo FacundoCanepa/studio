@@ -64,7 +64,12 @@ export type CategoryDoc = {
   slug: string;
   description?: string;
   color?: string;
+  imageId?: number;
   imageUrl?: string;
+  img?: {
+    id: number;
+    url?: string;
+  } | null;
   createdAt?: string;
   updatedAt?: string;
 }

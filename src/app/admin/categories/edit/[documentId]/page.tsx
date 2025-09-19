@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { getCategory } from '@/lib/strapi-client';
+import { CATEGORY_HAS_DESCRIPTION_FIELD, getCategory } from '@/lib/strapi-client';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { CategoryForm } from '../../_components/category-form';
@@ -48,7 +48,7 @@ export default async function EditCategoryPage({ params }: Props) {
       
       <h1 className="text-3xl font-bold tracking-tight">Editar Categoría</h1>
 
-      <CategoryForm category={category} />
+      <CategoryForm category={category} showDescriptionField={CATEGORY_HAS_DESCRIPTION_FIELD} />
     </div>
   );
 }

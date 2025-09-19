@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { Metadata } from 'next';
 import { CategoryForm } from '../_components/category-form';
+import { CATEGORY_HAS_DESCRIPTION_FIELD } from '@/lib/strapi-client';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
 export const metadata: Metadata = {
@@ -29,7 +30,7 @@ export default function NewCategoryPage() {
       
       <h1 className="text-3xl font-bold tracking-tight">Crear Nueva Categoría</h1>
 
-      <CategoryForm category={null} />
+      <CategoryForm category={null} showDescriptionField={CATEGORY_HAS_DESCRIPTION_FIELD} />
     </div>
   );
 }

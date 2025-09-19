@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -21,6 +20,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 interface CategoryFormProps {
   category: CategoryDoc | null;
+  showDescriptionField: boolean;
 }
 
 const initialState = {
@@ -29,7 +29,7 @@ const initialState = {
   success: false,
 };
 
-export function CategoryForm({ category }: CategoryFormProps) {
+export function CategoryForm({ category, showDescriptionField }: CategoryFormProps) {
   const [formState, formAction] = useFormState(
     saveCategoryAction.bind(null, category?.documentId || null),
     initialState
@@ -37,22 +37,42 @@ export function CategoryForm({ category }: CategoryFormProps) {
   const { toast } = useToast();
   const router = useRouter();
 
+  const initial = React.useMemo(() => {
+    const existingImageId = category?.img?.id ?? category?.imageId ?? null;
+    const resolvedImgUrl = category?.img?.url ?? category?.imageUrl ?? '';
+    return {
+      name: category?.name ?? '',
+      slug: category?.slug ?? '',
+      imgId: existingImageId != null ? String(existingImageId) : null,
+      imgUrl: resolvedImgUrl,
+    };
+  }, [category]);
+
   // Title / Slug
-  const [name, setName] = React.useState(category?.name || '');
-  const [slug, setSlug] = React.useState(category?.slug || '');
-  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(Boolean(category?.slug));
-  const [imgId, setImgId] = React.useState<string | null>(null);
-  const [imgUrl, setImgUrl] = React.useState<string | null>(category?.imageUrl ?? null);
+  const [name, setName] = React.useState(initial.name);
+  const [slug, setSlug] = React.useState(initial.slug);
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(Boolean(initial.slug));
+  const [imgId, setImgId] = React.useState<string | null>(initial.imgId);
+  const [imgUrl, setImgUrl] = React.useState<string>(initial.imgUrl);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    setName(initial.name);
+    setSlug(initial.slug);
+    setIsSlugManuallyEdited(Boolean(initial.slug));
+    setImgId(initial.imgId);
+    setImgUrl(initial.imgUrl);
+  }, [initial.name, initial.slug, initial.imgId, initial.imgUrl]);
 
   React.useEffect(() => {
     if (!isSlugManuallyEdited) {
       setSlug(toStrapiSlug(name));
     }
   }, [name, isSlugManuallyEdited]);
-   const handleFileChange = React.useCallback(
+
+  const handleFileChange = React.useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) {
@@ -185,7 +205,7 @@ export function CategoryForm({ category }: CategoryFormProps) {
               placeholder="Ej: Estilo de Vida"
             />
             {formState.errors?.name && (
-                <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
+                  <p className="text-sm text-destructive">{formState.errors.name[0]}</p>
             )}
           </div>
           
@@ -210,18 +230,20 @@ export function CategoryForm({ category }: CategoryFormProps) {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descripción (opcional)</Label>
-            <Textarea
-              id="description"
-              name="description"
-              defaultValue={category?.description || ''}
-              placeholder="Una breve descripción sobre de qué trata esta categoría."
-            />
-            {formState.errors?.description && (
-              <p className="text-sm text-destructive">{formState.errors.description[0]}</p>
-            )}
-          </div>
+          {showDescriptionField && (
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción (opcional)</Label>
+              <Textarea
+                id="description"
+                name="description"
+                defaultValue={category?.description ?? ''}
+                placeholder="Una breve descripción sobre de qué trata esta categoría."
+              />
+              {formState.errors?.description && (
+                <p className="text-sm text-destructive">{formState.errors.description[0]}</p>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="img">Imagen (opcional)</Label>
             <input ref={fileInputRef} id="img" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
