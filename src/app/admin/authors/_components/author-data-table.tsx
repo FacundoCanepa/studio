@@ -2,7 +2,6 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ColumnDef,
   flexRender,
@@ -23,41 +22,27 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   pageCount: number;
+  page: number;
+  search: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
 }
 
 export function AuthorDataTable<TData, TValue>({
   columns,
   data,
   pageCount,
+  page,
+  search,
+  onPageChange,
+  onSearchChange,
 }: DataTableProps<TData, TValue>) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  
-  const page = searchParams.get('page') ?? "1";
-  const query = searchParams.get('query') ?? "";
-  
-  const [debouncedQuery, setDebouncedQuery] = React.useState(query);
-  const debouncedValue = useDebounce(debouncedQuery, 500);
-
-  React.useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    if (debouncedValue) {
-      params.set('query', debouncedValue);
-      params.set('page', '1');
-    } else {
-      params.delete('query');
-    }
-    router.replace(`${pathname}?${params.toString()}`);
-  }, [debouncedValue, pathname, router, searchParams]);
 
   const table = useReactTable({
     data,
@@ -74,19 +59,13 @@ export function AuthorDataTable<TData, TValue>({
     },
   });
 
-  const handlePageChange = (newPage: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('page', String(newPage));
-    router.push(`${pathname}?${params.toString()}`);
-  };
-
   return (
     <div>
       <div className="flex items-center py-4">
         <Input
           placeholder="Filtrar por nombre o slug..."
-          value={debouncedQuery}
-          onChange={(event) => setDebouncedQuery(event.target.value)}
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
           className="max-w-sm"
         />
       </div>
@@ -138,8 +117,8 @@ export function AuthorDataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(Number(page) - 1)}
-          disabled={Number(page) <= 1}
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
         >
           Anterior
         </Button>
@@ -149,8 +128,8 @@ export function AuthorDataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(Number(page) + 1)}
-          disabled={Number(page) >= pageCount}
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= pageCount}
         >
           Siguiente
         </Button>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { listAuthors } from '@/lib/strapi-authors';
-import { useDebounce } from './use-debounce';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { AuthorDoc } from '@/lib/strapi-authors';
 
 interface AuthorsTableState {

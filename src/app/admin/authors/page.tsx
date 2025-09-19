@@ -1,6 +1,7 @@
 
+'use client';
+
 import * as React from 'react';
-import { listAuthors } from '@/lib/strapi-authors';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -9,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Metadata } from 'next';
 import Link from 'next/link';
 import { columns } from './_components/columns';
 import { AuthorDataTable } from './_components/author-data-table';
@@ -21,27 +21,22 @@ import {
   BreadcrumbSeparator,
   BreadcrumbPage
 } from '@/components/ui/breadcrumb';
+import { useAuthorsTable } from '@/hooks/useAuthorsTable';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: 'Gestionar Autores - Admin Panel',
-};
-
-// Force dynamic rendering to ensure fresh data on each page load
-export const revalidate = 0;
-
-export default async function ManageAuthorsPage({
-  searchParams,
-}: {
-  searchParams?: {
-    query?: string;
-    page?: string;
-  };
-}) {
-  const currentPage = Number(searchParams?.page) || 1;
-  const query = searchParams?.query || '';
-  
-  const { data: authors, meta } = await listAuthors({ page: currentPage, search: query, pageSize: 10 });
-  const pageCount = meta.pagination?.pageCount || 1;
+export default function ManageAuthorsPage() {
+  const {
+    data,
+    isLoading,
+    error,
+    page,
+    search,
+    pageCount,
+    handleSearchChange,
+    handlePageChange,
+  } = useAuthorsTable({ pageSize: 10 });
 
   return (
     <div className="space-y-8">
@@ -71,7 +66,33 @@ export default async function ManageAuthorsPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AuthorDataTable columns={columns} data={authors} pageCount={pageCount} />
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error al cargar autores</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {isLoading && !data ? (
+            <div className="space-y-4">
+              <div className="flex items-center py-4">
+                <Skeleton className="h-10 w-full max-w-sm" />
+              </div>
+              <div className="rounded-md border">
+                <div className="h-96" />
+              </div>
+            </div>
+          ) : (
+            <AuthorDataTable 
+              columns={columns} 
+              data={data?.items || []} 
+              pageCount={pageCount}
+              page={page}
+              search={search}
+              onPageChange={handlePageChange}
+              onSearchChange={handleSearchChange}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
