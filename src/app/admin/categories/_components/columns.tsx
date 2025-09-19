@@ -15,18 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { deleteCategoryAction } from "@/app/actions/categoryActions";
+import { DeleteConfirm } from "@/components/admin/DeleteConfirm";
 
 async function deleteCategory(documentId: string, toast: any) {
     const result = await deleteCategoryAction(documentId);
@@ -64,42 +54,33 @@ export const columns: ColumnDef<CategoryDoc>[] = [
         const { toast } = useToast();
 
         return (
-            <AlertDialog>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Abrir menú</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/admin/categories/edit/${category.documentId}`}>Editar</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <AlertDialogTrigger asChild>
-                     <DropdownMenuItem className="text-destructive focus:text-destructive">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Abrir menú</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/categories/edit/${category.documentId}`}>Editar</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DeleteConfirm 
+                    onConfirm={() => deleteCategory(category.documentId, toast)}
+                    title="¿Estás absolutamente seguro?"
+                    description="Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría."
+                >
+                    <DropdownMenuItem 
+                        className="text-destructive focus:text-destructive"
+                        onSelect={(e) => e.preventDefault()}
+                    >
                         Eliminar
                     </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <AlertDialogContent>
-                  <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                          Esta acción no se puede deshacer. Esto eliminará permanentemente la categoría.
-                      </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteCategory(category.documentId, toast)} className="bg-destructive hover:bg-destructive/90">
-                          Sí, eliminar categoría
-                      </AlertDialogAction>
-                  </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </DeleteConfirm>
+              </DropdownMenuContent>
+            </DropdownMenu>
         )
     }
   },

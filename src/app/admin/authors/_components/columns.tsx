@@ -17,20 +17,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Link from 'next/link';
 import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { deleteAuthorAction } from "@/app/actions/authorActions";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { DeleteConfirm } from "@/components/admin/DeleteConfirm";
 
 async function deleteAuthor(documentId: string, toast: any) {
     const result = await deleteAuthorAction(documentId);
@@ -128,42 +118,33 @@ export const columns: ColumnDef<AuthorDoc>[] = [
         const { toast } = useToast();
 
         return (
-            <AlertDialog>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Abrir menú</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <Link href={`/admin/authors/edit/${author.documentId}`}>Editar</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <AlertDialogTrigger asChild>
-                     <DropdownMenuItem className="text-destructive focus:text-destructive">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Abrir menú</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/authors/edit/${author.documentId}`}>Editar</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DeleteConfirm 
+                    onConfirm={() => deleteAuthor(author.documentId, toast)}
+                    title="¿Estás absolutamente seguro?"
+                    description="Esta acción no se puede deshacer. Esto eliminará permanentemente el autor."
+                >
+                    <DropdownMenuItem 
+                        className="text-destructive focus:text-destructive"
+                        onSelect={(e) => e.preventDefault()}
+                    >
                         Eliminar
                     </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <AlertDialogContent>
-                  <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                          Esta acción no se puede deshacer. Esto eliminará permanentemente el autor y podría afectar los artículos asociados.
-                      </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => deleteAuthor(author.documentId, toast)} className="bg-destructive hover:bg-destructive/90">
-                          Sí, eliminar autor
-                      </AlertDialogAction>
-                  </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </DeleteConfirm>
+              </DropdownMenuContent>
+            </DropdownMenu>
         )
     }
   },
