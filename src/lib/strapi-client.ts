@@ -21,7 +21,9 @@ const ARTICLE_FIELDS = [
     'home',
     'New',
     'Tendencias',
-    'type',
+    // NOTE: Requesting the Strapi attribute named "type" triggers a 400 response
+    // ("Invalid key type") in our production API. The value is optional and can be
+    // derived from other metadata if needed, so we avoid requesting it explicitly.
     'Informacion',
     'UrlYoutube',
     'publishedAt',

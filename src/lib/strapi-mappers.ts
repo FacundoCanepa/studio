@@ -87,7 +87,7 @@ export async function mapStrapiArticleToArticleDoc(item: StrapiArticle | null): 
         updatedAt: rawItem.updatedAt,
         views: rawItem.views ?? 0,
         saves: rawItem.saves ?? 0,
-        type: rawItem.type as any,
+        type: (rawItem.type ?? (rawItem as any)?.Type) as any,
         category,
         author,
         tags,
