@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { getArticles, getCategories, getAuthors, getCategory } from "@/lib/strapi-client";
+import { getCategories, getAuthors, getCategory } from "@/lib/strapi-client";
 import CategoryClientPage from './category-client-page';
 import type { Metadata, ResolvingMetadata } from 'next';
+import { fetchCachedArticles } from '@/lib/cached-articles';
 
 type Props = {
   params: { slug: string }
@@ -29,8 +30,8 @@ export async function generateMetadata(
 export default async function CategoryPage({ params }: Props) {
   const { slug } = params;
   
-  const [articles, categories, authors, category] = await Promise.all([
-    getArticles({ categorySlug: slug, cache: 'no-store' }),
+  const [{ articles }, categories, authors, category] = await Promise.all([
+    fetchCachedArticles({ category: slug, pageSize: 12 }),
     getCategories(),
     getAuthors({ cache: 'no-store' }),
     getCategory(slug)

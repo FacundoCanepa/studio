@@ -18,6 +18,8 @@ export type GetArticlesOptions = {
   tag?: string;
   search?: string;
   featured?: boolean;
+  isNew?: boolean;
+  home?: boolean;
 };
 
 
@@ -50,6 +52,13 @@ export async function getArticles(
 
   if (options.featured !== undefined) {
     filters.featured = {$eq: options.featured};
+  }
+  if (options.isNew !== undefined) {
+    filters.New = {$eq: options.isNew};
+  }
+
+  if (options.home !== undefined) {
+    filters.home = {$eq: options.home};
   }
 
   const query: Record<string, unknown> = {

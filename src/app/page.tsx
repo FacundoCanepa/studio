@@ -2,7 +2,6 @@
 import * as React from 'react';
 import { ArticleCard } from '@/components/articles/article-card';
 import { HorizontalArticleCard } from '@/components/articles/horizontal-article-card';
-import { getArticles } from '@/lib/strapi-client';
 import { NewsletterForm } from '@/components/marketing/newsletter-form';
 import type { ArticleDoc } from '@/lib/firestore-types';
 import { RecommendedArticles } from '@/components/shared/recommended-articles';
@@ -12,11 +11,16 @@ import { ImageGallery } from '@/components/shared/image-gallery';
 import { ColorPaletteSection } from '@/components/shared/color-palette-section';
 import { SocialFollow } from '@/components/shared/social-follow';
 import { AdSlot } from '@/components/marketing/ad-slot';
+import { fetchCachedArticles } from '@/lib/cached-articles';
 
 export default async function HomePage() {
-  const latestArticles: ArticleDoc[] = await getArticles({ limit: 4, filters: { isNew: true }, cache: 'no-store' });
-  const featuredArticles: ArticleDoc[] = await getArticles({ limit: 3, filters: { featured: true }, cache: 'no-store' });
-  
+  const [{ articles: latest }, { articles: featured }] = await Promise.all([
+    fetchCachedArticles({ pageSize: 4, isNew: true }),
+    fetchCachedArticles({ pageSize: 3, featured: true }),
+  ]);
+
+  const latestArticles: ArticleDoc[] = latest.slice(0, 4);
+  const featuredArticles: ArticleDoc[] = featured.slice(0, 3);
   return (
     <div className="bg-background">
       {/* Animated Icons Hero */}

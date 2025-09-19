@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { getArticleBySlug, getArticles } from '@/lib/strapi-client';
+import { getArticleBySlug } from '@/lib/strapi-client';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -15,6 +15,7 @@ import { AdSlot } from '@/components/marketing/ad-slot';
 import { ArticleCarousel } from './_components/article-carousel';
 import { YouTubeEmbed } from './_components/youtube-embed';
 import { FavoriteButton } from './_components/favorite-button';
+import { fetchCachedArticles } from '@/lib/cached-articles';
 
 type Props = {
   params: { slug: string };
@@ -62,9 +63,9 @@ export default async function ArticlePage({ params }: Props) {
     notFound();
   }
 
-  const relatedArticles = await getArticles({
-    categorySlug: article.category?.slug,
-    limit: 3,
+  const { articles: relatedArticles } = await fetchCachedArticles({
+    category: article.category?.slug,
+    pageSize: 3,
   });
   
   const filteredRelated = relatedArticles.filter(a => a.documentId !== article.documentId);

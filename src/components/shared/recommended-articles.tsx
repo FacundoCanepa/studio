@@ -1,13 +1,13 @@
 
-import { getArticles } from '@/lib/strapi-client';
 import { ArticleCard } from '../articles/article-card';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Terminal } from 'lucide-react';
 import { ArticleDoc } from '@/lib/firestore-types';
+import { fetchCachedArticles } from '@/lib/cached-articles';
 
 export const RecommendedArticles = async () => {
   // Fetch a few articles to show as recommendations for now
-  const recommended: ArticleDoc[] = await getArticles({ limit: 3 });
+  const { articles: recommended } = await fetchCachedArticles({ pageSize: 3 });
 
   if (recommended.length === 0) {
     return (

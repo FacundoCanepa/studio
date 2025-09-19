@@ -1,8 +1,10 @@
 
 import * as React from 'react';
-import { getArticles, getCategories, getAuthors } from "@/lib/strapi-client";
+import { getCategories, getAuthors } from "@/lib/strapi-client";
 import CategoryClientPage from '../categoria/[slug]/category-client-page';
 import type { Metadata } from 'next';
+import { fetchCachedArticles } from '@/lib/cached-articles';
+
 
 export const metadata: Metadata = {
     title: 'Todos los artículos - Vestigio Magazine',
@@ -10,15 +12,15 @@ export const metadata: Metadata = {
 }
 
 export default async function ArticlesPage() {
-  const [articles, categories, authors] = await Promise.all([
-    getArticles({ cache: 'no-store' }),
+  const [{ articles }, categories, authors] = await Promise.all([
+    fetchCachedArticles({ pageSize: 12 }),
     getCategories(),
     getAuthors({ cache: 'no-store' }),
   ]);
 
   return (
     <React.Suspense>
-      <CategoryClientPage 
+      <CategoryClientPage
         initialArticles={articles}
         allCategories={categories}
         authors={authors}

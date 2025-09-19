@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
   const search = parseNonEmptyString(searchParams.get('search'));
   const featured = parseBoolean(searchParams.get('featured'));
 
+  const isNew = parseBoolean(searchParams.get('isNew'));
+  const home = parseBoolean(searchParams.get('home'));
+  
   const filters: GetArticlesOptions = {};
 
   if (category) {
@@ -33,6 +36,15 @@ export async function GET(request: NextRequest) {
   if (featured !== undefined) {
     filters.featured = featured;
   }
+
+  if (isNew !== undefined) {
+    filters.isNew = isNew;
+  }
+
+  if (home !== undefined) {
+    filters.home = home;
+  }
+
 
   const data = await getArticles(page, pageSize, filters);
 

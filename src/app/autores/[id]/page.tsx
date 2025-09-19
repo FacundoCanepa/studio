@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { getAuthor, getArticles } from "@/lib/strapi-client";
+import { getAuthor } from "@/lib/strapi-client";
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { ArticleCard } from '@/components/articles/article-card';
@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { SectionTitle } from '@/components/shared/section-title';
 import { Badge } from '@/components/ui/badge';
 import { AdSlot } from '@/components/marketing/ad-slot';
+import { fetchCachedArticles } from '@/lib/cached-articles';
 
 type Props = {
   params: { id: string }
@@ -39,7 +40,7 @@ export default async function AuthorPage({ params }: Props) {
     notFound();
   }
 
-  const allArticles = await getArticles({ cache: 'no-store' });
+  const { articles: allArticles } = await fetchCachedArticles({ pageSize: 12 });
   const authorArticles = allArticles.filter(article => article.author?.documentId === author.documentId);
   
   const bioFirstParagraph = author.bioBlocks?.[0]?.children?.[0]?.text || 'Biografía no disponible.';
