@@ -64,7 +64,16 @@ export async function listAuthors({ page = 1, pageSize = 20, search = '' }: List
  * Gets a single author by their documentId.
  */
 export async function getAuthor(documentId: string) {
-    const queryString = qs({ populate: '*,articles,Avatar' });
+    const queryString = qs({
+        populate: {
+            articles: {
+                fields: ['title'],
+            },
+            Avatar: {
+                fields: ['url'],
+            },
+        },
+    });
     return fetchStrapi<any>(`/api/authors/${documentId}${queryString}`);
 }
 
