@@ -32,10 +32,30 @@ const ARTICLE_FIELDS = [
 const ARTICLE_SEO_FIELDS = ['metaTitle', 'metaDescription', 'canonicalUrl'] as const;
 
 const CATEGORY_REQUIRED_FIELDS = ['documentId', 'name', 'slug'] as const;
-const CATEGORY_OPTIONAL_FIELDS = ['color', 'description'] as const;
-const CATEGORY_SUMMARY_FIELDS = [...CATEGORY_REQUIRED_FIELDS, ...CATEGORY_OPTIONAL_FIELDS] as const;
+type CategoryRequiredField = (typeof CATEGORY_REQUIRED_FIELDS)[number];
+
+function parseCategoryOptionalFields(): string[] {
+    const envValue = process.env.STRAPI_CATEGORY_OPTIONAL_FIELDS;
+    if (!envValue) {
+        return [];
+    }
+
+    return envValue
+        .split(',')
+        .map((field) => field.trim())
+        .filter(
+            (field) =>
+                field.length > 0 && !CATEGORY_REQUIRED_FIELDS.includes(field as CategoryRequiredField),
+        );
+}
+
+const CATEGORY_OPTIONAL_FIELDS = parseCategoryOptionalFields();
+const CATEGORY_REQUEST_FIELDS: readonly (CategoryRequiredField | string)[] = [
+    ...CATEGORY_REQUIRED_FIELDS,
+    ...CATEGORY_OPTIONAL_FIELDS,
+];
 const CATEGORY_FALLBACK_FIELDS = CATEGORY_REQUIRED_FIELDS;
-type CategoryField = (typeof CATEGORY_SUMMARY_FIELDS)[number];
+type CategoryField = CategoryRequiredField | string;
 
 const AUTHOR_SUMMARY_FIELDS = ['documentId', 'Name'] as const;
 const AUTHOR_DETAIL_FIELDS = ['documentId', 'Name', 'Bio', 'createdAt', 'updatedAt'] as const;
@@ -419,12 +439,10 @@ function parseInvalidCategoryFields(error: unknown): CategoryField[] {
             const parsed = JSON.parse(jsonPayload);
             const detailsKey = parsed?.error?.details?.key;
             if (typeof detailsKey === 'string') {
+                invalidFields.add(detailsKey);
                 const normalizedKey = detailsKey.toLowerCase();
-                if (normalizedKey === 'color') {
-                    invalidFields.add('color');
-                }
-                if (normalizedKey === 'description' || normalizedKey === 'descripcion') {
-                    invalidFields.add('description');
+                if (normalizedKey !== detailsKey) {
+                    invalidFields.add(normalizedKey);
                 }
             }
         } catch {
@@ -433,6 +451,10 @@ function parseInvalidCategoryFields(error: unknown): CategoryField[] {
     }
 
     const normalizedMessage = message.toLowerCase();
+    const match = normalizedMessage.match(/invalid key\s+([a-z0-9_\-]+)/i);
+    if (match?.[1]) {
+        invalidFields.add(match[1]);
+    }
     if (normalizedMessage.includes('invalid key color') || normalizedMessage.includes('"key":"color"')) {
         invalidFields.add('color');
     }
@@ -443,6 +465,7 @@ function parseInvalidCategoryFields(error: unknown): CategoryField[] {
         normalizedMessage.includes('"key":"descripcion"')
     ) {
         invalidFields.add('description');
+        invalidFields.add('descripcion');
     }
 
     return Array.from(invalidFields);
@@ -456,13 +479,19 @@ function resolveCategoryFieldRetry(
     if (invalidFields.length === 0) {
         return null;
     }
+    const attemptedLowerMap = new Map<string, CategoryField>();
+    for (const field of attemptedFields) {
+        attemptedLowerMap.set(field.toLowerCase(), field);
+    }
 
-    const attemptedSet = new Set<CategoryField>(Array.from(attemptedFields));
-    const removed = invalidFields.filter((field) => attemptedSet.has(field));
+    const removed = invalidFields
+        .map((field) => attemptedLowerMap.get(field.toLowerCase()))
+        .filter((field): field is CategoryField => typeof field === 'string');
 
     let nextFields: CategoryField[];
     if (removed.length > 0) {
-        nextFields = attemptedFields.filter((field): field is CategoryField => !removed.includes(field));
+        const removedSet = new Set(removed);
+        nextFields = attemptedFields.filter((field): field is CategoryField => !removedSet.has(field));
     } else {
         nextFields = Array.from(CATEGORY_FALLBACK_FIELDS) as CategoryField[];
     }
@@ -470,7 +499,22 @@ function resolveCategoryFieldRetry(
     if (nextFields.length === 0) {
         nextFields = Array.from(CATEGORY_FALLBACK_FIELDS) as CategoryField[];
     }
+    const seen = new Set<string>();
+    for (const required of CATEGORY_REQUIRED_FIELDS) {
+        const requiredLower = required.toLowerCase();
+        if (!nextFields.some((field) => field.toLowerCase() === requiredLower)) {
+            nextFields.push(required);
+        }
+    }
 
+    nextFields = nextFields.filter((field) => {
+        const key = field.toLowerCase();
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
     const isSameFields =
         nextFields.length === attemptedFields.length &&
         nextFields.every((field, index) => field === attemptedFields[index]);
@@ -552,7 +596,7 @@ export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> 
             }
         };
 
-        const raw = await fetchCategoriesWithRetry(CATEGORY_SUMMARY_FIELDS);
+        const raw = await fetchCategoriesWithRetry(CATEGORY_REQUEST_FIELDS);
 
         console.log(`[GET_CATEGORIES] Aggregated ${raw.length} raw categories.`);
 
@@ -622,7 +666,7 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
             }
         };
 
-        const categoryData = await fetchCategoryWithRetry(CATEGORY_SUMMARY_FIELDS);
+        const categoryData = await fetchCategoryWithRetry(CATEGORY_REQUEST_FIELDS);
 
         if (!categoryData) {
             console.warn(`[GET_CATEGORY] No category found for slug: ${slug}`);
