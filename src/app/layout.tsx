@@ -1,5 +1,5 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AppHeader } from '@/components/layout/app-header';
@@ -27,11 +27,6 @@ export const metadata: Metadata = {
     template: `%s - Vestigio Magazine`,
   },
   description: 'Revista de moda, estilo de vida y tendencias.',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
   openGraph: {
     title: 'Vestigio Magazine',
     description: 'Revista de moda, estilo de vida y tendencias.',
@@ -55,6 +50,14 @@ export const metadata: Metadata = {
     canonical: '/',
   },
 };
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+};
+
+
+
 
 
 export default async function RootLayout({

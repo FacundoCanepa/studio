@@ -33,7 +33,11 @@ const ARTICLE_FIELDS = [
 
 const ARTICLE_SEO_FIELDS = ['metaTitle', 'metaDescription', 'canonicalUrl'] as const;
 
-const CATEGORY_SUMMARY_FIELDS = ['documentId', 'name', 'slug', 'description', 'color'] as const;
+const CATEGORY_BASE_FIELDS = ['documentId', 'name', 'slug', 'color'] as const;
+const CATEGORY_OPTIONAL_FIELDS = ['description'] as const;
+const CATEGORY_SUMMARY_FIELDS = [...CATEGORY_BASE_FIELDS, ...CATEGORY_OPTIONAL_FIELDS] as const;
+const CATEGORY_FALLBACK_FIELDS = CATEGORY_BASE_FIELDS;
+
 
 const AUTHOR_SUMMARY_FIELDS = ['documentId', 'Name'] as const;
 const AUTHOR_DETAIL_FIELDS = ['documentId', 'Name', 'Bio', 'createdAt', 'updatedAt'] as const;
@@ -51,7 +55,7 @@ const ARTICLE_POPULATE = {
         fields: MEDIA_FIELDS,
     },
     category: {
-        fields: CATEGORY_SUMMARY_FIELDS,
+        fields: CATEGORY_FALLBACK_FIELDS,
     },
     author: {
         fields: AUTHOR_SUMMARY_FIELDS,
@@ -398,81 +402,108 @@ export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
         return null;
     }
 }
-
-export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> {
-  if (!isApiAvailable()) return [];
-  try {
-    console.log('[GET_CATEGORIES] Fetching all categories...');
-    const pageSize = Math.min(Math.max(12, 6), 12);
-    const baseQuery: Record<string, any> = {
-      sort: ['name:asc'],
-      fields: CATEGORY_SUMMARY_FIELDS,
-      populate: CATEGORY_POPULATE, // removed populate=*
-    };
-
-    const baseRequest = { method: 'GET', ...(init ?? {}) } as StrapiFetchOptions;
-    const cacheMode = baseRequest.cache ?? 'default';
-    const requestInit: StrapiFetchOptions = {
-      ...baseRequest,
-      cache: cacheMode,
-      ...(cacheMode === 'no-store'
-        ? {}
-        : {
-            next: {
-              ...(baseRequest.next ?? {}),
-              revalidate: STRAPI_REVALIDATE_SECONDS, // high revalidate: read-mostly
-            },
-          }),
-    };
-    const raw: StrapiCategory[] = [];
-    let currentPage = 1;
-
-    while (true) {
-      const query = {
-        ...baseQuery,
-        pagination: {
-          page: currentPage,
-          pageSize,
-        },
-      };
-      const queryString = qs(query);
-      const response = await performStrapiRequest(`/api/categories${queryString}`, requestInit);
-      const pageData: StrapiCategory[] = response.data || [];
-      raw.push(...pageData);
-      console.log(`[GET_CATEGORIES] Fetched page ${currentPage} with ${pageData.length} raw categories.`);
-
-      if (pageData.length < pageSize) {
-        break;
-      }
-
-      currentPage += 1;
+function shouldRetryCategoryFields(error: unknown): boolean {
+    if (!(error instanceof Error)) {
+        return false;
     }
 
-    console.log(`[GET_CATEGORIES] Aggregated ${raw.length} raw categories.`);
+    const normalizedMessage = (error.message || '').toLowerCase();
+    if (!normalizedMessage) {
+        return false;
+    }
 
-    const mapped: Promise<CategoryDoc | null>[] = raw.map(async (c: StrapiCategory) => {
-      if (!c || !c.id || !c.name || !c.slug || !c.documentId) {
-         console.warn('[GET_CATEGORIES] Skipping category with missing id, name, slug, or documentId:', c);
-        return null;
-      }
-      return {
-        id: c.id,
-        documentId: c.documentId,
-        name: c.name,
-        slug: c.slug,
-        description: c.description,
-        color: c.color,
-        imageUrl: await getStrapiMediaUrl(c.img?.url),
-      };
-    });
+    return normalizedMessage.includes('invalid key description') || normalizedMessage.includes('invalid key descripcion');
+}
+export async function getCategories(init?: RequestInit): Promise<CategoryDoc[]> {
+    if (!isApiAvailable()) return [];
+    try {
+        console.log('[GET_CATEGORIES] Fetching all categories...');
+        const pageSize = Math.min(Math.max(12, 6), 12);
+        const baseQuery: Record<string, any> = {
+            sort: ['name:asc'],
+            populate: CATEGORY_POPULATE, // removed populate=*
+        };
 
-    const results = (await Promise.all(mapped)).filter(Boolean) as CategoryDoc[];
-    console.log(`[GET_CATEGORIES] Mapped ${results.length} categories.`);
-    return results;
-  } catch(error) {
-    console.error('[GET_CATEGORIES] Failed to fetch categories:', error);
-    return [];
-  }
+        const baseRequest = { method: 'GET', ...(init ?? {}) } as StrapiFetchOptions;
+        const cacheMode = baseRequest.cache ?? 'default';
+        const requestInit: StrapiFetchOptions = {
+            ...baseRequest,
+            cache: cacheMode,
+            ...(cacheMode === 'no-store'
+                ? {}
+                : {
+                      next: {
+                          ...(baseRequest.next ?? {}),
+                          revalidate: STRAPI_REVALIDATE_SECONDS, // high revalidate: read-mostly
+                      },
+                  }),
+        };
+        const fetchAllPages = async (fields: readonly string[]): Promise<StrapiCategory[]> => {
+            const accumulated: StrapiCategory[] = [];
+            let currentPage = 1;
+
+            while (true) {
+                const query = {
+                    ...baseQuery,
+                    ...(fields.length > 0 ? { fields: Array.from(fields) } : {}),
+                    pagination: {
+                        page: currentPage,
+                        pageSize,
+                    },
+                };
+                const queryString = qs(query);
+                const response = await performStrapiRequest(`/api/categories${queryString}`, requestInit);
+                const pageData: StrapiCategory[] = response.data || [];
+                accumulated.push(...pageData);
+                console.log(`[GET_CATEGORIES] Fetched page ${currentPage} with ${pageData.length} raw categories.`);
+
+                if (pageData.length < pageSize) {
+                    break;
+                }
+
+                currentPage += 1;
+            }
+
+            return accumulated;
+        };
+
+        let raw: StrapiCategory[];
+        try {
+            raw = await fetchAllPages(CATEGORY_SUMMARY_FIELDS);
+        } catch (error) {
+            if (shouldRetryCategoryFields(error)) {
+                console.warn('[GET_CATEGORIES] Retrying without optional category fields due to invalid key error.');
+                raw = await fetchAllPages(CATEGORY_FALLBACK_FIELDS);
+            } else {
+                throw error;
+            }
+        }
+
+        console.log(`[GET_CATEGORIES] Aggregated ${raw.length} raw categories.`);
+
+        const mapped: Promise<CategoryDoc | null>[] = raw.map(async (c: StrapiCategory) => {
+            if (!c || !c.id || !c.name || !c.slug || !c.documentId) {
+                console.warn('[GET_CATEGORIES] Skipping category with missing id, name, slug, or documentId:', c);
+                return null;
+            }
+            return {
+                id: c.id,
+                documentId: c.documentId,
+                name: c.name,
+                slug: c.slug,
+                description: (c as any)?.description ?? (c as any)?.Descripcion ?? (c as any)?.descripcion,
+                color: c.color,
+                imageUrl: await getStrapiMediaUrl(c.img?.url),
+            };
+        });
+
+        const results = (await Promise.all(mapped)).filter(Boolean) as CategoryDoc[];
+        console.log(`[GET_CATEGORIES] Mapped ${results.length} categories.`);
+        return results;
+    } catch (error) {
+        console.error('[GET_CATEGORIES] Failed to fetch categories:', error);
+        return [];
+    }
 }
 
 export async function getCategory(slug: string): Promise<CategoryDoc | null> {
@@ -480,33 +511,47 @@ export async function getCategory(slug: string): Promise<CategoryDoc | null> {
     try {
         console.log(`[GET_CATEGORY] Fetching category with slug: ${slug}`);
         const paginationSize = Math.min(Math.max(1, 6), 12);
-        const query = {
-            filters: {
-                slug: { $eq: slug },
-            },
-            fields: CATEGORY_SUMMARY_FIELDS,
-            populate: CATEGORY_POPULATE, // removed populate=*
-            pagination: {
-                page: 1,
-                pageSize: paginationSize,
-            },
+        const fetchCategoryData = async (fields: readonly string[]) => {
+            const query = {
+                filters: {
+                    slug: { $eq: slug },
+                },
+                ...(fields.length > 0 ? { fields: Array.from(fields) } : {}),
+                populate: CATEGORY_POPULATE, // removed populate=*
+                pagination: {
+                    page: 1,
+                    pageSize: paginationSize,
+                },
+            };
+            const queryString = qs(query);
+            const response = await performStrapiRequest(`/api/categories${queryString}`, { method: 'GET', cache: 'no-store' });
+            return response.data?.[0] as StrapiCategory | undefined;
         };
-        const queryString = qs(query);
-        const response = await performStrapiRequest(`/api/categories${queryString}`, { method: 'GET', cache: 'no-store' });
-        const categoryData = response.data?.[0];
+
+        let categoryData: StrapiCategory | undefined;
+        try {
+            categoryData = await fetchCategoryData(CATEGORY_SUMMARY_FIELDS);
+        } catch (error) {
+            if (shouldRetryCategoryFields(error)) {
+                console.warn(`[GET_CATEGORY] Retrying without optional category fields for slug: ${slug}.`);
+                categoryData = await fetchCategoryData(CATEGORY_FALLBACK_FIELDS);
+            } else {
+                throw error;
+            }
+        }
 
         if (!categoryData) {
             console.warn(`[GET_CATEGORY] No category found for slug: ${slug}`);
             return null;
         }
-        
+
         console.log(`[GET_CATEGORY] Found category: ${categoryData.name}`);
         return {
             id: categoryData.id,
             documentId: categoryData.documentId,
             name: categoryData.name,
             slug: categoryData.slug,
-            description: categoryData.description,
+            description: (categoryData as any)?.description ?? (categoryData as any)?.Descripcion ?? (categoryData as any)?.descripcion,
             color: categoryData.color,
             imageUrl: await getStrapiMediaUrl(categoryData.img?.url),
         };
