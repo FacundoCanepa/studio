@@ -90,7 +90,11 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ id: assetId });
+    return NextResponse.json({
+      id: assetId,
+      asset: firstAsset,
+      assets,
+    });
   } catch (error) {
     console.error('[STRAPI_UPLOAD_FORWARD_ERROR]', error);
     return NextResponse.json(

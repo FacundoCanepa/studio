@@ -38,14 +38,31 @@ export function uploadFileToStrapi(
       if (xhr.readyState === 4) {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const response: { id?: number; error?: string } = JSON.parse(xhr.responseText);
-            if (response && typeof response.id === 'number') {
-              resolve(response.id); // 3. Return the ID of the uploaded asset.
-            } else if (response?.error) {
-              reject(new Error(response.error));
-            } else {
-              reject(new Error('Respuesta de subida inválida desde el servidor.'));
+            const response: unknown = JSON.parse(xhr.responseText);
+
+            if (Array.isArray(response)) {
+              const first = response[0];
+              if (first && typeof (first as any).id === 'number') {
+                resolve((first as any).id);
+                return;
+              }
+            } else if (response && typeof response === 'object') {
+              const body = response as { id?: number; asset?: { id?: number }; error?: string };
+              if (typeof body.id === 'number') {
+                resolve(body.id);
+                return;
+              }
+              if (body.asset && typeof body.asset.id === 'number') {
+                resolve(body.asset.id);
+                return;
+              }
+              if (body.error) {
+                reject(new Error(body.error));
+                return;
+              }
             }
+
+            reject(new Error('Respuesta de subida inválida desde el servidor.'));
           } catch (e) {
             reject(new Error('Error al parsear la respuesta de subida.'));
           }

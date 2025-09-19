@@ -10,7 +10,7 @@ import { saveCategoryAction } from '@/app/actions/categoryActions';
 import type { CategoryDoc } from '@/lib/firestore-types';
 import { toStrapiSlug } from '@/lib/strapiSlug';
 import { Input } from '@/components/ui/input';
-import { STRAPI_API_TOKEN, STRAPI_URL, validateImage } from '@/lib/strapi-media-config';
+import { STRAPI_URL, validateImage } from '@/lib/strapi-media-config';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
   // Title / Slug
   const [name, setName] = React.useState(initial.name);
   const [slug, setSlug] = React.useState(initial.slug);
-  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = React.useState(Boolean(initial.slug));
+  const isEditing = Boolean(category);
   const [imgId, setImgId] = React.useState<string | null>(initial.imgId);
   const [imgUrl, setImgUrl] = React.useState<string>(initial.imgUrl);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
@@ -61,16 +61,15 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
   React.useEffect(() => {
     setName(initial.name);
     setSlug(initial.slug);
-    setIsSlugManuallyEdited(Boolean(initial.slug));
     setImgId(initial.imgId);
     setImgUrl(initial.imgUrl);
   }, [initial.name, initial.slug, initial.imgId, initial.imgUrl]);
 
   React.useEffect(() => {
-    if (!isSlugManuallyEdited) {
+    if (!isEditing) {
       setSlug(toStrapiSlug(name));
     }
-  }, [name, isSlugManuallyEdited]);
+  }, [name, isEditing]);
 
   const handleFileChange = React.useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,20 +99,12 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
         return;
       }
 
-      if (!STRAPI_API_TOKEN) {
-        const message =
-          'La variable de entorno STRAPI_API_TOKEN no está configurada. No es posible subir archivos en este momento.';
-        setUploadError(message);
-        toast({ title: 'Error de configuración', description: message, variant: 'destructive' });
-        event.target.value = '';
-        return;
-      }
 
       setIsUploading(true);
       setUploadError(null);
 
       const normalizedBaseUrl = STRAPI_URL.endsWith('/') ? STRAPI_URL.slice(0, -1) : STRAPI_URL;
-      const uploadUrl = `${normalizedBaseUrl}/api/upload`;
+      const uploadUrl = `/api/strapi/upload`;
 
       try {
         const fd = new FormData();
@@ -121,7 +112,6 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
 
         const response = await fetch(uploadUrl, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${STRAPI_API_TOKEN}` },
           body: fd,
         });
 
@@ -135,7 +125,10 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
           throw new Error(message);
         }
 
-        const asset = Array.isArray(payload) ? payload[0] : payload;
+        const assetPayload = Array.isArray(payload)
+        ? payload[0]
+        : (payload as any)?.asset ?? payload;
+      const asset = assetPayload as { id?: number; url?: string } | null;
         const assetId = asset?.id;
         const assetUrl: string | undefined = asset?.url;
 
@@ -215,10 +208,7 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
               id="slug"
               name="slug"
               value={slug}
-              onChange={(e) => {
-                setSlug(e.target.value);
-                setIsSlugManuallyEdited(true);
-              }}
+              readOnly
               required
               placeholder="Ej: estilo-de-vida"
             />
@@ -226,7 +216,9 @@ export function CategoryForm({ category, showDescriptionField }: CategoryFormPro
               <p className="text-sm text-destructive">{formState.errors.slug[0]}</p>
             )}
             <p className="text-sm text-muted-foreground">
-              Esta es la URL amigable para la categoría.
+            {isEditing
+                ? 'El slug se mantiene igual para no afectar enlaces existentes.'
+                : 'Este slug se genera automáticamente a partir del nombre.'}
             </p>
           </div>
 

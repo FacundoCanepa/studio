@@ -1,8 +1,7 @@
-
-
 // --- Environment Variables & Validation ---
 export const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL ?? null;
-export const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
+const isBrowser = typeof window !== 'undefined';
+export const STRAPI_API_TOKEN = isBrowser ? null : process.env.STRAPI_API_TOKEN ?? null;
 
 if (!STRAPI_URL) {
   console.warn(
@@ -10,9 +9,11 @@ if (!STRAPI_URL) {
   );
 }
 
-// At build time, the token might not be available, so we just warn.
-if (!STRAPI_API_TOKEN) {
-  console.warn('[MEDIA WARNING] STRAPI_API_TOKEN is not set. Media operations will likely fail if this is not a build-time warning.');
+// Only warn about the API token on the server where it is actually required.
+if (!isBrowser && !STRAPI_API_TOKEN) {
+  console.warn(
+    '[MEDIA WARNING] STRAPI_API_TOKEN is not set. Media operations will likely fail if this is not a build-time warning.'
+  );
 }
 
 // --- Configuration Constants ---
