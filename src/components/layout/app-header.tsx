@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ThemeToggle } from '../theme/theme-toggle';
 
 
 interface AppHeaderProps {
@@ -51,6 +52,7 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
         </nav>
 
         <div className="flex items-center justify-end space-x-2">
+           <ThemeToggle />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
