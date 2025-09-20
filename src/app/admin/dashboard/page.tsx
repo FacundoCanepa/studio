@@ -82,11 +82,79 @@ async function fetchAllUsersWithFavorites(): Promise<StrapiUser[]> {
             pagination: { limit: -1 }
         });
         const response = await performStrapiRequest(`/api/users${query}`, { method: 'GET', cache: 'no-store' });
-        return response.data || [];
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (Array.isArray(response?.data)) {
+          return response.data;
+        }
+
+        return [];
     } catch (error) {
         console.error('[DASHBOARD] Error fetching all users with favorites:', error);
         return [];
     }
+}
+
+
+type FavoriteRelationKey = 'favorite_articles' | 'favorite_tags';
+type FavoriteRelationItem = { id: number } & Record<string, any>;
+
+function normalizeFavoriteRelationItem(item: any): FavoriteRelationItem | null {
+  if (item == null) {
+    return null;
+  }
+
+  if (typeof item === 'number') {
+    return { id: item };
+  }
+
+  if (typeof item === 'object') {
+    const maybeAttributes = (item as any).attributes;
+    const rawId = (item as any).id ?? maybeAttributes?.id;
+    const parsedId = typeof rawId === 'number'
+      ? rawId
+      : typeof rawId === 'string'
+        ? Number.parseInt(rawId, 10)
+        : undefined;
+
+    if (typeof parsedId !== 'number' || Number.isNaN(parsedId)) {
+      return null;
+    }
+
+    const base = maybeAttributes && typeof maybeAttributes === 'object'
+      ? maybeAttributes
+      : item;
+
+    const normalized = { ...(base as Record<string, any>) };
+    delete (normalized as any).attributes;
+    normalized.id = parsedId;
+
+    return normalized as FavoriteRelationItem;
+  }
+
+  return null;
+}
+
+function extractFavoriteRelationItems(entity: any, key: FavoriteRelationKey): FavoriteRelationItem[] {
+  if (!entity) {
+    return [];
+  }
+
+  const relation = entity[key] ?? entity.attributes?.[key];
+  if (!relation) {
+    return [];
+  }
+
+  const items = Array.isArray(relation) ? relation : relation?.data;
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .map(normalizeFavoriteRelationItem)
+    .filter((item): item is FavoriteRelationItem => !!item && typeof item.id === 'number' && Number.isFinite(item.id));
 }
 
 
@@ -110,7 +178,7 @@ export default async function AdminDashboardPage() {
       getTags(),
       getGalleryItems(),
       fetchTotalCount('/api/users'),
-      fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed']),
+      fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed'], ['favorite_articles', 'favorite_tags']),
       fetchAllUsersWithFavorites(),
     ]);
   } catch (error) {
@@ -159,7 +227,9 @@ export default async function AdminDashboardPage() {
   // Most saved articles and tags
   const articleSaveCounts = new Map<number, number>();
   const tagSaveCounts = new Map<number, number>();
-
+  const favoriteArticleMetadata = new Map<number, { title?: string; slug?: string; documentId?: string }>();
+  const favoriteTagMetadata = new Map<number, { name?: string; slug?: string }>();
+  
   allUsers.forEach(user => {
     user.favorite_articles?.forEach(article => {
         if (article.id) {

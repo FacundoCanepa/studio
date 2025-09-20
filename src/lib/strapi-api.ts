@@ -1,8 +1,6 @@
 // src/lib/strapi-api.ts
 import 'server-only';
 
-import type { StrapiResponse } from './strapi-types';
-
 type JsonSerializableBody = Record<string, unknown> | unknown[];
 
 export type StrapiFetchOptions = Omit<RequestInit, 'body'> & {
@@ -246,34 +244,56 @@ export async function performStrapiRequest(endpoint: string, options: StrapiFetc
   if (options.method === 'GET' && isPaginated) {
     params.delete('pagination[limit]');
     params.set('pagination[pageSize]', '12'); // enforced pagination to reduce API calls
-    
+
     let allResults: any[] = [];
     let page = 1;
     let totalPages = 1;
+    let sawArrayResponse = false;
 
     console.log(`[PERFORM_STRAPI_REQUEST] Starting paginated fetch for ${url.pathname}`);
-    do {
+
+    // Loop manually instead of do/while to better control termination when Strapi returns plain arrays
+    while (true) {
       params.set('pagination[page]', String(page));
       const currentUrl = `${url.pathname}?${params.toString()}`;
+
       try {
-        const response = await fetchStrapi<StrapiResponse<any[]>>(currentUrl, { ...options, body: undefined });
-        if (response.data && Array.isArray(response.data)) {
-          allResults = allResults.concat(response.data);
-        }
-        if (response.meta?.pagination) {
-          totalPages = response.meta.pagination.pageCount;
+        const response = await fetchStrapi<any>(currentUrl, { ...options, body: undefined });
+
+        if (Array.isArray(response)) {
+          sawArrayResponse = true;
+          allResults = allResults.concat(response);
+
+          const pageSize = Number.parseInt(params.get('pagination[pageSize]') ?? '0', 10) || response.length;
+          if (pageSize === 0 || response.length < pageSize) {
+            break;
+          }
         } else {
+          if (response?.data && Array.isArray(response.data)) {
+            allResults = allResults.concat(response.data);
+          }
+
+          const pagination = response?.meta?.pagination;
+          if (!pagination || !pagination.pageCount || page >= pagination.pageCount) {
+            break;
+          }
+
+          totalPages = pagination.pageCount;
+        }
+
+        page++;
+
+        if (!sawArrayResponse && page > totalPages) {
           break;
         }
-        page++;
       } catch (error) {
         console.error(`[PERFORM_STRAPI_REQUEST][ERROR] Failed to fetch page ${page} for ${url.pathname}`, error);
         break;
       }
-    } while (page <= totalPages);
-    
+    }
+
     console.log(`[PERFORM_STRAPI_REQUEST] Finished paginated fetch. Total items: ${allResults.length}`);
-    return { data: allResults };
+    return sawArrayResponse ? allResults : { data: allResults };
   }
 
   const finalUrl = `${url.pathname}?${params.toString()}`;
