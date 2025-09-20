@@ -1,10 +1,9 @@
-
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, Users, GanttChartSquare } from 'lucide-react';
+import { Home, Newspaper, Users, GanttChartSquare, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AuthContext } from '@/context/auth-context';
 
@@ -13,6 +12,7 @@ const navItems = [
   { href: '/admin/articles', label: 'Artículos', icon: Newspaper },
   { href: '/admin/categories', label: 'Categorías', icon: GanttChartSquare },
   { href: '/admin/authors', label: 'Autores', icon: Users },
+  { href: '/admin/galeria', label: 'Galería', icon: ImageIcon },
 ];
 
 export const AdminSidebar = () => {

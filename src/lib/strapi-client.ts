@@ -1,6 +1,6 @@
 'use server';
 
-import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from './firestore-types';
+import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc, GalleryItemDoc } from './firestore-types';
 import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiGalleryItem } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
 import { performStrapiRequest, getStrapiMediaUrl, STRAPI_REVALIDATE_SECONDS, type StrapiFetchOptions } from './strapi-api';
@@ -113,6 +113,9 @@ const ARTICLE_POPULATE = {
 const AUTHOR_POPULATE = {
     Avatar: {
         fields: MEDIA_FIELDS,
+    },
+     articles: {
+        fields: ['title'],
     },
 } as const; // removed populate=*
 
@@ -371,20 +374,22 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
 
         console.log(`[GET_AUTHORS] Aggregated ${authors.length} authors.`);
         
-        const authorDocs = await Promise.all(authors.map(async (authorData) => {
+        const authorDocs = await Promise.all(authors.map(async (author) => {
+            const authorData = author.attributes;
             if (!authorData || !authorData.documentId || !authorData.Name) {
-                console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', authorData);
+                console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', author);
                 return null;
             }
 
             return {
-                id: authorData.id,
+                id: author.id,
                 documentId: authorData.documentId,
                 name: authorData.Name,
-                avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
+                avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes?.url),
                 bioBlocks: authorData.Bio,
                 createdAt: authorData.createdAt,
                 updatedAt: authorData.updatedAt,
+                articles: authorData.articles?.data?.map((art: any) => ({ id: art.id, title: art.attributes.title })) || [],
             };
         }));
 
@@ -413,21 +418,30 @@ export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
         };
         const queryString = qs(query);
         const response = await performStrapiRequest(`/api/authors${queryString}`, { method: 'GET', cache: 'no-store' });
-        const authorData = response.data?.[0];
+        const author = response.data?.[0];
 
-        if (!authorData) {
+        if (!author) {
             console.warn(`[GET_AUTHOR] No author found for documentId: ${documentId}`);
             return null;
         }
+        
+        const authorData = author.attributes;
         console.log(`[GET_AUTHOR] Found author: ${authorData.Name}`);
+        
+        const bio = (authorData.Bio || []).map((block: any) => ({
+            type: block.type,
+            children: block.children.map((child: any) => ({ type: child.type, text: child.text }))
+        }));
+
         return {
-            id: authorData.id,
+            id: author.id,
             documentId: authorData.documentId,
             name: authorData.Name,
-            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.url),
-            bioBlocks: authorData.Bio,
+            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes?.url),
+            bio: bio.map((b: any) => b.children.map((c: any) => c.text).join(' ')).join('\n'),
             createdAt: authorData.createdAt,
             updatedAt: authorData.updatedAt,
+            articles: authorData.articles?.data?.map((art: any) => ({ id: art.id, title: art.attributes.title })) || [],
         };
     } catch (error) {
         console.error(`[GET_AUTHOR][ERROR] Failed to fetch author with documentId ${documentId}`, error);
@@ -813,14 +827,14 @@ export async function getTag(slug: string): Promise<TagDoc | null> {
     }
 }
 
-export async function getGalleryItems(): Promise<{ id: string; title: string; description: string; imageUrl: string }[]> {
+export async function getGalleryItems(): Promise<GalleryItemDoc[]> {
   if (!isApiAvailable()) return [];
   try {
     console.log('[GET_GALLERY_ITEMS] Fetching gallery items...');
     const pageSize = Math.min(Math.max(12, 6), 12);
     const baseQuery: Record<string, any> = {
       fields: GALLERY_FIELDS,
-      populate: GALLERY_POPULATE, // removed populate=*
+      populate: GALLERY_POPULATE,
     };
 
     const galleryItems: StrapiGalleryItem[] = [];
@@ -849,12 +863,13 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
 
     console.log(`[GET_GALLERY_ITEMS] Aggregated ${galleryItems.length} gallery items.`);
 
-    const items = await Promise.all(galleryItems.map(async (itemData) => {
-      if (!itemData || !itemData.documentId) {
-        console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', itemData);
+    const items = await Promise.all(galleryItems.map(async (item) => {
+      const itemData = item.attributes;
+      if (!itemData || !item.id || !itemData.documentId) {
+        console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', item);
         return null;
       }
-      const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.url);
+      const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes?.url);
       if (!imageUrl) return null;
       return {
         id: itemData.documentId,
@@ -863,11 +878,47 @@ export async function getGalleryItems(): Promise<{ id: string; title: string; de
         imageUrl: imageUrl,
       };
     }));
-    return items.filter(Boolean) as { id: string; title: string; description: string; imageUrl: string }[];
+    return items.filter(Boolean) as GalleryItemDoc[];
   } catch(error) {
     console.error('[GET_GALLERY_ITEMS] Failed to fetch gallery items:', error);
     return [];
   }
+}
+
+export async function getGalleryItem(documentId: string): Promise<GalleryItemDoc | null> {
+    if (!isApiAvailable()) return null;
+    try {
+        console.log(`[GET_GALLERY_ITEM] Fetching gallery item with documentId: ${documentId}`);
+        const query = {
+            filters: { documentId: { $eq: documentId } },
+            fields: GALLERY_FIELDS,
+            populate: GALLERY_POPULATE,
+            pagination: { page: 1, pageSize: 1 },
+        };
+        const queryString = qs(query);
+        const response = await performStrapiRequest(`/api/Galerias${queryString}`, { method: 'GET', cache: 'no-store' });
+        const item = response.data?.[0];
+
+        if (!item) {
+            console.warn(`[GET_GALLERY_ITEM] No item found for documentId: ${documentId}`);
+            return null;
+        }
+
+        const itemData = item.attributes;
+        const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes?.url);
+
+        if (!imageUrl) return null;
+
+        return {
+            id: itemData.documentId,
+            title: itemData.Famoso,
+            description: itemData.Nota,
+            imageUrl: imageUrl,
+        };
+    } catch (error) {
+        console.error(`[GET_GALLERY_ITEM] Error fetching gallery item with documentId ${documentId}:`, error);
+        return null;
+    }
 }
 
 

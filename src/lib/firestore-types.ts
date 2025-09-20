@@ -51,11 +51,12 @@ export type AuthorDoc = {
   id: number;
   documentId: string;
   name: string;
+  bio?: string;
   avatarUrl?: string;
-  bioBlocks?: any; 
-  createdAt?: string;
-  updatedAt?: string;
-}
+  createdAt: string;
+  updatedAt: string;
+  articles?: Array<{ id: number; title: string }>;
+};
 
 export type CategoryDoc = {
   id: number;
@@ -81,6 +82,13 @@ export type TagDoc = {
   slug: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export type GalleryItemDoc = {
+  id: string; // documentId
+  title: string;
+  description: string;
+  imageUrl: string;
 }
 
 export type SubscriberDoc = {
