@@ -48,6 +48,10 @@ export function mapStrapiAuthorToAuthorDoc(input: unknown): AuthorDoc | null {
         title: article.attributes?.title ?? 'Título no disponible',
       }))
     : [];
+    const avatarUrlFromNested = typeof raw.Avatar?.data?.attributes?.url === 'string'
+    ? raw.Avatar.data.attributes.url
+    : undefined;
+  const avatarUrlFromRoot = typeof raw.Avatar?.url === 'string' ? raw.Avatar.url : undefined;
 
   const author: AuthorDoc = {
     id: entity.id,
@@ -56,7 +60,7 @@ export function mapStrapiAuthorToAuthorDoc(input: unknown): AuthorDoc | null {
     bio: extractBio(raw),
     createdAt,
     updatedAt,
-    avatarUrl: raw.Avatar?.data?.attributes?.url,
+    avatarUrl: avatarUrlFromRoot ?? avatarUrlFromNested,
     articles: articles,
   };
 

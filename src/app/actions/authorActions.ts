@@ -1,14 +1,46 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createAuthor, updateAuthor, deleteAuthor, AuthorPayload } from '@/lib/strapi-authors';
+import { createAuthor, updateAuthor, deleteAuthor, AuthorPayload, StrapiRichTextBlock } from '@/lib/strapi-authors';
 import { authorSchema, normalizeAuthorForm, AuthorFormData } from '@/lib/validation/author-schema';
 import type { FormState } from './types';
 
 /**
  * Server Action para guardar (crear o actualizar) un autor.
  */
+function convertTextToRichTextBlocks(text: string | undefined): AuthorPayload['Bio'] | undefined {
+  if (text === undefined) {
+    return undefined;
+  }
+
+  const trimmed = text.trim();
+
+  if (trimmed.length === 0) {
+    return [];
+  }
+
+  const paragraphs = trimmed
+    .split(/\r?\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph.length > 0);
+
+  if (paragraphs.length === 0) {
+    return [];
+  }
+
+  const blocks: StrapiRichTextBlock[] = paragraphs.map((paragraph) => ({
+    type: 'paragraph',
+    children: [
+      {
+        type: 'text',
+        text: paragraph,
+      },
+    ],
+  }));
+
+  return blocks;
+}
+
 export async function saveAuthorAction(
   documentId: string | null,
   prevState: FormState,
@@ -37,8 +69,12 @@ export async function saveAuthorAction(
 
   const payload: Partial<AuthorPayload> = {
     Name: name,
-    Bio: bio,
   };
+
+  const richTextBio = convertTextToRichTextBlocks(bio);
+  if (richTextBio !== undefined) {
+    payload.Bio = richTextBio;
+  }
   
   if (pendingCoverId !== undefined) {
       payload.Avatar = pendingCoverId === 'null' ? null : Number(pendingCoverId);
@@ -64,30 +100,3 @@ export async function saveAuthorAction(
       success: true,
     };
   } catch (error: any) {
-    console.error('[SAVE_AUTHOR_ACTION] Error during Strapi operation:', error);
-    const errorMessage = error.message || 'Ocurrió un error al guardar el autor.';
-    return {
-      message: errorMessage,
-      success: false,
-    };
-  }
-}
-
-/**
- * Server Action para eliminar un autor.
- */
-export async function deleteAuthorAction(documentId: string): Promise<{ success: boolean; message: string }> {
-    console.log(`[DELETE_AUTHOR_ACTION] Attempting to delete author with document ID: ${documentId}`);
-    try {
-        await deleteAuthor(documentId);
-        
-        console.log(`[DELETE_AUTHOR_ACTION] Successfully deleted author ${documentId}. Revalidating path.`);
-        revalidatePath('/admin/authors');
-
-        return { success: true, message: 'Autor eliminado con éxito.' };
-
-    } catch (error: any) {
-        console.error(`[DELETE_AUTHOR_ACTION] Exception caught for author document ID ${documentId}:`, error);
-        return { success: false, message: `Error al eliminar: ${error.message}` };
-    }
-}

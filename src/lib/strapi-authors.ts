@@ -10,10 +10,21 @@ import { qs } from './qs';
  * fetching, updating, or deleting records to maintain data consistency.
  * =================================================================================
  */
+export type StrapiRichTextTextNode = {
+    type: 'text';
+    text: string;
+  };
+  
+  export type StrapiRichTextParagraphBlock = {
+    type: 'paragraph';
+    children: StrapiRichTextTextNode[];
+  };
+  
+  export type StrapiRichTextBlock = StrapiRichTextParagraphBlock;
 
 export type AuthorPayload = {
   Name: string;
-  Bio?: string;
+Bio?: StrapiRichTextBlock[] | null;
   Avatar?: number | null;
 };
 
