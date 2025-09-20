@@ -1,9 +1,8 @@
-
 import { Metadata } from 'next';
 import { getArticles, getAuthors, getCategories, getTags, getGalleryItems } from '@/lib/strapi-client';
 import { performStrapiRequest } from '@/lib/strapi-api';
 import { qs } from '@/lib/qs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -11,11 +10,14 @@ import { es } from 'date-fns/locale';
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle, Mail,
   CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, AlertTriangle, BookOpen, Link as LinkIcon, Youtube,
-  FileText, ImageOff
+  FileText, ImageOff, Link2
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc } from '@/lib/firestore-types';
+import type { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc, GalleryItemDoc } from '@/lib/firestore-types';
 import Link from 'next/link';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { DistributionCharts } from './_components/distribution-charts';
+import Image from 'next/image';
 
 export const metadata: Metadata = {
   title: 'Dashboard - Admin Panel',
@@ -37,12 +39,13 @@ async function fetchTotalCount(endpoint: string): Promise<number> {
   }
 }
 
-async function fetchRecent(endpoint: string, fields: string[]): Promise<any[]> {
+async function fetchRecent(endpoint: string, fields: string[], populate?: any): Promise<any[]> {
   try {
     const query = qs({
       sort: 'createdAt:desc',
       pagination: { limit: 5 },
       fields: fields,
+      populate: populate,
     });
     const response = await performStrapiRequest(`${endpoint}${query}`, { method: 'GET', cache: 'no-store' });
     return response.data ?? [];
@@ -80,61 +83,45 @@ const StatCard = ({ title, value, icon: Icon, description, href }: StatCardProps
   )
 };
 
-interface MetricCardProps {
+interface RecentItemsTableProps {
   title: string;
-  metrics: { label: string; value: number; icon: React.ComponentType<{ className?: string }>; }[];
+  items: any[];
+  columns: { header: string; accessor: (item: any) => ReactNode }[];
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const MetricCard = ({ title, metrics, icon: Icon }: MetricCardProps) => (
+const RecentItemsTable = ({ title, items, columns, icon: Icon }: RecentItemsTableProps) => (
   <Card>
     <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Icon className="h-5 w-5" />
-        {title}
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      {metrics.map(({ label, value, icon: MetricIcon }) => (
-        <div key={label} className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <MetricIcon className="h-4 w-4" />
-            <span>{label}</span>
-          </div>
-          <span className="font-medium">{value}</span>
-        </div>
-      ))}
-    </CardContent>
-  </Card>
-);
-
-interface TopListCardProps<T> {
-  title: string;
-  items: T[];
-  renderItem: (item: T) => ReactNode;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const TopListCard = <T,>({ title, items, renderItem, icon: Icon }: TopListCardProps<T>) => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
+      <CardTitle className="flex items-center gap-2 text-base">
         <Icon className="h-5 w-5" />
         {title}
       </CardTitle>
     </CardHeader>
     <CardContent>
-      {items.length > 0 ? (
-        <ul className="space-y-2">
-          {items.map(renderItem)}
-        </ul>
-      ) : (
-        <p className="text-sm text-muted-foreground">No hay datos suficientes.</p>
-      )}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map(col => <TableHead key={col.header}>{col.header}</TableHead>)}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.length > 0 ? (
+            items.map((item, index) => (
+              <TableRow key={item.id || index}>
+                {columns.map(col => <TableCell key={col.header}>{col.accessor(item)}</TableCell>)}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="text-center h-24">No hay datos recientes.</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </CardContent>
   </Card>
 )
-
 
 export default async function AdminDashboardPage() {
   const [
@@ -179,31 +166,32 @@ export default async function AdminDashboardPage() {
     noYoutube: articles.filter(a => !a.urlYoutube).length,
     noSeo: articles.filter(a => !a.seo?.metaTitle || !a.seo?.metaDescription).length,
   };
+  
+  const authorsWithArticleCount = authors.map(author => ({
+    ...author,
+    articleCount: articles.filter(a => a.author?.documentId === author.documentId).length
+  }));
 
-  const calculateTopItems = <T extends { documentId: string, name: string }>(
-    items: T[],
-    articles: ArticleDoc[],
-    key: 'category' | 'author' | 'tags'
-  ) => {
-    const counts = new Map<string, { item: T, count: number }>();
-    articles.forEach(article => {
-      const relatedItems = Array.isArray(article[key]) ? article[key] : [article[key]];
-      relatedItems.forEach(item => {
-        if (item) {
-          const existing = counts.get(item.documentId) || { item: items.find(i => i.documentId === item.documentId)!, count: 0 };
-          if(existing.item) {
-            existing.count++;
-            counts.set(item.documentId, existing);
-          }
-        }
-      });
-    });
-    return Array.from(counts.values()).sort((a, b) => b.count - a.count).slice(0, 5);
-  }
+  const categoriesWithArticleCount = categories.map(cat => ({
+    ...cat,
+    articleCount: articles.filter(a => a.category?.documentId === cat.documentId).length
+  }));
 
-  const topCategories = calculateTopItems<CategoryDoc>(categories, articles, 'category');
-  const topAuthors = calculateTopItems<AuthorDoc>(authors, articles, 'author');
-  const topTags = calculateTopItems<TagDoc>(tags, articles, 'tags');
+  const tagsWithArticleCount = tags.map(tag => ({
+    ...tag,
+    articleCount: articles.filter(a => a.tags?.some(t => t.documentId === tag.documentId)).length
+  }));
+
+  // Data for charts
+  const articlesByCategoryChartData = categories.map(cat => ({
+    name: cat.name,
+    value: articles.filter(a => a.category?.documentId === cat.documentId).length,
+  })).filter(d => d.value > 0);
+
+  const articlesByTagChartData = tags.map(tag => ({
+    name: tag.name,
+    value: articles.filter(a => a.tags?.some(t => t.documentId === tag.documentId)).length
+  })).filter(d => d.value > 0);
 
   const stats = [
     { title: 'Total de Artículos', value: articles.length, icon: Newspaper, href: '/admin/articles' },
@@ -214,149 +202,165 @@ export default async function AdminDashboardPage() {
     { title: 'Usuarios Registrados', value: totalUsers, icon: UserCircle },
     { title: 'Suscriptores', value: totalSubscribers, icon: Mail },
   ];
+  
+  const recent5Articles = articles.sort((a,b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime()).slice(0,5);
+  const recent5GalleryItems = galleryItems.slice(0, 5);
 
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
       
+      {/* 1. Resumen Global */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Resumen General</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {stats.map(stat => <StatCard key={stat.title} {...stat} />)}
         </div>
       </section>
+      
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="xl:col-span-2 space-y-8">
+            {/* 2. Estado de Artículos */}
+            <section>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Newspaper />Estado de Artículos</CardTitle>
+                         <CardDescription>Un vistazo rápido a los artículos y sus estados actuales.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6 text-sm">
+                            <div className="flex items-center gap-2"><CheckCircle className="text-green-500"/> Publicados: <span className="font-bold">{articleMetrics.published}</span></div>
+                            <div className="flex items-center gap-2"><XCircle className="text-red-500"/> Borradores: <span className="font-bold">{articleMetrics.drafts}</span></div>
+                            <div className="flex items-center gap-2"><Star className="text-yellow-500"/> Destacados: <span className="font-bold">{articleMetrics.featured}</span></div>
+                            <div className="flex items-center gap-2"><Home className="text-blue-500"/> En Portada: <span className="font-bold">{articleMetrics.home}</span></div>
+                            <div className="flex items-center gap-2"><Sparkles className="text-purple-500"/> Nuevos: <span className="font-bold">{articleMetrics.isNew}</span></div>
+                            <div className="flex items-center gap-2"><TrendingUp className="text-indigo-500"/> Tendencias: <span className="font-bold">{articleMetrics.tendencias}</span></div>
+                        </div>
+                        <RecentItemsTable 
+                            title="Últimos 5 Artículos Actualizados"
+                            items={recent5Articles}
+                            icon={Newspaper}
+                            columns={[
+                                { header: 'Título', accessor: item => <Link href={`/admin/articles/edit/${item.documentId}`} className="font-medium hover:underline">{item.title}</Link> },
+                                { header: 'Categoría', accessor: item => item.category ? <Badge variant="secondary">{item.category.name}</Badge> : 'N/A'},
+                                { header: 'Fecha', accessor: item => format(new Date(item.updatedAt || item.createdAt!), 'dd MMM yyyy', { locale: es }) },
+                            ]}
+                        />
+                    </CardContent>
+                </Card>
+            </section>
+            
+            {/* 5. Distribución Visual */}
+            <section>
+                <DistributionCharts byCategory={articlesByCategoryChartData} byTag={articlesByTagChartData} />
+            </section>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* 4. Relaciones (Autores) */}
+              <section>
+                <RecentItemsTable
+                  title="Autores y sus Artículos"
+                  icon={Users}
+                  items={authorsWithArticleCount.sort((a,b) => b.articleCount - a.articleCount)}
+                  columns={[
+                    { header: 'Autor', accessor: item => <Link href={`/admin/authors/edit/${item.documentId}`} className="font-medium hover:underline">{item.name}</Link> },
+                    { header: 'Artículos', accessor: item => <Badge variant="outline">{item.articleCount}</Badge> },
+                  ]}
+                />
+              </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <MetricCard 
-          title="Estado de Artículos"
-          icon={Newspaper}
-          metrics={[
-            { label: 'Publicados', value: articleMetrics.published, icon: CheckCircle },
-            { label: 'Borradores', value: articleMetrics.drafts, icon: XCircle },
-            { label: 'Destacados', value: articleMetrics.featured, icon: Star },
-            { label: 'En Portada', value: articleMetrics.home, icon: Home },
-            { label: 'Nuevos', value: articleMetrics.isNew, icon: Sparkles },
-            { label: 'Tendencias', value: articleMetrics.tendencias, icon: TrendingUp },
-          ]}
-        />
-         <MetricCard 
-          title="Artículos Incompletos"
-          icon={AlertTriangle}
-          metrics={[
-            { label: 'Sin Portada', value: incompleteArticles.noCover, icon: ImageOff },
-            { label: 'Sin Categoría', value: incompleteArticles.noCategory, icon: GanttChartSquare },
-            { label: 'Sin Autor', value: incompleteArticles.noAuthor, icon: Users },
-            { label: 'Sin Etiquetas', value: incompleteArticles.noTags, icon: Tag },
-            { label: 'Sin Contenido Extra', value: incompleteArticles.noContentMore, icon: BookOpen },
-            { label: 'Sin Información', value: incompleteArticles.noInformacion, icon: FileText },
-            { label: 'Sin Video', value: incompleteArticles.noYoutube, icon: Youtube },
-            { label: 'Sin SEO Básico', value: incompleteArticles.noSeo, icon: LinkIcon },
-          ]}
-        />
-        <div className="space-y-8">
-            <TopListCard 
-              title="Top 5 Categorías"
-              items={topCategories}
-              icon={GanttChartSquare}
-              renderItem={({ item, count }) => (
-                 <li key={item.documentId} className="flex justify-between items-center text-sm">
-                    <span>{item.name}</span>
-                    <Badge variant="secondary">{count} art.</Badge>
-                </li>
-              )}
-            />
-             <TopListCard 
-              title="Top 5 Autores"
-              items={topAuthors}
-              icon={Users}
-              renderItem={({ item, count }) => (
-                 <li key={item.documentId} className="flex justify-between items-center text-sm">
-                    <span>{item.name}</span>
-                    <Badge variant="secondary">{count} art.</Badge>
-                </li>
-              )}
-            />
+              {/* 4. Relaciones (Categorías) */}
+              <section>
+                 <RecentItemsTable
+                  title="Categorías y sus Artículos"
+                  icon={GanttChartSquare}
+                  items={categoriesWithArticleCount.sort((a,b) => b.articleCount - a.articleCount)}
+                  columns={[
+                    { header: 'Categoría', accessor: item => <Link href={`/admin/categories/edit/${item.documentId}`} className="font-medium hover:underline">{item.name}</Link> },
+                    { header: 'Artículos', accessor: item => <Badge variant="outline">{item.articleCount}</Badge> },
+                  ]}
+                />
+              </section>
+            </div>
+            
+            {/* 6. Galería */}
+            <section>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ImageIcon />Resumen de Galería</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                           {recent5GalleryItems.map(item => (
+                                <Link key={item.id} href={`/admin/galeria/edit/${item.id}`}>
+                                    <div className="aspect-square relative rounded-md overflow-hidden group">
+                                        <Image src={item.imageUrl} alt={item.title} fill className="object-cover" sizes="150px" />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                            <p className="text-white text-xs font-medium line-clamp-2">{item.title}</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                           ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </section>
         </div>
-      </section>
 
-      <section className="grid gap-8 md:grid-cols-2">
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <UserCircle className="h-5 w-5" />
-                    Últimos Usuarios Registrados
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Usuario</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead>Fecha</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {recentUsers.length > 0 ? (
-                            recentUsers.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">{user.username}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={user.confirmed ? 'default' : 'secondary'}>
-                                            {user.confirmed ? 'Confirmado' : 'Pendiente'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{format(new Date(user.createdAt), 'dd MMM yyyy', { locale: es })}</TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={4} className="text-center">No hay registros recientes.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Últimos Suscriptores
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Fuente</TableHead>
-                            <TableHead>Fecha</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {recentSubscribers.length > 0 ? (
-                             recentSubscribers.map((subscriber) => (
-                                <TableRow key={subscriber.id}>
-                                    <TableCell>{subscriber.email}</TableCell>
-                                     <TableCell>
-                                        <Badge variant="outline">{subscriber.source || 'N/A'}</Badge>
-                                    </TableCell>
-                                    <TableCell>{format(new Date(subscriber.createdAt), 'dd MMM yyyy', { locale: es })}</TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                             <TableRow>
-                                <TableCell colSpan={3} className="text-center">No hay registros recientes.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-      </section>
+        <div className="space-y-8">
+            {/* 3. Cobertura de Contenido */}
+            <section>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><AlertTriangle />Cobertura de Contenido</CardTitle>
+                        <CardDescription>Alertas sobre contenido que podría estar incompleto.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <Alert variant={incompleteArticles.noCover > 0 ? "destructive" : "default"}>
+                            <ImageOff className="h-4 w-4" />
+                            <AlertTitle>{incompleteArticles.noCover} artículos sin portada</AlertTitle>
+                        </Alert>
+                        <Alert variant={incompleteArticles.noSeo > 0 ? "destructive" : "default"}>
+                            <Link2 className="h-4 w-4" />
+                            <AlertTitle>{incompleteArticles.noSeo} artículos sin SEO básico</AlertTitle>
+                        </Alert>
+                         <Alert variant={authors.filter(a => !a.bio).length > 0 ? "destructive" : "default"}>
+                            <Users className="h-4 w-4" />
+                            <AlertTitle>{authors.filter(a => !a.bio).length} autores sin biografía</AlertTitle>
+                        </Alert>
+                         <Alert variant={categories.filter(c => !c.description).length > 0 ? "destructive" : "default"}>
+                            <GanttChartSquare className="h-4 w-4" />
+                            <AlertTitle>{categories.filter(c => !c.description).length} categorías sin descripción</AlertTitle>
+                        </Alert>
+                    </CardContent>
+                </Card>
+            </section>
+
+             {/* 7. Suscriptores y Usuarios */}
+             <section>
+                <RecentItemsTable
+                    title="Últimos Usuarios"
+                    icon={UserCircle}
+                    items={recentUsers}
+                    columns={[
+                        { header: "Usuario", accessor: (item) => item.username },
+                        { header: "Estado", accessor: (item) => <Badge variant={item.confirmed ? "default" : "secondary"}>{item.confirmed ? "Activo" : "Pendiente"}</Badge> },
+                    ]}
+                />
+             </section>
+             <section>
+                <RecentItemsTable
+                    title="Últimos Suscriptores"
+                    icon={Mail}
+                    items={recentSubscribers}
+                    columns={[
+                        { header: "Email", accessor: (item) => item.email },
+                        { header: "Fuente", accessor: (item) => <Badge variant="outline">{item.source || 'N/A'}</Badge>},
+                    ]}
+                />
+             </section>
+        </div>
+      </div>
     </div>
   );
 }

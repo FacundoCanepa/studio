@@ -8,6 +8,7 @@ import { getCategories } from '@/lib/strapi-client';
 import { Poppins, EB_Garamond } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/context/auth-context';
+import { ThemeProvider } from '@/components/theme/theme-provider';
 
 const fontBody = Poppins({
   subsets: ['latin'],
@@ -51,14 +52,14 @@ export const metadata: Metadata = {
   },
 };
 export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: 'white' },
+    { media: '(prefers-color-scheme: dark)', color: 'black' },
+  ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 };
-
-
-
-
 
 export default async function RootLayout({
   children,
@@ -69,14 +70,21 @@ export default async function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
-        <AuthProvider>
-          <div className="relative flex min-h-screen flex-col">
-            <AppHeader categories={categories} />
-            <main className="flex-1">{children}</main>
-            <AppFooter />
-          </div>
-          <Toaster />
-        </AuthProvider>
+         <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              <div className="relative flex min-h-screen flex-col">
+                <AppHeader categories={categories} />
+                <main className="flex-1">{children}</main>
+                <AppFooter />
+              </div>
+              <Toaster />
+            </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
