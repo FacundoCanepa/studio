@@ -18,7 +18,7 @@ import { ContentHealthCard } from './_components/content-health-card';
 import { DistributionCharts } from './_components/distribution-charts';
 
 import {
-  Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle, Mail,
+  Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
   CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash
 } from 'lucide-react';
 
@@ -76,7 +76,7 @@ async function fetchRecent(endpoint: string, fields: string[], populate?: any): 
 }
 
 export default async function AdminDashboardPage() {
-  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], totalUsers: number, recentUsers: any[], totalSubscribers: number, recentSubscribers: any[];
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], totalUsers: number, recentUsers: any[];
 
   try {
     [
@@ -87,8 +87,6 @@ export default async function AdminDashboardPage() {
       galleryItems,
       totalUsers,
       recentUsers,
-      totalSubscribers,
-      recentSubscribers
     ] = await Promise.all([
       getArticles({ limit: -1 }),
       getAuthors({ cache: 'no-store' }),
@@ -97,8 +95,6 @@ export default async function AdminDashboardPage() {
       getGalleryItems(),
       fetchTotalCount('/api/users'),
       fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed']),
-      fetchTotalCount('/api/subscribers'),
-      fetchRecent('/api/subscribers', ['email', 'createdAt', 'source']),
     ]);
   } catch (error) {
     console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
@@ -161,7 +157,6 @@ export default async function AdminDashboardPage() {
     { title: 'Items en Galería', value: galleryItems.length, icon: ImageIcon, href: '/admin/galeria' },
     { title: 'Total de Etiquetas', value: tags.length, icon: Tag, href: '/admin/tags' },
     { title: 'Usuarios Registrados', value: totalUsers, icon: UserCircle },
-    { title: 'Suscriptores', value: totalSubscribers, icon: Mail },
   ];
   
   const recent5Articles = articles.sort((a,b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime()).slice(0,5);
@@ -278,7 +273,7 @@ export default async function AdminDashboardPage() {
                 <ContentHealthCard metrics={healthMetrics} />
             </section>
 
-             {/* 7. Suscriptores y Usuarios */}
+             {/* 7. Usuarios */}
              <section>
                 <RecentItemsCard
                     title="Últimos Usuarios Registrados"
@@ -287,17 +282,6 @@ export default async function AdminDashboardPage() {
                     columns={[
                         { header: "Usuario", accessor: (item: any) => item.attributes?.username || item.username },
                         { header: "Estado", accessor: (item: any) => <Badge variant={item.attributes?.confirmed || item.confirmed ? "default" : "secondary"}>{item.attributes?.confirmed || item.confirmed ? "Activo" : "Pendiente"}</Badge> },
-                    ]}
-                />
-             </section>
-             <section>
-                <RecentItemsCard
-                    title="Últimos Suscriptores"
-                    icon={Mail}
-                    items={recentSubscribers}
-                    columns={[
-                        { header: "Email", accessor: (item: any) => item.attributes?.email || item.email },
-                        { header: "Fuente", accessor: (item: any) => <Badge variant="outline">{item.attributes?.source || item.source || 'N/A'}</Badge>},
                     ]}
                 />
              </section>

@@ -95,14 +95,6 @@ export type GalleryItemDoc = {
   imageUrl: string;
 }
 
-export type SubscriberDoc = {
-  documentId: string;
-  email: string;
-  source: "newsletter" | "google-login" | "manual" | "other";
-  consent?: boolean;
-  createdAt?: string;
-}
-
 export type StrapiSyncMeta = {
     lastSyncedAt?: string;
     status: 'idle' | 'syncing' | 'error';
