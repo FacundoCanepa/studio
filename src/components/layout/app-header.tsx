@@ -52,7 +52,6 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
         </nav>
 
         <div className="flex items-center justify-end space-x-2">
-           <ThemeToggle />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -79,6 +78,8 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <ThemeToggle />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar sesión</span>
@@ -86,12 +87,17 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-             <Button asChild variant="ghost" size="sm">
-                <Link href="/login">
-                    <UserCircle className="h-5 w-5 mr-2" />
-                    Ingresar
-                </Link>
-             </Button>
+             <div className='flex items-center'>
+                <div className='hidden sm:flex'>
+                    <ThemeToggle />
+                </div>
+                <Button asChild variant="ghost" size="sm">
+                    <Link href="/login">
+                        <UserCircle className="h-5 w-5 sm:mr-2" />
+                        <span className='hidden sm:inline'>Ingresar</span>
+                    </Link>
+                </Button>
+             </div>
           )}
 
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
@@ -107,6 +113,9 @@ export const AppHeader = ({ categories = [] }: AppHeaderProps) => {
                    <Link href="/" className="text-2xl font-bold font-headline tracking-tighter text-primary">
                      VESTIGIO
                    </Link>
+                   <div className='sm:hidden'>
+                     <ThemeToggle />
+                   </div>
                 </div>
                 <nav className="flex flex-col space-y-4 p-4">
                   {navLinks.map((link) => (
