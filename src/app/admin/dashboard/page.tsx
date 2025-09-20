@@ -164,7 +164,7 @@ function extractFavoriteRelationItems(entity: any, key: FavoriteRelationKey): Fa
 
 
 export default async function AdminDashboardPage() {
-  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: AnalyticsData[] | null;
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: AnalyticsData[] | null, topPages: any;
 
   try {
     const [
@@ -177,7 +177,7 @@ export default async function AdminDashboardPage() {
       recentUsersData,
       allUsersData,
       analytics,
-      topPages
+      topPagesData
     ] = await Promise.all([
       getArticles({ limit: -1 }),
       getAuthors({ cache: 'no-store' }),
@@ -200,6 +200,7 @@ export default async function AdminDashboardPage() {
     recentUsers = recentUsersData;
     allUsers = allUsersData;
     analyticsData = analytics;
+    topPages = topPagesData;
 
   // --- Metrics Calculation ---
   const articleMetrics = {
