@@ -21,6 +21,7 @@ import { ContentHealthCard } from './_components/content-health-card';
 import { DistributionCharts } from './_components/distribution-charts';
 import { AnalyticsSummary } from './_components/analytics-summary';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TrafficChart } from './_components/traffic-chart';
 
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
@@ -320,6 +321,13 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
       
+      {/* Traffic Chart */}
+       <section>
+        <React.Suspense fallback={<Card><CardHeader><Skeleton className="h-8 w-48" /></CardHeader><CardContent><Skeleton className="h-[350px] w-full" /></CardContent></Card>}>
+            <TrafficChart />
+        </React.Suspense>
+      </section>
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
             {/* 2. Estado de Artículos */}
