@@ -21,7 +21,7 @@ export async function GET() {
     console.error('[GA4_SUMMARY] Google Analytics client is not initialized. Check environment variables.');
     return NextResponse.json(
       { error: 'Google Analytics client is not configured on the server.' },
-      { status: 500 }
+      { status: 503 }
     );
   }
 

@@ -18,12 +18,12 @@ function initializeGaClient() {
   const googleAppCredsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
   if (!ga4PropertyId || ga4PropertyId === 'YOUR_GA4_PROPERTY_ID') {
-    console.warn('[GA4] GA4_PROPERTY_ID environment variable is not set correctly. Google Analytics client will not be initialized.');
+    console.warn('[GA4_ENV] GA4_PROPERTY_ID environment variable is not set correctly. Google Analytics client will not be initialized.');
     return;
   }
   
   if (!googleAppCredsJson) {
-    console.warn('[GA4] GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set. Google Analytics client will not be initialized.');
+    console.warn('[GA4_ENV] GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set. Google Analytics client will not be initialized.');
     return;
   }
 
@@ -38,7 +38,7 @@ function initializeGaClient() {
     console.log('[GA4] Google Analytics Data Client initialized successfully.');
 
   } catch (error) {
-    console.error('[GA4] Failed to initialize Google Analytics Data Client:', error);
+    console.error('[GA4_ENV] Failed to initialize Google Analytics Data Client:', error);
     analyticsDataClient = null;
     propertyId = null;
   }
