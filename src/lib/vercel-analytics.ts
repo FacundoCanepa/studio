@@ -6,12 +6,19 @@ import 'server-only';
 const VERCEL_API_TOKEN = process.env.VERCEL_API_TOKEN;
 const VERCEL_PROJECT_ID = process.env.VERCEL_PROJECT_ID;
 
+export interface AnalyticsData {
+  visitors: number;
+  pageviews: number;
+  bounceRate: number;
+  date: string;
+}
+
 /**
  * Obtiene métricas de Vercel Analytics para las últimas 24 horas.
  *
- * @returns {Promise<any>} Un objeto con los datos de análisis o null si hay un error de configuración.
+ * @returns {Promise<AnalyticsData | null>} Un objeto con los datos de análisis o null si hay un error.
  */
-export async function getVercelAnalytics(): Promise<any> {
+export async function getVercelAnalytics(): Promise<AnalyticsData | null> {
   // Verifica si las variables de entorno necesarias están configuradas
   if (!VERCEL_API_TOKEN || !VERCEL_PROJECT_ID) {
     console.warn('[VERCEL_ANALYTICS] VERCEL_API_TOKEN o VERCEL_PROJECT_ID no están configurados. Saltando la obtención de datos.');
@@ -46,7 +53,19 @@ export async function getVercelAnalytics(): Promise<any> {
     }
 
     const data = await response.json();
-    return data;
+    
+    // Procesa y devuelve los datos en el formato requerido
+    const latestData = data?.data?.[0];
+    if (latestData) {
+      return {
+        visitors: latestData.visitors ?? 0,
+        pageviews: latestData.pageviews ?? 0,
+        bounceRate: latestData.bounceRate ?? 0,
+        date: latestData.date,
+      };
+    }
+
+    return null;
   } catch (error) {
     console.error('[VERCEL_ANALYTICS] Excepción al contactar la API de Vercel:', error);
     return null;

@@ -21,7 +21,7 @@ import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
   CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark, BarChart3
 } from 'lucide-react';
-import { getVercelAnalytics } from '@/lib/vercel-analytics';
+import { getVercelAnalytics, type AnalyticsData } from '@/lib/vercel-analytics';
 
 export const metadata: Metadata = {
   title: 'Dashboard - Admin Panel',
@@ -160,7 +160,7 @@ function extractFavoriteRelationItems(entity: any, key: FavoriteRelationKey): Fa
 
 
 export default async function AdminDashboardPage() {
-  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: any;
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: AnalyticsData | null;
 
   try {
     [
@@ -309,7 +309,7 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
             {/* Vercel Analytics */}
-            {analyticsData && analyticsData.data && (
+            {analyticsData && (
               <section>
                 <Card>
                   <CardHeader>
@@ -319,15 +319,15 @@ export default async function AdminDashboardPage() {
                   <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div className="bg-secondary/50 p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Visitantes</p>
-                      <p className="text-2xl font-bold">{analyticsData.data[0]?.visitors ?? 'N/A'}</p>
+                      <p className="text-2xl font-bold">{analyticsData.visitors ?? 'N/A'}</p>
                     </div>
                     <div className="bg-secondary/50 p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Vistas de Página</p>
-                      <p className="text-2xl font-bold">{analyticsData.data[0]?.pageviews ?? 'N/A'}</p>
+                      <p className="text-2xl font-bold">{analyticsData.pageviews ?? 'N/A'}</p>
                     </div>
                     <div className="bg-secondary/50 p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Tasa de Rebote</p>
-                      <p className="text-2xl font-bold">{analyticsData.data[0]?.bounceRate ? `${(analyticsData.data[0].bounceRate * 100).toFixed(1)}%` : 'N/A'}</p>
+                      <p className="text-2xl font-bold">{analyticsData.bounceRate ? `${(analyticsData.bounceRate * 100).toFixed(1)}%` : 'N/A'}</p>
                     </div>
                   </CardContent>
                 </Card>
