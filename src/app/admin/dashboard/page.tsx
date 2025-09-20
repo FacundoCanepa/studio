@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import * as React from 'react';
 
 import { getArticles, getAuthors, getCategories, getTags, getGalleryItems } from '@/lib/strapi-client';
 import { performStrapiRequest } from '@/lib/strapi-api';
@@ -18,10 +19,12 @@ import { SummaryCard } from './_components/summary-card';
 import { RecentItemsCard } from './_components/recent-items-card';
 import { ContentHealthCard } from './_components/content-health-card';
 import { DistributionCharts } from './_components/distribution-charts';
+import { AnalyticsSummary } from './_components/analytics-summary';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
-  CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark, BarChart3
+  CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark, BarChart3, Eye, TrendingDown
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -286,6 +289,14 @@ export default async function AdminDashboardPage() {
   
   const recent5Articles = articles.sort((a,b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime()).slice(0,5);
   const recent5GalleryItems = galleryItems.slice(0, 5);
+  
+  const AnalyticsSkeleton = () => (
+    <>
+        <SummaryCard title="Visitantes (7d)" value={<Skeleton className="h-6 w-16" />} icon={Users} description="Cargando..." />
+        <SummaryCard title="Páginas Vistas (7d)" value={<Skeleton className="h-6 w-20" />} icon={Eye} description="Cargando..." />
+        <SummaryCard title="Tasa de Rebote (7d)" value={<Skeleton className="h-6 w-12" />} icon={TrendingDown} description="Cargando..." />
+    </>
+  );
 
   return (
     <div className="space-y-8">
@@ -294,8 +305,18 @@ export default async function AdminDashboardPage() {
       {/* 1. Resumen Global */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Resumen General</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
           {stats.map(stat => <SummaryCard key={stat.title} {...stat} />)}
+        </div>
+      </section>
+
+      {/* Analytics Section */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Analíticas de Tráfico</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <React.Suspense fallback={<AnalyticsSkeleton />}>
+                <AnalyticsSummary />
+            </React.Suspense>
         </div>
       </section>
       
