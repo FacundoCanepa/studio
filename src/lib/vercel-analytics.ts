@@ -1,3 +1,4 @@
+
 'use server';
 
 import 'server-only';
@@ -13,12 +14,16 @@ export interface AnalyticsData {
   date: string;
 }
 
+interface GetAnalyticsOptions {
+  timeseries?: '24h' | '7d' | '30d' | '90d';
+}
+
 /**
- * Obtiene métricas de Vercel Analytics para las últimas 24 horas.
+ * Obtiene métricas de Vercel Analytics.
  *
- * @returns {Promise<AnalyticsData | null>} Un objeto con los datos de análisis o null si hay un error.
+ * @returns {Promise<AnalyticsData[] | null>} Un array con los datos de análisis o null si hay un error.
  */
-export async function getVercelAnalytics(): Promise<AnalyticsData | null> {
+export async function getVercelAnalytics({ timeseries = '24h' }: GetAnalyticsOptions = {}): Promise<AnalyticsData[] | null> {
   // Verifica si las variables de entorno necesarias están configuradas
   if (!VERCEL_API_TOKEN || !VERCEL_PROJECT_ID) {
     console.warn('[VERCEL_ANALYTICS] VERCEL_API_TOKEN o VERCEL_PROJECT_ID no están configurados. Saltando la obtención de datos.');
@@ -29,7 +34,7 @@ export async function getVercelAnalytics(): Promise<AnalyticsData | null> {
   const apiUrl = new URL('https://api.vercel.com/v1/analytics/data');
   apiUrl.searchParams.set('projectId', VERCEL_PROJECT_ID);
   apiUrl.searchParams.set('metrics', 'visitors,pageviews,bounceRate');
-  apiUrl.searchParams.set('from', '24h');
+  apiUrl.searchParams.set('from', timeseries);
 
   try {
     const response = await fetch(apiUrl.toString(), {
@@ -55,14 +60,13 @@ export async function getVercelAnalytics(): Promise<AnalyticsData | null> {
     const data = await response.json();
     
     // Procesa y devuelve los datos en el formato requerido
-    const latestData = data?.data?.[0];
-    if (latestData) {
-      return {
-        visitors: latestData.visitors ?? 0,
-        pageviews: latestData.pageviews ?? 0,
-        bounceRate: latestData.bounceRate ?? 0,
-        date: latestData.date,
-      };
+    if (data?.data && Array.isArray(data.data)) {
+      return data.data.map((item: any) => ({
+        visitors: item.visitors ?? 0,
+        pageviews: item.pageviews ?? 0,
+        bounceRate: item.bounceRate ?? 0,
+        date: item.date,
+      }));
     }
 
     return null;

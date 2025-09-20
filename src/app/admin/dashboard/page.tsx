@@ -17,6 +17,7 @@ import { SummaryCard } from './_components/summary-card';
 import { RecentItemsCard } from './_components/recent-items-card';
 import { ContentHealthCard } from './_components/content-health-card';
 import { DistributionCharts } from './_components/distribution-charts';
+import { VisitorChart } from './_components/visitor-chart';
 
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
@@ -161,7 +162,7 @@ function extractFavoriteRelationItems(entity: any, key: FavoriteRelationKey): Fa
 
 
 export default async function AdminDashboardPage() {
-  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: AnalyticsData | null;
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: AnalyticsData[] | null;
 
   try {
     [
@@ -183,7 +184,7 @@ export default async function AdminDashboardPage() {
       fetchTotalCount('/api/users'),
       fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed'], ['favorite_articles', 'favorite_tags']),
       fetchAllUsersWithFavorites(),
-      getVercelAnalytics(),
+      getVercelAnalytics({ timeseries: '7d' }),
     ]);
   } catch (error) {
     console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
@@ -295,6 +296,8 @@ export default async function AdminDashboardPage() {
   const recent5Articles = articles.sort((a,b) => new Date(b.updatedAt || b.createdAt!).getTime() - new Date(a.updatedAt || a.createdAt!).getTime()).slice(0,5);
   const recent5GalleryItems = galleryItems.slice(0, 5);
 
+  const latestAnalytics = analyticsData?.[analyticsData.length - 1];
+
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -310,28 +313,35 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
             {/* Vercel Analytics */}
-            {analyticsData && (
+            {latestAnalytics && (
               <section>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChart3 />Analíticas de Tráfico (últimas 24hs)</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><BarChart />Analíticas de Tráfico (últimas 24hs)</CardTitle>
                     <CardDescription>Datos proporcionados por Vercel Analytics.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                     <div className="bg-secondary/50 p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Visitantes</p>
-                      <p className="text-2xl font-bold">{analyticsData.visitors ?? 'N/A'}</p>
+                      <p className="text-2xl font-bold">{latestAnalytics.visitors ?? 'N/A'}</p>
                     </div>
                     <div className="bg-secondary/50 p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Vistas de Página</p>
-                      <p className="text-2xl font-bold">{analyticsData.pageviews ?? 'N/A'}</p>
+                      <p className="text-2xl font-bold">{latestAnalytics.pageviews ?? 'N/A'}</p>
                     </div>
                     <div className="bg-secondary/50 p-4 rounded-lg">
                       <p className="text-sm text-muted-foreground">Tasa de Rebote</p>
-                      <p className="text-2xl font-bold">{analyticsData.bounceRate ? `${(analyticsData.bounceRate * 100).toFixed(1)}%` : 'N/A'}</p>
+                      <p className="text-2xl font-bold">{latestAnalytics.bounceRate ? `${(latestAnalytics.bounceRate * 100).toFixed(1)}%` : 'N/A'}</p>
                     </div>
                   </CardContent>
                 </Card>
+              </section>
+            )}
+
+            {/* Visitor Chart */}
+            {analyticsData && analyticsData.length > 0 && (
+              <section>
+                <VisitorChart data={analyticsData} />
               </section>
             )}
 
