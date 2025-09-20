@@ -1,4 +1,3 @@
-
 // src/app/api/ga/summary/route.ts
 import { NextResponse } from 'next/server';
 import { getGaClient } from '@/lib/ga-client';
