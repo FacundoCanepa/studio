@@ -22,6 +22,8 @@ import { DistributionCharts } from './_components/distribution-charts';
 import { AnalyticsSummary } from './_components/analytics-summary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TrafficChart } from './_components/traffic-chart';
+import { TopPagesChart } from './_components/top-pages-chart';
+
 
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
@@ -321,12 +323,15 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
       
-      {/* Traffic Chart */}
-       <section>
+      {/* Traffic Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <React.Suspense fallback={<Card><CardHeader><Skeleton className="h-8 w-48" /></CardHeader><CardContent><Skeleton className="h-[350px] w-full" /></CardContent></Card>}>
             <TrafficChart />
         </React.Suspense>
-      </section>
+         <React.Suspense fallback={<Card><CardHeader><Skeleton className="h-8 w-48" /></CardHeader><CardContent><Skeleton className="h-[350px] w-full" /></CardContent></Card>}>
+            <TopPagesChart />
+        </React.Suspense>
+      </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">

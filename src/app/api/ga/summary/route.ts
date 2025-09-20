@@ -1,3 +1,4 @@
+
 // src/app/api/ga/summary/route.ts
 import { NextResponse } from 'next/server';
 import { getGaClient } from '@/lib/ga-client';
@@ -74,9 +75,9 @@ function processAnalyticsResponse(response: RunReportResponse): AnalyticsSummary
   if (response.totals && response.totals.length > 0) {
     const totalsRow = response.totals[0];
     if (totalsRow.metricValues) {
-      totalVisitors = parseInt(totalsRow.metricValues[0]?.value || '0', 10);
-      totalPageViews = parseInt(totalsRow.metricValues[1]?.value || '0', 10);
-      totalBounceRate = parseFloat(totalsRow.metricValues[2]?.value || '0');
+      totalVisitors = parseInt(totalsRow.metricValues[0]?.value ?? '0', 10);
+      totalPageViews = parseInt(totalsRow.metricValues[1]?.value ?? '0', 10);
+      totalBounceRate = parseFloat(totalsRow.metricValues[2]?.value ?? '0');
     }
   }
 
