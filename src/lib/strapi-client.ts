@@ -864,12 +864,13 @@ export async function getGalleryItems(): Promise<GalleryItemDoc[]> {
     console.log(`[GET_GALLERY_ITEMS] Aggregated ${galleryItems.length} gallery items.`);
 
     const items = await Promise.all(galleryItems.map(async (item) => {
-      const itemData = item.attributes;
-      if (!itemData || !item.id || !itemData.documentId) {
+        const itemData = (item as any).attributes ?? item;
+        if (!itemData || !itemData.documentId) {
         console.warn('[GET_GALLERY_ITEMS] Skipping invalid item from Strapi:', item);
         return null;
       }
-      const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes?.url);
+      const imageSource = itemData.Imagen?.data?.attributes?.url ?? itemData.Imagen?.url;
+      const imageUrl = await getStrapiMediaUrl(imageSource);
       if (!imageUrl) return null;
       return {
         id: itemData.documentId,
@@ -904,8 +905,10 @@ export async function getGalleryItem(documentId: string): Promise<GalleryItemDoc
             return null;
         }
 
-        const itemData = item.attributes;
-        const imageUrl = await getStrapiMediaUrl(itemData.Imagen?.data?.attributes?.url);
+        const itemData = (item as any).attributes ?? item;
+        const imageSource = itemData.Imagen?.data?.attributes?.url ?? itemData.Imagen?.url;
+        const imageUrl = await getStrapiMediaUrl(imageSource);
+
 
         if (!imageUrl) return null;
 
