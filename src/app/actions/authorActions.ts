@@ -33,11 +33,10 @@ export async function saveAuthorAction(
   }
   
   console.log('[SAVE_AUTHOR_ACTION] Validation successful.');
-  const { name, slug, bio, pendingCoverId } = validation.data;
+  const { name, bio, pendingCoverId } = validation.data;
 
   const payload: Partial<AuthorPayload> = {
     Name: name,
-    slug,
     Bio: bio,
   };
   

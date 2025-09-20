@@ -63,7 +63,7 @@ export function AuthorDataTable<TData, TValue>({
     <div>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filtrar por nombre o slug..."
+         placeholder="Filtrar por nombre..."
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           className="max-w-sm"

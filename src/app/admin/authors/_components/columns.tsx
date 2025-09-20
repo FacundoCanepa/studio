@@ -72,10 +72,6 @@ export const columns: ColumnDef<AuthorDoc>[] = [
     cell: ({ row }) => <div className="font-medium">{row.getValue("name")}</div>,
   },
   {
-    accessorKey: "slug",
-    header: "Slug",
-  },
-  {
     accessorKey: "updatedAt",
     header: ({ column }) => (
         <Button

@@ -10,7 +10,6 @@ import Link from 'next/link';
 
 import { saveAuthorAction } from '@/app/actions/authorActions';
 import type { AuthorDoc } from '@/lib/strapi-authors';
-import { toKebabCase } from '@/lib/validation/author-schema';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,7 +37,6 @@ export function AuthorForm({ initialData }: AuthorFormProps) {
   const [pending, setPending] = React.useState(false);
 
   const [name, setName] = React.useState(initialData?.name ?? '');
-  const [slug, setSlug] = React.useState(initialData?.slug ?? '');
   const [pendingCoverId, setPendingCoverId] = React.useState<number | null | undefined>(undefined);
 
   React.useEffect(() => {
@@ -58,7 +56,6 @@ export function AuthorForm({ initialData }: AuthorFormProps) {
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     setName(newName);
-    setSlug(toKebabCase(newName));
   };
   
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -88,7 +85,7 @@ export function AuthorForm({ initialData }: AuthorFormProps) {
             <CardHeader>
               <CardTitle>Información Principal</CardTitle>
               <CardDescription>
-                Completa la información del autor. El slug se genera automáticamente.
+                Completa la información del autor.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -98,12 +95,6 @@ export function AuthorForm({ initialData }: AuthorFormProps) {
                 {formState.errors?.name && <p className="text-sm text-destructive">{formState.errors.name[0]}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug (URL)</Label>
-                <Input id="slug" name="slug" value={slug} required readOnly />
-                <p className="text-sm text-muted-foreground">Se genera automáticamente, no se puede editar.</p>
-                {formState.errors?.slug && <p className="text-sm text-destructive">{formState.errors.slug[0]}</p>}
-              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="bio">Biografía</Label>

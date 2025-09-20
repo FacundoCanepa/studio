@@ -1,4 +1,3 @@
-
 import type { AuthorDoc } from './strapi-authors';
 
 type UnknownRecord = Record<string, any> | null | undefined;
@@ -14,7 +13,7 @@ function extractBio(source: UnknownRecord): string | undefined {
         if (!block || typeof block !== 'object') return '';
         const children = Array.isArray(block.children) ? block.children : [];
         return children
-          .map((child) => (typeof child?.text === 'string' ? child.text : ''))
+          .map((child: any) => (typeof child?.text === 'string' ? child.text : ''))
           .join('');
       })
       .join('\n')
@@ -54,7 +53,6 @@ export function mapStrapiAuthorToAuthorDoc(input: unknown): AuthorDoc | null {
     id: entity.id,
     documentId,
     name,
-    slug: raw.slug ?? '',
     bio: extractBio(raw),
     createdAt,
     updatedAt,

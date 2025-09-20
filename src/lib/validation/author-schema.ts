@@ -20,8 +20,6 @@ export function toKebabCase(input: string): string {
 
 export const authorSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
-  slug: z.string().min(3, 'El slug debe tener al menos 3 caracteres.')
-    .transform(value => toKebabCase(value)),
   bio: z.string().optional(),
   pendingCoverId: z.string().optional(),
 });
@@ -37,7 +35,6 @@ export function normalizeAuthorForm(values: Record<string, any>): Partial<Author
     const normalized: Partial<AuthorFormData> = {};
     
     if (typeof values.name === 'string') normalized.name = values.name.trim();
-    if (typeof values.slug === 'string') normalized.slug = toKebabCase(values.slug);
     if (typeof values.bio === 'string') normalized.bio = values.bio.trim();
     if (values.pendingCoverId !== undefined) normalized.pendingCoverId = values.pendingCoverId;
 

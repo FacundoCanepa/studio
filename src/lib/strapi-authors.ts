@@ -1,4 +1,3 @@
-
 'use server';
 
 import { fetchStrapi } from './strapi-api';
@@ -14,7 +13,6 @@ import { qs } from './qs';
 
 export type AuthorPayload = {
   Name: string;
-  slug: string;
   Bio?: string;
   Avatar?: number | null;
 };
@@ -23,7 +21,6 @@ export type AuthorDoc = {
   id: number;
   documentId: string;
   name: string;
-  slug: string;
   bio?: string;
   avatarUrl?: string;
   createdAt: string;
@@ -49,10 +46,7 @@ export async function listAuthors({ page = 1, pageSize = 20, search = '' }: List
 
     if (search) {
         queryParams.filters = {
-            $or: [
-                { Name: { $containsi: search } },
-                { slug: { $containsi: search } },
-            ],
+            Name: { $containsi: search },
         };
     }
     
@@ -77,6 +71,7 @@ export async function getAuthor(documentId: string) {
     return fetchStrapi<any>(`/api/authors/${documentId}${queryString}`);
 }
 
+/**
 /**
  * Creates a new author.
  */
