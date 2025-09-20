@@ -1,4 +1,5 @@
 
+
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -23,7 +24,8 @@ import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
   CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark, BarChart3
 } from 'lucide-react';
-import { getVercelAnalytics, type AnalyticsData } from '@/lib/vercel-analytics';
+import { getVercelAnalytics, getVercelTopPages, type AnalyticsData } from '@/lib/vercel-analytics';
+import { TopPagesChart } from './_components/top-pages-chart';
 
 export const metadata: Metadata = {
   title: 'Dashboard - Admin Panel',
@@ -165,16 +167,17 @@ export default async function AdminDashboardPage() {
   let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: AnalyticsData[] | null;
 
   try {
-    [
-      articles,
-      authors,
-      categories,
-      tags,
-      galleryItems,
-      totalUsers,
-      recentUsers,
-      allUsers,
-      analyticsData,
+    const [
+      articlesData,
+      authorsData,
+      categoriesData,
+      tagsData,
+      galleryItemsData,
+      totalUsersData,
+      recentUsersData,
+      allUsersData,
+      analytics,
+      topPages
     ] = await Promise.all([
       getArticles({ limit: -1 }),
       getAuthors({ cache: 'no-store' }),
@@ -185,22 +188,18 @@ export default async function AdminDashboardPage() {
       fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed'], ['favorite_articles', 'favorite_tags']),
       fetchAllUsersWithFavorites(),
       getVercelAnalytics({ timeseries: '7d' }),
+      getVercelTopPages({ limit: 5 })
     ]);
-  } catch (error) {
-    console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
-    return (
-      <div className="space-y-8">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <Alert variant="destructive">
-          <ServerCrash className="h-4 w-4" />
-          <AlertTitle>Error al Cargar el Dashboard</AlertTitle>
-          <AlertDescription>
-            No se pudieron obtener los datos necesarios desde Strapi. Por favor, verifica que el servicio esté funcionando y que las variables de entorno (`NEXT_PUBLIC_STRAPI_URL` y `STRAPI_API_TOKEN`) estén configuradas correctamente.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+
+    articles = articlesData;
+    authors = authorsData;
+    categories = categoriesData;
+    tags = tagsData;
+    galleryItems = galleryItemsData;
+    totalUsers = totalUsersData;
+    recentUsers = recentUsersData;
+    allUsers = allUsersData;
+    analyticsData = analytics;
 
   // --- Metrics Calculation ---
   const articleMetrics = {
@@ -317,7 +316,7 @@ export default async function AdminDashboardPage() {
               <section>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChart />Analíticas de Tráfico (últimas 24hs)</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><BarChart3 />Analíticas de Tráfico (últimas 24hs)</CardTitle>
                     <CardDescription>Datos proporcionados por Vercel Analytics.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
@@ -339,11 +338,18 @@ export default async function AdminDashboardPage() {
             )}
 
             {/* Visitor Chart */}
-            {analyticsData && analyticsData.length > 0 && (
-              <section>
-                <VisitorChart data={analyticsData} />
-              </section>
-            )}
+            <div className="grid md:grid-cols-2 gap-8">
+                {analyticsData && analyticsData.length > 0 && (
+                  <section>
+                    <VisitorChart data={analyticsData} />
+                  </section>
+                )}
+                {topPages && topPages.length > 0 && (
+                    <section>
+                        <TopPagesChart data={topPages} />
+                    </section>
+                )}
+            </div>
 
             {/* 2. Estado de Artículos */}
             <section>
@@ -464,6 +470,21 @@ export default async function AdminDashboardPage() {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
+    return (
+      <div className="space-y-8">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <Alert variant="destructive">
+          <ServerCrash className="h-4 w-4" />
+          <AlertTitle>Error al Cargar el Dashboard</AlertTitle>
+          <AlertDescription>
+            No se pudieron obtener los datos necesarios desde Strapi. Por favor, verifica que el servicio esté funcionando y que las variables de entorno (`NEXT_PUBLIC_STRAPI_URL` y `STRAPI_API_TOKEN`) estén configuradas correctamente.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 }
 
     
