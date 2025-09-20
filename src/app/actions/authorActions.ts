@@ -99,4 +99,12 @@ export async function saveAuthorAction(
       message: documentId ? 'Autor actualizado con éxito.' : 'Autor creado con éxito.',
       success: true,
     };
-  } catch (error: any) {
+  }  catch (error: unknown) {
+    console.error('[SAVE_AUTHOR_ACTION] Error saving author:', error);
+    return {
+      message:
+        'Ocurrió un error al guardar el autor. Por favor, inténtalo de nuevo más tarde.',
+      success: false,
+    };
+  }
+}
