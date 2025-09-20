@@ -9,7 +9,6 @@ import { Poppins, EB_Garamond } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/context/auth-context';
 import { ThemeProvider } from '@/components/theme/theme-provider';
-import { Analytics } from '@vercel/analytics/react';
 
 const fontBody = Poppins({
   subsets: ['latin'],
@@ -86,7 +85,6 @@ export default async function RootLayout({
               <Toaster />
             </AuthProvider>
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   );
