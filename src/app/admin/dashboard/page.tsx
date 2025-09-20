@@ -1,3 +1,4 @@
+
 import { Metadata } from 'next';
 import { getArticles, getAuthors, getCategories, getTags, getGalleryItems } from '@/lib/strapi-client';
 import { performStrapiRequest } from '@/lib/strapi-api';
@@ -10,7 +11,7 @@ import { es } from 'date-fns/locale';
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle, Mail,
   CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, AlertTriangle, BookOpen, Link as LinkIcon, Youtube,
-  FileText, ImageOff, Link2
+  FileText, ImageOff, Link2, ServerCrash
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc, GalleryItemDoc } from '@/lib/firestore-types';
@@ -114,7 +115,7 @@ const RecentItemsTable = ({ title, items, columns, icon: Icon }: RecentItemsTabl
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="text-center h-24">No hay datos recientes.</TableCell>
+              <TableCell colSpan={columns.length} className="text-center h-24 text-muted-foreground">No hay datos recientes.</TableCell>
             </TableRow>
           )}
         </TableBody>
@@ -124,27 +125,45 @@ const RecentItemsTable = ({ title, items, columns, icon: Icon }: RecentItemsTabl
 )
 
 export default async function AdminDashboardPage() {
-  const [
-    articles,
-    authors,
-    categories,
-    tags,
-    galleryItems,
-    totalUsers,
-    recentUsers,
-    totalSubscribers,
-    recentSubscribers
-  ] = await Promise.all([
-    getArticles({ limit: -1 }),
-    getAuthors({ cache: 'no-store' }),
-    getCategories({ cache: 'no-store' }),
-    getTags(),
-    getGalleryItems(),
-    fetchTotalCount('/api/users'),
-    fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed']),
-    fetchTotalCount('/api/subscribers'),
-    fetchRecent('/api/subscribers', ['email', 'createdAt', 'source']),
-  ]);
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], totalUsers: number, recentUsers: any[], totalSubscribers: number, recentSubscribers: any[];
+
+  try {
+    [
+      articles,
+      authors,
+      categories,
+      tags,
+      galleryItems,
+      totalUsers,
+      recentUsers,
+      totalSubscribers,
+      recentSubscribers
+    ] = await Promise.all([
+      getArticles({ limit: -1 }),
+      getAuthors({ cache: 'no-store' }),
+      getCategories({ cache: 'no-store' }),
+      getTags(),
+      getGalleryItems(),
+      fetchTotalCount('/api/users'),
+      fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed']),
+      fetchTotalCount('/api/subscribers'),
+      fetchRecent('/api/subscribers', ['email', 'createdAt', 'source']),
+    ]);
+  } catch (error) {
+    console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
+    return (
+      <div className="space-y-8">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <Alert variant="destructive">
+          <ServerCrash className="h-4 w-4" />
+          <AlertTitle>Error al Cargar el Dashboard</AlertTitle>
+          <AlertDescription>
+            No se pudieron obtener los datos necesarios desde Strapi. Por favor, verifica que el servicio esté funcionando y que las variables de entorno (`NEXT_PUBLIC_STRAPI_URL` y `STRAPI_API_TOKEN`) estén configuradas correctamente.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   // --- Metrics Calculation ---
   const articleMetrics = {
@@ -191,7 +210,7 @@ export default async function AdminDashboardPage() {
   const articlesByTagChartData = tags.map(tag => ({
     name: tag.name,
     value: articles.filter(a => a.tags?.some(t => t.documentId === tag.documentId)).length
-  })).filter(d => d.value > 0);
+  })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
 
   const stats = [
     { title: 'Total de Artículos', value: articles.length, icon: Newspaper, href: '/admin/articles' },
@@ -290,6 +309,7 @@ export default async function AdminDashboardPage() {
                         <CardTitle className="flex items-center gap-2"><ImageIcon />Resumen de Galería</CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {recent5GalleryItems.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                            {recent5GalleryItems.map(item => (
                                 <Link key={item.id} href={`/admin/galeria/edit/${item.id}`}>
@@ -302,6 +322,9 @@ export default async function AdminDashboardPage() {
                                 </Link>
                            ))}
                         </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No hay elementos en la galería.</p>
+                      )}
                     </CardContent>
                 </Card>
             </section>
@@ -339,12 +362,12 @@ export default async function AdminDashboardPage() {
              {/* 7. Suscriptores y Usuarios */}
              <section>
                 <RecentItemsTable
-                    title="Últimos Usuarios"
+                    title="Últimos Usuarios Registrados"
                     icon={UserCircle}
                     items={recentUsers}
                     columns={[
-                        { header: "Usuario", accessor: (item) => item.username },
-                        { header: "Estado", accessor: (item) => <Badge variant={item.confirmed ? "default" : "secondary"}>{item.confirmed ? "Activo" : "Pendiente"}</Badge> },
+                        { header: "Usuario", accessor: (item) => item.attributes?.username || item.username },
+                        { header: "Estado", accessor: (item) => <Badge variant={item.attributes?.confirmed || item.confirmed ? "default" : "secondary"}>{item.attributes?.confirmed || item.confirmed ? "Activo" : "Pendiente"}</Badge> },
                     ]}
                 />
              </section>
@@ -354,8 +377,8 @@ export default async function AdminDashboardPage() {
                     icon={Mail}
                     items={recentSubscribers}
                     columns={[
-                        { header: "Email", accessor: (item) => item.email },
-                        { header: "Fuente", accessor: (item) => <Badge variant="outline">{item.source || 'N/A'}</Badge>},
+                        { header: "Email", accessor: (item) => item.attributes?.email || item.email },
+                        { header: "Fuente", accessor: (item) => <Badge variant="outline">{item.attributes?.source || item.source || 'N/A'}</Badge>},
                     ]}
                 />
              </section>
@@ -364,3 +387,5 @@ export default async function AdminDashboardPage() {
     </div>
   );
 }
+
+    
