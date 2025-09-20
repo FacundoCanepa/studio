@@ -144,9 +144,12 @@ export async function getVercelAnalytics({ timeseries = '24h' }: GetAnalyticsOpt
   }
 
   // Construye la URL de la API de Vercel
-  const apiUrl = new URL('https://api.vercel.com/v1/analytics/overview');
+  const apiUrl = new URL('https://api.vercel.com/v1/analytics/data');
   apiUrl.searchParams.set('projectId', VERCEL_PROJECT_ID);
   apiUrl.searchParams.set('period', timeseries);
+  apiUrl.searchParams.set('keys', 'visitors,pageviews,bounceRate');
+  apiUrl.searchParams.set('filter', JSON.stringify({ path: null }));
+
 
   try {
     const response = await fetch(apiUrl.toString(), {
@@ -198,10 +201,12 @@ export async function getVercelTopPages({ limit = 5 }: { limit?: number } = {}):
       return null;
     }
 
-    const apiUrl = new URL('https://api.vercel.com/v1/analytics/top-pages');
+    const apiUrl = new URL('https://api.vercel.com/v1/analytics/data/top-paths');
     apiUrl.searchParams.set('projectId', VERCEL_PROJECT_ID);
     apiUrl.searchParams.set('period', '7d');
     apiUrl.searchParams.set('limit', String(limit));
+    apiUrl.searchParams.set('keys', 'path,visitors');
+
 
     try {
       const response = await fetch(apiUrl.toString(), {
@@ -224,13 +229,13 @@ export async function getVercelTopPages({ limit = 5 }: { limit?: number } = {}):
       }
 
       const data = await response.json();
-
-      const pages: unknown = data?.pages ?? data?.topPages ?? data?.data;
+      
+      const pages: unknown = data?.data ?? data?.topPaths ?? data?.pages;
 
       if (Array.isArray(pages)) {
         const normalized = pages.map((item: any) => ({
-          path: item?.path ?? item?.pathname ?? item?.url ?? 'N/A',
-          visitors: normalizeMetricValue(item?.visitors ?? item?.visits ?? item?.users ?? item?.uniqueVisitors),
+          path: item?.key ?? item?.path ?? item?.pathname ?? 'N/A',
+          visitors: normalizeMetricValue(item?.count ?? item?.visitors ?? item?.visits),
         }));
 
         return normalized;
@@ -243,3 +248,4 @@ export async function getVercelTopPages({ limit = 5 }: { limit?: number } = {}):
       return null;
     }
   }
+
