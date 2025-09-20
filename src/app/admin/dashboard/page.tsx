@@ -19,8 +19,9 @@ import { DistributionCharts } from './_components/distribution-charts';
 
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
-  CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark
+  CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark, BarChart3
 } from 'lucide-react';
+import { getVercelAnalytics } from '@/lib/vercel-analytics';
 
 export const metadata: Metadata = {
   title: 'Dashboard - Admin Panel',
@@ -159,7 +160,7 @@ function extractFavoriteRelationItems(entity: any, key: FavoriteRelationKey): Fa
 
 
 export default async function AdminDashboardPage() {
-  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[];
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[], analyticsData: any;
 
   try {
     [
@@ -171,6 +172,7 @@ export default async function AdminDashboardPage() {
       totalUsers,
       recentUsers,
       allUsers,
+      analyticsData,
     ] = await Promise.all([
       getArticles({ limit: -1 }),
       getAuthors({ cache: 'no-store' }),
@@ -180,6 +182,7 @@ export default async function AdminDashboardPage() {
       fetchTotalCount('/api/users'),
       fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed'], ['favorite_articles', 'favorite_tags']),
       fetchAllUsersWithFavorites(),
+      getVercelAnalytics(),
     ]);
   } catch (error) {
     console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
@@ -305,6 +308,32 @@ export default async function AdminDashboardPage() {
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
+            {/* Vercel Analytics */}
+            {analyticsData && analyticsData.data && (
+              <section>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><BarChart3 />Analíticas de Tráfico (últimas 24hs)</CardTitle>
+                    <CardDescription>Datos proporcionados por Vercel Analytics.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                    <div className="bg-secondary/50 p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Visitantes</p>
+                      <p className="text-2xl font-bold">{analyticsData.data[0]?.visitors ?? 'N/A'}</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Vistas de Página</p>
+                      <p className="text-2xl font-bold">{analyticsData.data[0]?.pageviews ?? 'N/A'}</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 rounded-lg">
+                      <p className="text-sm text-muted-foreground">Tasa de Rebote</p>
+                      <p className="text-2xl font-bold">{analyticsData.data[0]?.bounceRate ? `${(analyticsData.data[0].bounceRate * 100).toFixed(1)}%` : 'N/A'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
             {/* 2. Estado de Artículos */}
             <section>
                 <Card>
