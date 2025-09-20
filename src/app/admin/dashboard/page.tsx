@@ -7,7 +7,7 @@ import { es } from 'date-fns/locale';
 import { getArticles, getAuthors, getCategories, getTags, getGalleryItems } from '@/lib/strapi-client';
 import { performStrapiRequest } from '@/lib/strapi-api';
 import { qs } from '@/lib/qs';
-import type { ArticleDoc, AuthorDoc, CategoryDoc, GalleryItemDoc, TagDoc } from '@/lib/firestore-types';
+import type { ArticleDoc, AuthorDoc, CategoryDoc, GalleryItemDoc, TagDoc, StrapiUser } from '@/lib/firestore-types';
 
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,7 @@ import { DistributionCharts } from './_components/distribution-charts';
 
 import {
   Newspaper, Users, GanttChartSquare, Tag, Image as ImageIcon, UserCircle,
-  CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash
+  CheckCircle, XCircle, Star, Home, Sparkles, TrendingUp, ServerCrash, Bookmark
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -75,8 +75,23 @@ async function fetchRecent(endpoint: string, fields: string[], populate?: any): 
   }
 }
 
+async function fetchAllUsersWithFavorites(): Promise<StrapiUser[]> {
+    try {
+        const query = qs({
+            populate: ['favorite_articles', 'favorite_tags'],
+            pagination: { limit: -1 }
+        });
+        const response = await performStrapiRequest(`/api/users${query}`, { method: 'GET', cache: 'no-store' });
+        return response.data || [];
+    } catch (error) {
+        console.error('[DASHBOARD] Error fetching all users with favorites:', error);
+        return [];
+    }
+}
+
+
 export default async function AdminDashboardPage() {
-  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], totalUsers: number, recentUsers: any[];
+  let articles: ArticleDoc[], authors: AuthorDoc[], categories: CategoryDoc[], tags: TagDoc[], galleryItems: GalleryItemDoc[], allUsers: StrapiUser[], totalUsers: number, recentUsers: any[];
 
   try {
     [
@@ -87,6 +102,7 @@ export default async function AdminDashboardPage() {
       galleryItems,
       totalUsers,
       recentUsers,
+      allUsers,
     ] = await Promise.all([
       getArticles({ limit: -1 }),
       getAuthors({ cache: 'no-store' }),
@@ -95,6 +111,7 @@ export default async function AdminDashboardPage() {
       getGalleryItems(),
       fetchTotalCount('/api/users'),
       fetchRecent('/api/users', ['username', 'email', 'createdAt', 'confirmed']),
+      fetchAllUsersWithFavorites(),
     ]);
   } catch (error) {
     console.error("[DASHBOARD_ERROR] Failed to fetch initial data:", error);
@@ -138,6 +155,48 @@ export default async function AdminDashboardPage() {
     ...cat,
     articleCount: articles.filter(a => a.category?.documentId === cat.documentId).length
   }));
+
+  // Most saved articles and tags
+  const articleSaveCounts = new Map<number, number>();
+  const tagSaveCounts = new Map<number, number>();
+
+  allUsers.forEach(user => {
+    user.favorite_articles?.forEach(article => {
+        if (article.id) {
+            articleSaveCounts.set(article.id, (articleSaveCounts.get(article.id) || 0) + 1);
+        }
+    });
+    user.favorite_tags?.forEach(tag => {
+        if (tag.id) {
+            tagSaveCounts.set(tag.id, (tagSaveCounts.get(tag.id) || 0) + 1);
+        }
+    });
+  });
+
+  const topSavedArticles = Array.from(articleSaveCounts.entries())
+    .sort(([, countA], [, countB]) => countB - countA)
+    .slice(0, 5)
+    .map(([articleId, count]) => {
+        const article = articles.find(a => a.id === articleId);
+        return {
+            title: article?.title || `Artículo ID: ${articleId}`,
+            slug: article?.slug,
+            count
+        };
+    });
+
+    const topSavedTags = Array.from(tagSaveCounts.entries())
+    .sort(([, countA], [, countB]) => countB - countA)
+    .slice(0, 5)
+    .map(([tagId, count]) => {
+        const tag = tags.find(t => t.id === tagId);
+        return {
+            name: tag?.name || `Tag ID: ${tagId}`,
+            slug: tag?.slug,
+            count
+        };
+    });
+
 
   // Data for charts
   const articlesByCategoryChartData = categories.map(cat => ({
@@ -212,31 +271,37 @@ export default async function AdminDashboardPage() {
             </section>
             
             <div className="grid md:grid-cols-2 gap-8">
-              {/* 4. Relaciones (Autores) */}
-              <section>
-                <RecentItemsCard
-                  title="Autores y sus Artículos"
-                  icon={Users}
-                  items={authorsWithArticleCount.sort((a,b) => b.articleCount - a.articleCount)}
-                  columns={[
-                    { header: 'Autor', accessor: (item: AuthorDoc) => <Link href={`/admin/authors/edit/${item.documentId}`} className="font-medium hover:underline">{item.name}</Link> },
-                    { header: 'Artículos', accessor: (item: { articleCount: number }) => <Badge variant="outline">{item.articleCount}</Badge> },
-                  ]}
-                />
-              </section>
+               <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Bookmark />Artículos Más Guardados</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-3">
+                            {topSavedArticles.map((article, index) => (
+                                <li key={index} className="flex justify-between items-center text-sm">
+                                    <Link href={`/articulos/${article.slug}`} className="hover:underline truncate pr-4" title={article.title}>{article.title}</Link>
+                                    <Badge variant="outline">{article.count}</Badge>
+                                </li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
 
-              {/* 4. Relaciones (Categorías) */}
-              <section>
-                 <RecentItemsCard
-                  title="Categorías y sus Artículos"
-                  icon={GanttChartSquare}
-                  items={categoriesWithArticleCount.sort((a,b) => b.articleCount - a.articleCount)}
-                  columns={[
-                    { header: 'Categoría', accessor: (item: CategoryDoc) => <Link href={`/admin/categories/edit/${item.documentId}`} className="font-medium hover:underline">{item.name}</Link> },
-                    { header: 'Artículos', accessor: (item: { articleCount: number }) => <Badge variant="outline">{item.articleCount}</Badge> },
-                  ]}
-                />
-              </section>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Tag />Etiquetas Más Populares</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <ul className="space-y-3">
+                            {topSavedTags.map((tag, index) => (
+                                <li key={index} className="flex justify-between items-center text-sm">
+                                    <Link href={`/articulos?tag=${tag.slug}`} className="hover:underline">{tag.name}</Link>
+                                    <Badge variant="outline">{tag.count}</Badge>
+                                </li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
             </div>
             
             {/* 6. Galería */}

@@ -95,6 +95,23 @@ export type GalleryItemDoc = {
   imageUrl: string;
 }
 
+export type StrapiUser = {
+  id: number;
+  username: string;
+  email: string;
+  provider?: string;
+  confirmed?: boolean;
+  blocked?: boolean;
+  favorite_articles?: Array<{ id: number }>;
+  favorite_tags?: Array<{ id: number }>;
+  role?: {
+    id: number;
+    name: string;
+    description: string;
+    type: string;
+  };
+};
+
 export type StrapiSyncMeta = {
     lastSyncedAt?: string;
     status: 'idle' | 'syncing' | 'error';
