@@ -34,7 +34,21 @@ async function fetchTotalCount(endpoint: string): Promise<number> {
   try {
     const query = qs({ pagination: { pageSize: 1 } });
     const response = await performStrapiRequest(`${endpoint}${query}`, { method: 'GET', cache: 'no-store' });
-    return response.meta?.pagination?.total ?? 0;
+    
+    if (Array.isArray(response)) {
+      return response.length;
+    }
+
+    const totalFromMeta = response?.meta?.pagination?.total;
+    if (typeof totalFromMeta === 'number') {
+      return totalFromMeta;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data.length;
+    }
+
+    return 0;
   } catch (error) {
     console.error(`[DASHBOARD] Error fetching total count for ${endpoint}:`, error);
     return 0;
@@ -50,6 +64,10 @@ async function fetchRecent(endpoint: string, fields: string[], populate?: any): 
       populate,
     });
     const response = await performStrapiRequest(`${endpoint}${query}`, { method: 'GET', cache: 'no-store' });
+    if (Array.isArray(response)) {
+      return response;
+    }
+
     return response.data ?? [];
   } catch (error) {
     console.error(`[DASHBOARD] Error fetching recent items from ${endpoint}:`, error);

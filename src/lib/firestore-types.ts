@@ -46,7 +46,10 @@ export type ArticleDoc = {
   isNew?: boolean; // Mapped from 'New'
   tendencias?: boolean; // Mapped from 'Tendencias'
 }
-
+export type AuthorBioBlock = {
+  type?: string;
+  children?: Array<{ type?: string; text?: string }>;
+};
 export type AuthorDoc = {
   id: number;
   documentId: string;
@@ -56,6 +59,7 @@ export type AuthorDoc = {
   createdAt: string;
   updatedAt: string;
   articles?: Array<{ id: number; title: string }>;
+  bioBlocks?: AuthorBioBlock[] | null;
 };
 
 export type CategoryDoc = {

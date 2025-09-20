@@ -1,8 +1,9 @@
 'use server';
 
-import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc, GalleryItemDoc } from './firestore-types';
+import { ArticleDoc, AuthorDoc, CategoryDoc, TagDoc, GalleryItemDoc, AuthorBioBlock } from './firestore-types';
 import { StrapiArticle, StrapiAuthor, StrapiCategory, StrapiTag, StrapiGalleryItem } from '@/lib/strapi-types';
 import { mapStrapiArticleToArticleDoc } from './strapi-mappers';
+import { mapStrapiAuthorToAuthorDoc } from './strapi-author-mapper';
 import { performStrapiRequest, getStrapiMediaUrl, STRAPI_REVALIDATE_SECONDS, type StrapiFetchOptions } from './strapi-api';
 import { qs } from './qs';
 
@@ -148,6 +149,23 @@ function isApiAvailable(): boolean {
         return false;
     }
     return true;
+}
+function extractAuthorBioBlocks(input: unknown): AuthorBioBlock[] | null | undefined {
+    if (!input || typeof input !== 'object') {
+        return undefined;
+    }
+
+    const entity = input as Record<string, any>;
+    if (Object.prototype.hasOwnProperty.call(entity, 'Bio')) {
+        return entity.Bio as AuthorBioBlock[] | null | undefined;
+    }
+
+    const attributes = entity.attributes;
+    if (attributes && typeof attributes === 'object' && Object.prototype.hasOwnProperty.call(attributes, 'Bio')) {
+        return (attributes as Record<string, any>).Bio as AuthorBioBlock[] | null | undefined;
+    }
+
+    return undefined;
 }
 
 type GetArticlesParams = {
@@ -374,26 +392,37 @@ export async function getAuthors(options: { cache?: RequestCache } = {}): Promis
 
         console.log(`[GET_AUTHORS] Aggregated ${authors.length} authors.`);
         
-        const authorDocs = await Promise.all(authors.map(async (author) => {
-            const authorData = author.attributes;
-            if (!authorData || !authorData.documentId || !authorData.Name) {
-                console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', author);
-                return null;
-            }
+        const authorDocs = await Promise.all(
+            authors.map(async (author) => {
+                const mapped = mapStrapiAuthorToAuthorDoc(author);
+                if (!mapped) {
+                    console.warn('[GET_AUTHORS] Skipping author with missing id, documentId or Name:', author);
+                    return null;
+                }
 
-            return {
-                id: author.id,
-                documentId: authorData.documentId,
-                name: authorData.Name,
-                avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes?.url),
-                bioBlocks: authorData.Bio,
-                createdAt: authorData.createdAt,
-                updatedAt: authorData.updatedAt,
-                articles: authorData.articles?.data?.map((art: any) => ({ id: art.id, title: art.attributes.title })) || [],
-            };
-        }));
+                const normalizedAvatarUrl = mapped.avatarUrl
+                    ? await getStrapiMediaUrl(mapped.avatarUrl)
+                    : undefined;
 
-        return authorDocs.filter(Boolean) as AuthorDoc[];
+                const bioBlocks = extractAuthorBioBlocks(author);
+
+                const normalized: AuthorDoc = {
+                    id: mapped.id,
+                    documentId: mapped.documentId,
+                    name: mapped.name,
+                    bio: mapped.bio,
+                    avatarUrl: normalizedAvatarUrl,
+                    createdAt: mapped.createdAt,
+                    updatedAt: mapped.updatedAt,
+                    articles: mapped.articles,
+                    bioBlocks,
+                };
+
+                return normalized;
+            }),
+        );
+
+        return authorDocs.filter((author): author is AuthorDoc => Boolean(author));
     } catch (error) {
         console.error('[GET_AUTHORS] Failed to fetch authors:', error);
         return [];
@@ -424,25 +453,33 @@ export async function getAuthor(documentId: string): Promise<AuthorDoc | null> {
             console.warn(`[GET_AUTHOR] No author found for documentId: ${documentId}`);
             return null;
         }
-        
-        const authorData = author.attributes;
-        console.log(`[GET_AUTHOR] Found author: ${authorData.Name}`);
-        
-        const bio = (authorData.Bio || []).map((block: any) => ({
-            type: block.type,
-            children: block.children.map((child: any) => ({ type: child.type, text: child.text }))
-        }));
+        const mapped = mapStrapiAuthorToAuthorDoc(author);
+        if (!mapped) {
+            console.warn(`[GET_AUTHOR] Unable to map author for documentId: ${documentId}`);
+            return null;
+        }
 
-        return {
-            id: author.id,
-            documentId: authorData.documentId,
-            name: authorData.Name,
-            avatarUrl: await getStrapiMediaUrl(authorData.Avatar?.data?.attributes?.url),
-            bio: bio.map((b: any) => b.children.map((c: any) => c.text).join(' ')).join('\n'),
-            createdAt: authorData.createdAt,
-            updatedAt: authorData.updatedAt,
-            articles: authorData.articles?.data?.map((art: any) => ({ id: art.id, title: art.attributes.title })) || [],
+        console.log(`[GET_AUTHOR] Found author: ${mapped.name}`);
+
+        const normalizedAvatarUrl = mapped.avatarUrl
+            ? await getStrapiMediaUrl(mapped.avatarUrl)
+            : undefined;
+
+        const bioBlocks = extractAuthorBioBlocks(author);
+
+        const normalized: AuthorDoc = {
+            id: mapped.id,
+            documentId: mapped.documentId,
+            name: mapped.name,
+            bio: mapped.bio,
+            avatarUrl: normalizedAvatarUrl,
+            createdAt: mapped.createdAt,
+            updatedAt: mapped.updatedAt,
+            articles: mapped.articles,
+            bioBlocks,
         };
+
+        return normalized;
     } catch (error) {
         console.error(`[GET_AUTHOR][ERROR] Failed to fetch author with documentId ${documentId}`, error);
         return null;

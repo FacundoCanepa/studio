@@ -2,6 +2,48 @@ import type { AuthorDoc } from './strapi-authors';
 
 type UnknownRecord = Record<string, any> | null | undefined;
 
+function extractArticles(source: UnknownRecord): Array<{ id: number; title: string }> {
+  if (!source || typeof source !== 'object') {
+    return [];
+  }
+
+  const results = new Map<number, { id: number; title: string }>();
+
+  const addArticle = (article: any) => {
+    if (!article || typeof article !== 'object') {
+      return;
+    }
+
+    const entity = article as Record<string, any>;
+    const rawArticle = entity.attributes ?? entity;
+
+    const rawId = typeof entity.id === 'number' ? entity.id : rawArticle?.id;
+    const id = typeof rawId === 'number' ? rawId : undefined;
+    if (id === undefined) {
+      return;
+    }
+
+    const titleFromRaw = typeof rawArticle?.title === 'string' ? rawArticle.title : undefined;
+    const titleFromAttributes = typeof entity.attributes?.title === 'string' ? entity.attributes.title : undefined;
+    const title = titleFromRaw ?? titleFromAttributes ?? 'Título no disponible';
+
+    results.set(id, { id, title });
+  };
+
+  const flatArticles = Array.isArray((source as Record<string, any>).articles)
+    ? (source as Record<string, any>).articles
+    : [];
+  flatArticles.forEach(addArticle);
+
+  const nestedArticles = Array.isArray((source as Record<string, any>).articles?.data)
+    ? (source as Record<string, any>).articles.data
+    : [];
+  nestedArticles.forEach(addArticle);
+
+  return Array.from(results.values());
+}
+
+
 function extractBio(source: UnknownRecord): string | undefined {
   const rawBio = (source as Record<string, any> | undefined)?.Bio;
   if (typeof rawBio === 'string') {
@@ -42,15 +84,11 @@ export function mapStrapiAuthorToAuthorDoc(input: unknown): AuthorDoc | null {
   const createdAt = raw.createdAt ?? '';
   const updatedAt = raw.updatedAt ?? createdAt;
   
-  const articles = Array.isArray(raw.articles?.data)
-    ? raw.articles.data.map((article: any) => ({
-        id: article.id,
-        title: article.attributes?.title ?? 'Título no disponible',
-      }))
-    : [];
-    const avatarUrlFromNested = typeof raw.Avatar?.data?.attributes?.url === 'string'
+  const articles = extractArticles(raw);
+  const avatarUrlFromNested = typeof raw.Avatar?.data?.attributes?.url === 'string'
     ? raw.Avatar.data.attributes.url
     : undefined;
+  const avatarUrlFromString = typeof raw.Avatar === 'string' ? raw.Avatar : undefined;
   const avatarUrlFromRoot = typeof raw.Avatar?.url === 'string' ? raw.Avatar.url : undefined;
 
   const author: AuthorDoc = {
@@ -60,7 +98,7 @@ export function mapStrapiAuthorToAuthorDoc(input: unknown): AuthorDoc | null {
     bio: extractBio(raw),
     createdAt,
     updatedAt,
-    avatarUrl: avatarUrlFromRoot ?? avatarUrlFromNested,
+    avatarUrl: avatarUrlFromRoot ?? avatarUrlFromNested ?? avatarUrlFromString,
     articles: articles,
   };
 
