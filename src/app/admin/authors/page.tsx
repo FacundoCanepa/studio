@@ -22,7 +22,6 @@ import {
   BreadcrumbPage
 } from '@/components/ui/breadcrumb';
 import { useAuthorsTable } from '@/hooks/useAuthorsTable';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
@@ -73,26 +72,15 @@ export default function ManageAuthorsPage() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          {isLoading && !data ? (
-            <div className="space-y-4">
-              <div className="flex items-center py-4">
-                <Skeleton className="h-10 w-full max-w-sm" />
-              </div>
-              <div className="rounded-md border">
-                <div className="h-96" />
-              </div>
-            </div>
-          ) : (
-            <AuthorDataTable 
-              columns={columns} 
-              data={data?.items || []} 
-              pageCount={pageCount}
-              page={page}
-              search={search}
-              onPageChange={handlePageChange}
-              onSearchChange={handleSearchChange}
-            />
-          )}
+          <AuthorDataTable 
+            columns={columns} 
+            data={data?.items || []} 
+            pageCount={pageCount}
+            page={page}
+            search={search}
+            onPageChange={handlePageChange}
+            onSearchChange={handleSearchChange}
+          />
         </CardContent>
       </Card>
     </div>
