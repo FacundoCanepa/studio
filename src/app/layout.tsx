@@ -9,6 +9,8 @@ import { Poppins, EB_Garamond } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import { AuthProvider } from '@/context/auth-context';
 import { ThemeProvider } from '@/components/theme/theme-provider';
+import Script from 'next/script';
+import { AnalyticsTracker } from '@/lib/gtag/AnalyticsTracker';
 
 const fontBody = Poppins({
   subsets: ['latin'],
@@ -20,6 +22,8 @@ const fontHeadline = EB_Garamond({
   subsets: ['latin'],
   variable: '--font-headline',
 });
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://studio-lemon.vercel.app'),
@@ -69,6 +73,22 @@ export default async function RootLayout({
   const categories = await getCategories();
   return (
     <html lang="es" suppressHydrationWarning>
+       {GA_ID && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_ID}');
+            `}
+          </Script>
+        </>
+      )}
       <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
          <ThemeProvider
             attribute="class"
@@ -77,6 +97,7 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <AuthProvider>
+              <AnalyticsTracker />
               <div className="relative flex min-h-screen flex-col">
                 <AppHeader categories={categories} />
                 <main className="flex-1">{children}</main>
