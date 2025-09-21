@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server';
+
 import { qs } from '@/lib/qs';
 import { proxyStrapiRequest } from '../../../../strapi-proxy';
 
@@ -26,9 +28,26 @@ export async function GET(request: Request, { params }: DocumentCommentsContext)
 
   const fallbackRequest = buildFallbackRequest(request, params.documentId);
 
-  return proxyStrapiRequest(fallbackRequest, 'comments', {
+  const fallbackResponse = await proxyStrapiRequest(fallbackRequest, 'comments', {
     context: 'STRAPI_DOCUMENT_COMMENTS_FALLBACK',
   });
+
+  if (!fallbackResponse.ok) {
+    return fallbackResponse;
+  }
+
+  const fallbackClone = fallbackResponse.clone();
+
+  try {
+    const fallbackBody = await fallbackClone.json();
+    renameUsersPermissionsUserToAuthor(fallbackBody);
+
+    return NextResponse.json(fallbackBody, { status: fallbackResponse.status });
+  } catch (error) {
+    console.error('[STRAPI_DOCUMENT_COMMENTS_FALLBACK_TRANSFORM_ERROR]', error);
+  }
+
+  return fallbackResponse;
 }
 
 export async function POST(request: Request, { params }: DocumentCommentsContext) {
@@ -50,7 +69,7 @@ function parsePositiveInteger(value: string | null) {
   return parsed;
 }
 
-function buildFallbackQuery(documentId: string, url: URL) {
+export function buildFallbackQuery(documentId: string, url: URL) {
   const page = parsePositiveInteger(url.searchParams.get('page')) ?? 1;
   const pageSize = parsePositiveInteger(url.searchParams.get('pageSize')) ?? 10;
 
@@ -65,13 +84,13 @@ function buildFallbackQuery(documentId: string, url: URL) {
 
   const nestedChildrenPopulate = {
     populate: {
-      author: populateAuthor,
+      users_permissions_user: populateAuthor,
       children: {
         populate: {
-          author: populateAuthor,
+          users_permissions_user: populateAuthor,
           children: {
             populate: {
-              author: populateAuthor,
+              users_permissions_user: populateAuthor,
             },
           },
         },
@@ -91,7 +110,7 @@ function buildFallbackQuery(documentId: string, url: URL) {
       },
     },
     populate: {
-      author: populateAuthor,
+      users_permissions_user: populateAuthor,
       children: nestedChildrenPopulate,
     },
     sort: ['createdAt:desc'],
@@ -102,6 +121,28 @@ function buildFallbackQuery(documentId: string, url: URL) {
   };
 
   return qs(query);
+}
+
+export function renameUsersPermissionsUserToAuthor(value: unknown) {
+  if (Array.isArray(value)) {
+    value.forEach(renameUsersPermissionsUserToAuthor);
+    return;
+  }
+
+  if (!value || typeof value !== 'object') {
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  if ('users_permissions_user' in record && !('author' in record)) {
+    record.author = record.users_permissions_user;
+    delete record.users_permissions_user;
+  }
+
+  for (const key of Object.keys(record)) {
+    renameUsersPermissionsUserToAuthor(record[key]);
+  }
 }
 
 function buildFallbackRequest(originalRequest: Request, documentId: string) {

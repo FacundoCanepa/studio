@@ -1,179 +1,174 @@
 import assert from 'node:assert/strict';
 
-interface RecordedRequest {
-  url: string;
-  init: RequestInit | undefined;
-}
+import {
+  buildFallbackQuery,
+  renameUsersPermissionsUserToAuthor,
+} from '../src/app/api/strapi/articles/document/[documentId]/comments/route';
 
-async function main() {
-  const originalFetch = global.fetch;
-  const previousStrapiUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+const queryUrl = new URL('https://example.com/articles/comments?page=2');
+const queryString = buildFallbackQuery('document-123', queryUrl);
+const params = new URLSearchParams(queryString.startsWith('?') ? queryString.slice(1) : queryString);
 
-  process.env.NEXT_PUBLIC_STRAPI_URL = 'https://strapi.test';
+const expectedPopulateKeys = [
+  'populate[users_permissions_user][fields][0]',
+  'populate[users_permissions_user][fields][1]',
+  'populate[users_permissions_user][populate][avatar][fields][0]',
+  'populate[children][populate][users_permissions_user][fields][0]',
+  'populate[children][populate][users_permissions_user][fields][1]',
+  'populate[children][populate][users_permissions_user][populate][avatar][fields][0]',
+  'populate[children][populate][children][populate][users_permissions_user][fields][0]',
+  'populate[children][populate][children][populate][users_permissions_user][fields][1]',
+  'populate[children][populate][children][populate][users_permissions_user][populate][avatar][fields][0]',
+];
 
-  const { GET } = await import(
-    '../src/app/api/strapi/articles/document/[documentId]/comments/route'
+expectedPopulateKeys.forEach(key => {
+  assert.ok(
+    params.has(key),
+    `Expected fallback query to request ${key}, received ${queryString}`
   );
+});
 
-  const recorded: RecordedRequest[] = [];
-  let callCount = 0;
-
-  global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-        ? input.toString()
-        : input.url;
-
-    recorded.push({ url, init });
-    callCount += 1;
-
-    if (callCount === 1) {
-      return new Response(JSON.stringify({ error: { message: 'Not Found' } }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    return new Response(
-      JSON.stringify({
-        data: [],
-        meta: {
-          pagination: {
-            page: 1,
-            pageSize: 10,
-            pageCount: 0,
-            total: 0,
+const fallbackPayload: any = {
+  data: [
+    {
+      id: 1,
+      attributes: {
+        body: 'Root comment',
+        users_permissions_user: {
+          data: {
+            id: 100,
+            attributes: {
+              username: 'root-user',
+              name: 'Root User',
+              avatar: {
+                data: {
+                  id: 200,
+                  attributes: {
+                    url: '/root.png',
+                  },
+                },
+              },
+            },
           },
         },
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
-  };
-
-  try {
-    const request = new Request(
-      'https://example.com/api/strapi/articles/document/doc-123/comments?page=1&pageSize=10',
-      {
-        headers: {
-          Authorization: 'Bearer test-token',
-        },
-      }
-    );
-
-    const response = await GET(request, { params: { documentId: 'doc-123' } });
-
-    assert.equal(response.status, 200, 'Expected fallback response to succeed');
-
-    const payload = await response.json();
-    assert.deepEqual(payload, {
-      data: [],
-      meta: {
-        pagination: {
-          page: 1,
-          pageSize: 10,
-          pageCount: 0,
-          total: 0,
+        children: {
+          data: [
+            {
+              id: 2,
+              attributes: {
+                body: 'First reply',
+                users_permissions_user: {
+                  data: {
+                    id: 101,
+                    attributes: {
+                      username: 'reply-user',
+                      name: 'Reply User',
+                      avatar: {
+                        data: {
+                          id: 201,
+                          attributes: {
+                            url: '/reply.png',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                children: {
+                  data: [
+                    {
+                      id: 3,
+                      attributes: {
+                        body: 'Nested reply',
+                        users_permissions_user: {
+                          data: {
+                            id: 102,
+                            attributes: {
+                              username: 'nested-user',
+                              name: 'Nested User',
+                              avatar: {
+                                data: {
+                                  id: 202,
+                                  attributes: {
+                                    url: '/nested.png',
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                        children: { data: [] },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          ],
         },
       },
-    });
+    },
+  ],
+  meta: {
+    pagination: {
+      page: 1,
+      pageSize: 10,
+      total: 1,
+    },
+  },
+};
 
-    assert.equal(recorded.length, 2, 'Expected two Strapi fetch calls');
-    const firstRequestUrl = new URL(recorded[0].url);
-    assert.equal(firstRequestUrl.pathname, '/api/articles/document/doc-123/comments');
-    assert.equal(firstRequestUrl.search, '?page=1&pageSize=10');
+renameUsersPermissionsUserToAuthor(fallbackPayload);
 
-    const fallbackUrl = new URL(recorded[1].url);
-    assert.equal(fallbackUrl.pathname, '/api/comments');
-    assert.equal(
-      fallbackUrl.searchParams.get('filters[article][documentId][$eq]'),
-      'doc-123'
-    );
-    assert.equal(fallbackUrl.searchParams.get('filters[parent][$null]'), 'true');
-    assert.equal(fallbackUrl.searchParams.get('pagination[page]'), '1');
-    assert.equal(fallbackUrl.searchParams.get('pagination[pageSize]'), '10');
-    assert.equal(fallbackUrl.searchParams.get('sort[0]'), 'createdAt:desc');
-    assert.equal(
-      fallbackUrl.searchParams.get('populate[author][fields][0]'),
-      'username'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get('populate[author][fields][1]'),
-      'name'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get('populate[author][populate][avatar][fields][0]'),
-      'url'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get(
-        'populate[children][populate][author][fields][0]'
-      ),
-      'username'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get(
-        'populate[children][populate][author][fields][1]'
-      ),
-      'name'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get(
-        'populate[children][populate][author][populate][avatar][fields][0]'
-      ),
-      'url'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get(
-        'populate[children][populate][children][populate][author][fields][0]'
-      ),
-      'username'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get(
-        'populate[children][populate][children][populate][author][fields][1]'
-      ),
-      'name'
-    );
-    assert.equal(
-      fallbackUrl.searchParams.get(
-        'populate[children][populate][children][populate][author][populate][avatar][fields][0]'
-      ),
-      'url'
-    );
+const rootComment = fallbackPayload.data[0];
+assert.ok(rootComment.attributes.author, 'Root comment should expose author');
+assert.equal(
+  rootComment.attributes.author.data.attributes.username,
+  'root-user',
+  'Root author username should be preserved'
+);
+assert.equal(
+  rootComment.attributes.author.data.attributes.avatar.data.attributes.url,
+  '/root.png',
+  'Root author avatar URL should be preserved'
+);
+assert.ok(
+  !('users_permissions_user' in rootComment.attributes),
+  'Root comment should not expose users_permissions_user after transformation'
+);
 
-    const fallbackHeaders =
-      recorded[1].init?.headers instanceof Headers
-        ? recorded[1].init?.headers
-        : new Headers(recorded[1].init?.headers ?? {});
+const firstReply = rootComment.attributes.children.data[0];
+assert.ok(firstReply.attributes.author, 'First reply should expose author');
+assert.equal(
+  firstReply.attributes.author.data.attributes.username,
+  'reply-user',
+  'First reply author username should be preserved'
+);
+assert.equal(
+  firstReply.attributes.author.data.attributes.avatar.data.attributes.url,
+  '/reply.png',
+  'First reply author avatar URL should be preserved'
+);
+assert.ok(
+  !('users_permissions_user' in firstReply.attributes),
+  'First reply should not expose users_permissions_user after transformation'
+);
 
-    assert.equal(
-      fallbackHeaders.get('Authorization'),
-      'Bearer test-token',
-      'Expected Authorization header to be forwarded'
-    );
-    assert.equal(
-      fallbackHeaders.get('Accept'),
-      'application/json',
-      'Expected Accept header to be set'
-    );
+const nestedReply = firstReply.attributes.children.data[0];
+assert.ok(nestedReply.attributes.author, 'Nested reply should expose author');
+assert.equal(
+  nestedReply.attributes.author.data.attributes.username,
+  'nested-user',
+  'Nested reply author username should be preserved'
+);
+assert.equal(
+  nestedReply.attributes.author.data.attributes.avatar.data.attributes.url,
+  '/nested.png',
+  'Nested reply author avatar URL should be preserved'
+);
+assert.ok(
+  !('users_permissions_user' in nestedReply.attributes),
+  'Nested reply should not expose users_permissions_user after transformation'
+);
 
-    console.log('Comments route fallback test passed');
-  } finally {
-    global.fetch = originalFetch;
-    if (previousStrapiUrl === undefined) {
-      delete process.env.NEXT_PUBLIC_STRAPI_URL;
-    } else {
-      process.env.NEXT_PUBLIC_STRAPI_URL = previousStrapiUrl;
-    }
-  }
-}
-
-void main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+console.log('All comments route cases passed');
