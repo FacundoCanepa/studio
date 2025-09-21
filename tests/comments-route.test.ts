@@ -27,7 +27,12 @@ expectedPopulateKeys.forEach(key => {
     `Expected fallback query to request ${key}, received ${queryString}`
   );
 });
-
+assert.equal(
+    params.get('filters[parent][id][$null]'),
+    'true',
+    `Expected fallback query to request filters[parent][id][$null]=true, received ${queryString}`
+  );
+  
 const fallbackPayload: any = {
   data: [
     {

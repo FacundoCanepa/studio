@@ -106,7 +106,9 @@ export function buildFallbackQuery(documentId: string, url: URL) {
         },
       },
       parent: {
-        $null: true,
+        id: {
+            $null: true,
+          },
       },
     },
     populate: {
