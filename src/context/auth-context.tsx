@@ -84,7 +84,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               ...data.data,
               role: data.data.role || 'Authenticated'
             });
-            setToken(data.token);
+            const tokenFromResponse = typeof data.token === 'string' ? data.token : null;
+            setToken(tokenFromResponse);
           } else {
             setUser(null);
             setToken(null);

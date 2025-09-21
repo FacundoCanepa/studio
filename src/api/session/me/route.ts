@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     console.log('[API_ME] Sanitized user data being sent to client:', JSON.stringify(sanitizedUser, null, 2));
 
 
-    return NextResponse.json({ok: true, data: sanitizedUser});
+    return NextResponse.json({ok: true, data: sanitizedUser, token});
   } catch (error) {
     if (
       error instanceof Error &&
