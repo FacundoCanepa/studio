@@ -13,35 +13,113 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
    * @param {object} ctx - El contexto de la solicitud de Koa.
    */
   async create(ctx) {
-    // 1. OBTENER EL USUARIO AUTENTICADO
     const user = ctx.state.user;
-
     if (!user) {
       return ctx.unauthorized('You must be logged in to create a comment.');
     }
 
-    // 2. PREPARAR LOS DATOS DEL COMENTARIO
     const body = ctx.request.body;
-    const entityData = { ...body.data };
+    const { content, article, parent } = body.data;
 
-    // Asignación segura del autor y estado por defecto
-    entityData.author = user.id;
-    entityData.estado = 'approved';
+    if (!content) {
+      return ctx.badRequest('Comment content is required.');
+    }
 
-    // Crear la entidad de comentario
+    const entityData = {
+      content,
+      author: user.id,
+      estado: 'approved',
+      article,
+      parent,
+    };
+
     const entity = await strapi.service('api::comment.comment').create({
-      ...body,
       data: entityData,
     });
 
-    // 3. SANITIZAR Y DEVOLVER LA RESPUESTA
     const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
     return this.transformResponse(sanitizedEntity);
   },
 
   /**
+   * Sobrescribe la acción 'update' para verificar la propiedad y limitar los campos.
+   */
+  async update(ctx) {
+    const { id } = ctx.params;
+    const { id: userId } = ctx.state.user;
+    const { content } = ctx.request.body.data;
+
+    // 1. Validar que solo se puede editar el 'content'
+    if (Object.keys(ctx.request.body.data).length > 1 || !content) {
+        return ctx.badRequest('Only the comment content can be edited.');
+    }
+
+    // 2. Verificar la propiedad del comentario
+    const comment = await strapi.entityService.findOne('api::comment.comment', id, {
+        populate: ['author'],
+    });
+
+    if (!comment) {
+        return ctx.notFound('Comment not found.');
+    }
+
+    if (comment.author?.id !== userId) {
+        return ctx.forbidden('You are not allowed to edit this comment.');
+    }
+    
+    // 3. Llamar al servicio de 'update' con los datos validados
+    const entity = await strapi.service('api::comment.comment').update(id, {
+        data: { content },
+    });
+
+    const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
+    return this.transformResponse(sanitizedEntity);
+  },
+
+  /**
+   * Sobrescribe la acción 'delete' para verificar la propiedad.
+   */
+  async delete(ctx) {
+    const { id } = ctx.params;
+    const { id: userId } = ctx.state.user;
+
+    const comment = await strapi.entityService.findOne('api::comment.comment', id, {
+        populate: ['author'],
+    });
+
+    if (!comment) {
+        return ctx.notFound('Comment not found.');
+    }
+
+    if (comment.author?.id !== userId) {
+        return ctx.forbidden('You are not allowed to delete this comment.');
+    }
+
+    // Si la propiedad es correcta, procede con la eliminación por defecto.
+    // Strapi por defecto dejará los 'children' huérfanos (parent se vuelve null).
+    return await super.delete(ctx);
+  },
+  
+  /**
+   * Nueva acción para que un administrador apruebe un comentario.
+   */
+  async approve(ctx) {
+    const { id } = ctx.params;
+    
+    // Aquí se podría añadir una lógica para verificar si el usuario es un administrador.
+    // Por simplicidad, asumimos que la ruta estará protegida por middleware de admin.
+
+    const entity = await strapi.service('api::comment.comment').update(id, {
+        data: { estado: 'approved' },
+    });
+
+    const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
+    return this.transformResponse(sanitizedEntity);
+  },
+
+
+  /**
    * Nueva acción para encontrar comentarios de un artículo específico.
-   * @param {object} ctx - El contexto de la solicitud de Koa.
    */
   async findByArticle(ctx) {
     const { id, documentId } = ctx.params;
@@ -51,19 +129,17 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
       return ctx.badRequest('Article ID or Document ID must be provided.');
     }
 
-    // 1. Construir el filtro para el artículo
     const articleFilter = id
       ? { article: { id: { $eq: id } } }
       : { article: { documentId: { $eq: documentId } } };
 
-    // 2. Usar entityService para encontrar comentarios con filtros y paginación
     const { results, pagination } = await strapi.entityService.findPage('api::comment.comment', {
       page: parseInt(page, 10),
       pageSize: parseInt(pageSize, 10),
       filters: {
         ...articleFilter,
         estado: { $eq: 'approved' },
-        parent: { id: { $null: true } }, // Solo comentarios raíz
+        parent: { id: { $null: true } },
       },
       sort: { createdAt: 'desc' },
       populate: {
@@ -75,10 +151,10 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
             }
           }
         },
-        children: { // Poblar comentarios anidados
+        children: {
           sort: { createdAt: 'asc' },
           populate: {
-            author: { // Poblar el autor de los comentarios anidados
+            author: {
               fields: ['id', 'username', 'name'],
                populate: {
                 avatar: {
@@ -91,10 +167,8 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
       }
     });
 
-    // 3. Sanitizar la salida antes de devolverla
     const sanitizedResults = await this.sanitizeOutput(results, ctx);
 
-    // 4. Devolver la respuesta en el formato estándar de Strapi (datos + meta)
     return this.transformResponse({
       data: sanitizedResults,
       meta: { pagination }

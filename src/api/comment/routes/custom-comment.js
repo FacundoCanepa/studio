@@ -8,7 +8,6 @@ module.exports = {
       path: '/articles/:id/comments',
       handler: 'comment.findByArticle',
       config: {
-        // No se requiere autenticación para esta ruta
         auth: false,
       },
     },
@@ -17,8 +16,17 @@ module.exports = {
       path: '/articles/document/:documentId/comments',
       handler: 'comment.findByArticle',
       config: {
-        // No se requiere autenticación para esta ruta
         auth: false,
+      },
+    },
+    {
+      method: 'POST',
+      path: '/comments/:id/approve',
+      handler: 'comment.approve',
+      config: {
+        // Por defecto, las rutas personalizadas requieren autenticación.
+        // Se pueden añadir políticas aquí para restringir solo a admins.
+        // policies: ['is-admin'],
       },
     },
   ],
