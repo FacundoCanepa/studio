@@ -5,6 +5,27 @@
  */
 
 const { createCoreController } = require('@strapi/strapi').factories;
+const renameUsersPermissionsUserToAuthor = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => renameUsersPermissionsUserToAuthor(item));
+  }
+
+  if (value && typeof value === 'object') {
+    if (Object.prototype.hasOwnProperty.call(value, 'users_permissions_user')) {
+      value.author = renameUsersPermissionsUserToAuthor(value.users_permissions_user);
+      delete value.users_permissions_user;
+    }
+
+    Object.keys(value).forEach((key) => {
+      value[key] = renameUsersPermissionsUserToAuthor(value[key]);
+    });
+
+    return value;
+  }
+
+  return value;
+};
+
 
 module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
   /**
@@ -120,15 +141,11 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
         return ctx.badRequest('Parent comment must belong to the same article.');
       }
     }
-
-    // Asignar el `author` desde el `user` de la sesión (del plugin users-permissions)
-    // El modelo `Comment` tiene una relación con `Author`, no con `User`.
-    // Asumimos que tienes una lógica para encontrar o crear un `Author` a partir de un `User`.
-    // Por simplicidad aquí, se asigna directamente. Asegúrate que la relación en `Comment`
-    // apunte a `plugin::users-permissions.user`.
+// Asignar el usuario de `users-permissions` desde el `user` de la sesión.
+    // El modelo `Comment` tiene una relación directa con `plugin::users-permissions.user`.
     const entityData = {
       content,
-      author: user.id, // Asigna el ID del usuario de `users-permissions`
+      users_permissions_user: user.id, // Asigna el ID del usuario de `users-permissions`
       estado: 'approved',
     };
 
@@ -143,7 +160,8 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
     });
 
     const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
-    return this.transformResponse(sanitizedEntity);
+    const renamedEntity = renameUsersPermissionsUserToAuthor(sanitizedEntity);
+    return this.transformResponse(renamedEntity);
   },
 
   /**
@@ -161,15 +179,15 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
 
     // 2. Verificar la propiedad del comentario
     const comment = await strapi.entityService.findOne('api::comment.comment', id, {
-        populate: ['author'],
+      populate: ['users_permissions_user'],
     });
 
     if (!comment) {
         return ctx.notFound('Comment not found.');
     }
 
-    // La relación `author` en el comentario ahora apunta a `users-permissions.user`
-    if (comment.author?.id !== userId) {
+  // La relación `users_permissions_user` en el comentario apunta a `users-permissions.user`
+  if (comment.users_permissions_user?.id !== userId) {
         return ctx.forbidden('You are not allowed to edit this comment.');
     }
     
@@ -179,7 +197,8 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
     });
 
     const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
-    return this.transformResponse(sanitizedEntity);
+    const renamedEntity = renameUsersPermissionsUserToAuthor(sanitizedEntity);
+    return this.transformResponse(renamedEntity);
   },
 
   /**
@@ -197,13 +216,17 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
         return ctx.notFound('Comment not found.');
     }
 
-    if (comment.author?.id !== userId) {
+    if (comment.users_permissions_user?.id !== userId) {
         return ctx.forbidden('You are not allowed to delete this comment.');
     }
 
     // Si la propiedad es correcta, procede con la eliminación por defecto.
     // Strapi por defecto dejará los 'children' huérfanos (parent se vuelve null).
-    return await super.delete(ctx);
+    const entity = await strapi.service('api::comment.comment').delete(id);
+
+    const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
+    const renamedEntity = renameUsersPermissionsUserToAuthor(sanitizedEntity);
+    return this.transformResponse(renamedEntity);
   },
   
   /**
@@ -220,7 +243,8 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
     });
 
     const sanitizedEntity = await this.sanitizeOutput(entity, ctx);
-    return this.transformResponse(sanitizedEntity);
+    const renamedEntity = renameUsersPermissionsUserToAuthor(sanitizedEntity);
+    return this.transformResponse(renamedEntity);
   },
 
 
@@ -249,7 +273,7 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
       },
       sort: { createdAt: 'desc' },
       populate: {
-        author: {
+        users_permissions_user: {
           fields: ['id', 'username', 'name'],
           populate: {
             avatar: {
@@ -260,7 +284,7 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
         children: {
           sort: { createdAt: 'asc' },
           populate: {
-            author: {
+            users_permissions_user: {
               fields: ['id', 'username', 'name'],
                populate: {
                 avatar: {
@@ -271,7 +295,7 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
             // Se puede anidar más niveles si se desea, pero con moderación.
             children: {
                  populate: {
-                    author: {
+                  users_permissions_user: {
                         fields: ['id', 'username', 'name'],
                         populate: {
                             avatar: {
@@ -287,9 +311,10 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
     });
 
     const sanitizedResults = await this.sanitizeOutput(results, ctx);
+    const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
 
     return this.transformResponse({
-      data: sanitizedResults,
+      data: renamedResults,
       meta: { pagination }
     });
   },
