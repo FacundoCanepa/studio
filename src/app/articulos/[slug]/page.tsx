@@ -16,6 +16,8 @@ import { ArticleCarousel } from './_components/article-carousel';
 import { YouTubeEmbed } from './_components/youtube-embed';
 import { FavoriteButton } from './_components/favorite-button';
 import { fetchCachedArticles } from '@/lib/cached-articles';
+import { CommentSection } from './_components/comment-section';
+import { Separator } from '@/components/ui/separator';
 
 type Props = {
   params: { slug: string };
@@ -134,6 +136,11 @@ export default async function ArticlePage({ params }: Props) {
                     <ArticleTags tags={article.tags} />
                   </div>
                 )}
+
+                <Separator className="my-16" />
+
+                <CommentSection articleId={article.id} documentId={article.documentId} />
+
               </div>
 
             </div>

@@ -5,17 +5,16 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { toggleFavoriteAction, toggleTagFavoriteAction } from '@/app/actions/favoriteActions';
 import memoFetch, { invalidateMemoFetch } from '@/lib/memo-fetch';
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role?: string;
+import type { StrapiUser } from '@/lib/strapi-types';
+
+interface User extends StrapiUser {
   favoriteArticles: number[];
   favoriteTags: number[];
 }
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAdmin: boolean;
   isEmployee: boolean;
@@ -32,6 +31,7 @@ interface AuthContextType {
 
 export const AuthContext = React.createContext<AuthContextType>({
   user: null,
+  token: null,
   isLoading: true,
   isAdmin: false,
   isEmployee: false,
@@ -60,6 +60,7 @@ const errorMessages: { [key: string]: string } = {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<User | null>(null);
+  const [token, setToken] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
 
@@ -83,15 +84,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               ...data.data,
               role: data.data.role || 'Authenticated'
             });
+            setToken(data.token);
           } else {
             setUser(null);
+            setToken(null);
           }
         } else {
           setUser(null);
+          setToken(null);
         }
       } catch (error) {
         console.error('[AUTH_PROVIDER] Fetch user error:', error);
         setUser(null);
+        setToken(null);
       } finally {
         setIsLoading(false);
       }
@@ -140,7 +145,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: JSON.stringify({ identifier, password }),
     });
-    await fetchUser({ forceRefresh: true }); // Re-fetch user to update state globally/ Re-fetch user to update state globally
+    await fetchUser({ forceRefresh: true }); // Re-fetch user to update state globally
     return data;
   };
   
@@ -155,6 +160,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await performRequest('/api/session/logout', { method: 'POST' });
     invalidateMemoFetch('/api/session/me', sessionRequestInit);
     setUser(null);
+    setToken(null);
     router.push('/');
     router.refresh();
   };
@@ -220,6 +226,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        token,
         isLoading,
         isAdmin,
         isEmployee,

@@ -1,4 +1,3 @@
-// src/api/comment/controllers/comment.js
 'use strict';
 
 /**
@@ -24,10 +23,15 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
     if (!content) {
       return ctx.badRequest('Comment content is required.');
     }
-
+    
+    // Asignar el `author` desde el `user` de la sesión (del plugin users-permissions)
+    // El modelo `Comment` tiene una relación con `Author`, no con `User`.
+    // Asumimos que tienes una lógica para encontrar o crear un `Author` a partir de un `User`.
+    // Por simplicidad aquí, se asigna directamente. Asegúrate que la relación en `Comment`
+    // apunte a `plugin::users-permissions.user`.
     const entityData = {
       content,
-      author: user.id,
+      author: user.id, // Asigna el ID del usuario de `users-permissions`
       estado: 'approved',
       article,
       parent,
@@ -63,6 +67,7 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
         return ctx.notFound('Comment not found.');
     }
 
+    // La relación `author` en el comentario ahora apunta a `users-permissions.user`
     if (comment.author?.id !== userId) {
         return ctx.forbidden('You are not allowed to edit this comment.');
     }
@@ -161,6 +166,19 @@ module.exports = createCoreController('api::comment.comment', ({ strapi }) => ({
                   fields: ['url', 'formats']
                 }
               }
+            },
+            // Se puede anidar más niveles si se desea, pero con moderación.
+            children: {
+                 populate: {
+                    author: {
+                        fields: ['id', 'username', 'name'],
+                        populate: {
+                            avatar: {
+                            fields: ['url', 'formats']
+                            }
+                        }
+                    }
+                }
             }
           }
         }

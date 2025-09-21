@@ -1,5 +1,3 @@
-
-
 // --- STRAPI RESPONSE TYPES ---
 
 export interface StrapiResponse<T> {
@@ -164,6 +162,16 @@ export type StrapiProduct = StrapiEntity & {
     createdAt: string;
     updatedAt: string;
     publishedAt?: string;
+}
+
+export type StrapiComment = StrapiEntity & {
+  content: string;
+  author: StrapiUser;
+  article: StrapiArticle;
+  parent?: StrapiComment;
+  children?: StrapiComment[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 
