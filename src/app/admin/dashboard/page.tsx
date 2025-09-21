@@ -304,8 +304,13 @@ export default async function AdminDashboardPage() {
   const TrafficChartSkeleton = () => (
     <Card>
       <CardHeader>
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-4 w-64 mt-2" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64 mt-2" />
+          </div>
+          <Skeleton className="h-10 w-[180px]" />
+        </div>
       </CardHeader>
       <CardContent>
         <Skeleton className="h-[350px] w-full" />
@@ -321,10 +326,10 @@ export default async function AdminDashboardPage() {
       </CardHeader>
       <CardContent className="space-y-8">
         <Skeleton className="h-[250px] w-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
+        <div className="space-y-3">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-5/6" />
         </div>
       </CardContent>
     </Card>
