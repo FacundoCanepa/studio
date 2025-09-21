@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -27,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { LineChart as ChartIcon, AlertCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -80,7 +80,7 @@ export const TrafficChart = () => {
 
   const renderContent = () => {
     if (loading) {
-      return <Skeleton className="h-[350px] w-full" />;
+      return <div className="h-[350px] w-full" />;
     }
 
     if (error) {

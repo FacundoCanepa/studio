@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface AnalyticsData {
   topPages: { path: string; count: number }[];
@@ -72,16 +72,7 @@ export const TopPagesChart = () => {
 
   const renderContent = () => {
     if (loading) {
-      return (
-        <div className="space-y-6">
-          <Skeleton className="h-[250px] w-full" />
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-4 w-56" />
-          </div>
-        </div>
-      );
+      return <div className="h-[450px]" />;
     }
     
     if (error) {
