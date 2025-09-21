@@ -3,6 +3,7 @@ import { Facebook, Instagram, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdSlot } from '../marketing/ad-slot';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export const AppFooter = () => {
   return (
@@ -35,8 +36,16 @@ export const AppFooter = () => {
           </div>
         </div>
 
-        <div className="border-t py-6 text-center text-sm text-foreground/60">
+        <div className="border-t py-6 text-center text-sm text-foreground/60 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p>&copy; {new Date().getFullYear()} Vestigio Magazine. Todos los derechos reservados.</p>
+           <div className="flex items-center gap-4">
+              <Link href="/terminos-y-condiciones" className="hover:text-primary transition-colors">
+                Términos y Condiciones
+              </Link>
+              <Link href="/politica-de-privacidad" className="hover:text-primary transition-colors">
+                Política de Privacidad
+              </Link>
+          </div>
         </div>
       </div>
     </footer>
