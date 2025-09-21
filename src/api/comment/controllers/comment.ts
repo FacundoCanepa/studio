@@ -245,7 +245,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
         sort: { createdAt: 'desc' },
         populate: {
           users_permissions_user: {
-            fields: ['id', 'username', 'name'],
+            fields: ['id', 'username'],
             populate: {
               avatar: { fields: ['url', 'formats'] },
             },
@@ -254,7 +254,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
             sort: { createdAt: 'asc' },
             populate: {
               users_permissions_user: {
-                fields: ['id', 'username', 'name'],
+                fields: ['id', 'username'],
                 populate: {
                   avatar: { fields: ['url', 'formats'] },
                 },
@@ -262,7 +262,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
               children: {
                 populate: {
                   users_permissions_user: {
-                    fields: ['id', 'username', 'name'],
+                    fields: ['id', 'username'],
                     populate: {
                       avatar: { fields: ['url', 'formats'] },
                     },
@@ -293,7 +293,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
       sort: { createdAt: 'desc' },
       populate: {
         users_permissions_user: {
-          fields: ['id', 'username', 'name'],
+          fields: ['id', 'username'],
           populate: {
             avatar: { fields: ['url', 'formats'] },
           },
@@ -302,7 +302,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
           sort: { createdAt: 'asc' },
           populate: {
             users_permissions_user: {
-              fields: ['id', 'username', 'name'],
+              fields: ['id', 'username'],
               populate: {
                 avatar: { fields: ['url', 'formats'] },
               },
@@ -310,7 +310,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
             children: {
               populate: {
                 users_permissions_user: {
-                  fields: ['id', 'username', 'name'],
+                  fields: ['id', 'username'],
                   populate: {
                     avatar: { fields: ['url', 'formats'] },
                   },
