@@ -31,6 +31,10 @@ interface CommentsApiResponse {
         };
     };
 }
+interface StrapiCommentsResponse<T = unknown> {
+    data?: T[];
+    meta?: CommentsApiResponse['meta'];
+}
 
 interface ParsedJsonResponse<T> {
     body: T | null;
@@ -196,7 +200,7 @@ async function fetchComments(
     const res = await fetch(
         `/api/strapi/comments?filters[article][documentId][$eq]=${documentId}&pagination[page]=${pageNum}&pagination[pageSize]=${pageSize}`
     );
-    const { body, rawText } = await parseJsonResponse<CommentsApiResponse>(res, 'COMMENTS_FETCH');
+    const { body, rawText } = await parseJsonResponse<StrapiCommentsResponse>(res, 'COMMENTS_FETCH');
     if (!res.ok) {
         throw new Error(resolveErrorMessage(body, rawText, 'No se pudieron cargar los comentarios.'));
     }
@@ -205,7 +209,35 @@ async function fetchComments(
         throw new Error('La respuesta de comentarios es inválida.');
     }
 
-    return body;
+    const normalizedComments = body.data
+    .map((item, index) => {
+        try {
+            return normalizeCommentEntity(item);
+        } catch (error) {
+            console.error('[COMMENTS_FETCH] Unable to normalize comment at index', index, error);
+            return null;
+        }
+    })
+    .filter((comment): comment is Comment => comment !== null);
+const fallbackPagination = {
+    page: pageNum,
+    pageSize,
+    pageCount: Math.max(1, Math.ceil(normalizedComments.length / pageSize)),
+    total: normalizedComments.length,
+};
+const pagination = body.meta?.pagination
+    ? {
+          page: body.meta.pagination.page ?? fallbackPagination.page,
+          pageSize: body.meta.pagination.pageSize ?? fallbackPagination.pageSize,
+          pageCount: body.meta.pagination.pageCount ?? fallbackPagination.pageCount,
+          total: body.meta.pagination.total ?? fallbackPagination.total,
+      }
+    : fallbackPagination;
+
+return {
+    data: normalizedComments,
+    meta: { pagination },
+};
 }
 
 async function postComment(
