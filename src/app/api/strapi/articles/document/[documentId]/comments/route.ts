@@ -85,6 +85,7 @@ export interface Comment {
   content: string;
   createdAt: string;
   updatedAt: string;
+  estado?: string;
   author: CommentAuthor;
   children: Comment[];
 }
@@ -109,6 +110,7 @@ const USER_POPULATE = {
     },
   },
 };
+const COMMENT_FIELDS = ['content', 'estado', 'createdAt', 'updatedAt'];
 
 function parsePaginationParam(value: string | null, fallback: number) {
   const parsed = Number.parseInt(value ?? '', 10);
@@ -123,17 +125,21 @@ function buildCommentsQuery(documentId: string, page: number, pageSize: number) 
     filters: {
       article: { documentId: { $eq: documentId } },
       estado: { $eq: 'approved' },
-      parent: { id: { $null: true } },
+      parent: { $null: true },
     },
     sort: ['createdAt:desc'],
     pagination: { page, pageSize },
+    fields: COMMENT_FIELDS,
     populate: {
       users_permissions_user: USER_POPULATE,
       children: {
-        sort: { createdAt: 'asc' },
+        fields: COMMENT_FIELDS,
+        sort: ['createdAt:asc'],
         populate: {
           users_permissions_user: USER_POPULATE,
           children: {
+            fields: COMMENT_FIELDS,
+            sort: ['createdAt:asc'],
             populate: {
               users_permissions_user: USER_POPULATE,
             },
@@ -205,6 +211,7 @@ function mapStrapiComment(entity: StrapiCommentEntity): Comment {
     id: entity.id,
     content: attributes.content ?? attributes.body ?? '',
     createdAt: attributes.createdAt ?? '',
+    estado: attributes.estado ?? undefined,
     updatedAt: attributes.updatedAt ?? attributes.createdAt ?? '',
     author: resolveAuthor(relation),
     children: Array.isArray(rawChildren)

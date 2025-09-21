@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '@/context/auth-context';
-import type { StrapiResponse, StrapiUser } from '@/lib/strapi-types';
 
 export interface CommentAuthor {
     id: number;
@@ -16,6 +15,7 @@ export interface Comment {
     content: string;
     createdAt: string;
     updatedAt: string;
+    estado?: string;
     author: CommentAuthor;
     children: Comment[];
 }
@@ -31,12 +31,118 @@ interface CommentsApiResponse {
         };
     };
 }
+
 interface ParsedJsonResponse<T> {
     body: T | null;
     rawText?: string;
 }
 
-async function parseJsonResponse<T>(response: Response, context: string): Promise<ParsedJsonResponse<T>> {
+function parseNumericId(value: unknown): number {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const parsed = Number.parseInt(value, 10);
+        if (Number.isFinite(parsed)) {
+            return parsed;
+        }
+    }
+    return 0;
+}
+
+function extractRelationAttributes(
+    relation: unknown
+): (Record<string, any> & { id?: number | string }) | null {
+    if (!relation || typeof relation !== 'object') {
+        return null;
+    }
+
+    if ('data' in relation) {
+        const data = (relation as { data?: any }).data;
+        if (!data || typeof data !== 'object') {
+            return null;
+        }
+        const attributes = (data as any).attributes ?? {};
+        return { id: (data as any).id, ...attributes };
+    }
+
+    return relation as Record<string, any>;
+}
+
+function normalizeAuthor(relation: unknown): CommentAuthor {
+    const relationData = extractRelationAttributes(relation);
+    const defaultAuthor: CommentAuthor = { id: 0, username: 'Usuario' };
+
+    if (!relationData) {
+        return defaultAuthor;
+    }
+
+    const usernameSource =
+        relationData.username ?? relationData.email ?? relationData.name;
+    const username =
+        typeof usernameSource === 'string' && usernameSource.trim().length > 0
+            ? usernameSource.trim()
+            : 'Usuario';
+
+    const author: CommentAuthor = {
+        id: parseNumericId(relationData.id),
+        username,
+    };
+
+    if (typeof relationData.name === 'string' && relationData.name.trim().length > 0) {
+        author.name = relationData.name.trim();
+    }
+
+    const avatarRelation = relationData.avatar;
+    const avatarUrl =
+        avatarRelation?.data?.attributes?.url ?? avatarRelation?.url ?? undefined;
+
+    if (avatarUrl) {
+        author.avatar = { url: avatarUrl };
+    }
+
+    return author;
+}
+
+function normalizeCommentEntity(entity: unknown): Comment {
+    if (!entity || typeof entity !== 'object') {
+        throw new Error('Strapi devolvió un comentario inválido.');
+    }
+
+    if ('content' in entity && 'author' in entity && Array.isArray((entity as any).children)) {
+        return entity as Comment;
+    }
+
+    const base = 'data' in entity && (entity as any).data ? (entity as any).data : entity;
+    const attributes = (base as any).attributes ?? base;
+    const childrenSource =
+        attributes?.children?.data ??
+        (Array.isArray(attributes?.children) ? attributes.children : []);
+
+    const comment: Comment = {
+        id: parseNumericId((base as any)?.id ?? attributes?.id),
+        content: attributes?.content ?? attributes?.body ?? '',
+        createdAt: attributes?.createdAt ?? new Date().toISOString(),
+        updatedAt: attributes?.updatedAt ?? attributes?.createdAt ?? new Date().toISOString(),
+        estado: attributes?.estado ?? (base as any)?.estado ?? undefined,
+        author: normalizeAuthor(
+            attributes?.author ??
+                attributes?.users_permissions_user ??
+                (base as any)?.author ??
+                (base as any)?.users_permissions_user
+        ),
+        children: Array.isArray(childrenSource)
+            ? childrenSource.map((child: unknown) => normalizeCommentEntity(child))
+            : [],
+    };
+
+    return comment;
+}
+
+async function parseJsonResponse<T>(
+    response: Response,
+    context: string
+): Promise<ParsedJsonResponse<T>> {
     if (response.status === 204 || response.status === 205) {
         return { body: null };
     }
@@ -59,62 +165,36 @@ async function parseJsonResponse<T>(response: Response, context: string): Promis
         try {
             body = JSON.parse(rawText) as T;
         } catch {
-            // Ignored: we already logged the parsing issue above.
+            // Ignorado
         }
     }
 
-    return { body: (body ?? null), rawText };
+    return { body: body ?? null, rawText };
 }
 
-function resolveErrorMessage(body: unknown, rawText: string | undefined, fallback: string) {
-    if (body && typeof body === 'object') {
-        const payload = body as Record<string, unknown>;
-        const errorField = payload.error;
-
-        if (typeof errorField === 'string' && errorField.trim().length > 0) {
-            return errorField;
-        }
-
-        if (errorField && typeof errorField === 'object' && 'message' in errorField) {
-            const nestedMessage = (errorField as Record<string, unknown>).message;
-            if (typeof nestedMessage === 'string' && nestedMessage.trim().length > 0) {
-                return nestedMessage;
-            }
-        }
-
-        const message = payload.message;
-        if (typeof message === 'string' && message.trim().length > 0) {
-            return message;
-        }
-    }
-
-    if (typeof body === 'string' && body.trim().length > 0) {
-        return body;
-    }
-
-    if (rawText && rawText.trim().length > 0) {
-        return rawText;
-    }
-
-    return fallback;
+// Helpers faltantes
+function resolveErrorMessage(body: any, rawText: string | undefined, fallback: string): string {
+    return (
+        body?.error?.message ||
+        body?.message ||
+        rawText ||
+        fallback
+    );
 }
 
-function extractDataField<T>(payload: unknown): T | null {
-    if (payload && typeof payload === 'object' && 'data' in payload) {
-        const data = (payload as { data: T }).data;
-        return data ?? null;
-    }
-
-    return null;
+function extractDataField<T>(body: any): T | null {
+    if (!body) return null;
+    if ('data' in body) return body.data as T;
+    return body as T;
 }
 
 async function fetchComments(
     documentId: string,
-    page: number,
+    pageNum: number,
     pageSize: number
 ): Promise<CommentsApiResponse> {
     const res = await fetch(
-        `/api/strapi/articles/document/${documentId}/comments?page=${page}&pageSize=${pageSize}`
+        `/api/strapi/comments?filters[article][documentId][$eq]=${documentId}&pagination[page]=${pageNum}&pagination[pageSize]=${pageSize}`
     );
     const { body, rawText } = await parseJsonResponse<CommentsApiResponse>(res, 'COMMENTS_FETCH');
     if (!res.ok) {
@@ -140,19 +220,23 @@ async function postComment(
         },
         body: JSON.stringify({ data: payload }),
     });
-    const { body, rawText } = await parseJsonResponse<{ data: Comment }>(res, 'COMMENTS_CREATE');
+    const { body, rawText } = await parseJsonResponse<{ data: unknown }>(res, 'COMMENTS_CREATE');
     if (!res.ok) {
-        throw new Error(resolveErrorMessage(body, rawText, 'No se pudo publicar el comentario.'))
+        throw new Error(resolveErrorMessage(body, rawText, 'No se pudo publicar el comentario.'));
     }
-    const data = extractDataField<Comment>(body);
+    const data = extractDataField<unknown>(body);
     if (!data) {
         throw new Error('La respuesta al publicar el comentario es inválida.');
     }
 
-    return data;
+    return normalizeCommentEntity(data);
 }
 
-async function updateComment(token: string, commentId: number, content: string): Promise<Comment> {
+async function updateComment(
+    token: string,
+    commentId: number,
+    content: string
+): Promise<Comment> {
     const res = await fetch(`/api/strapi/comments/${commentId}`, {
         method: 'PUT',
         headers: {
@@ -161,18 +245,18 @@ async function updateComment(token: string, commentId: number, content: string):
         },
         body: JSON.stringify({ data: { content } }),
     });
-    const { body, rawText } = await parseJsonResponse<{ data: Comment }>(res, 'COMMENTS_UPDATE');
+    const { body, rawText } = await parseJsonResponse<{ data: unknown }>(res, 'COMMENTS_UPDATE');
 
     if (!res.ok) {
         throw new Error(resolveErrorMessage(body, rawText, 'No se pudo actualizar el comentario.'));
     }
 
-    const data = extractDataField<Comment>(body);
+    const data = extractDataField<unknown>(body);
     if (!data) {
         throw new Error('La respuesta al actualizar el comentario es inválida.');
     }
 
-    return data;
+    return normalizeCommentEntity(data);
 }
 
 async function deleteComment(token: string, commentId: number): Promise<void> {
@@ -189,7 +273,6 @@ async function deleteComment(token: string, commentId: number): Promise<void> {
     }
 }
 
-
 export function useComments(articleId: number, documentId: string) {
     const { user, token } = useContext(AuthContext);
     const [comments, setComments] = useState<Comment[]>([]);
@@ -199,28 +282,29 @@ export function useComments(articleId: number, documentId: string) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const pageSize = 10;
-
-    const loadComments = useCallback(async (pageNum: number) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const { data, meta } = await fetchComments(documentId, pageNum, pageSize);
-            setComments(prev => (pageNum === 1 ? data : [...prev, ...data]));
-            setPage(meta.pagination.page);
-            setPageCount(meta.pagination.pageCount);
-            setTotal(meta.pagination.total);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [documentId]);
+    const loadComments = useCallback(
+        async (pageNum: number, pageSize = 10) => {
+            setLoading(true);
+            setError(null);
+            try {
+                const { data, meta } = await fetchComments(documentId, pageNum, pageSize);
+                setComments(prev => (pageNum === 1 ? data : [...prev, ...data]));
+                setPage(meta.pagination.page);
+                setPageCount(meta.pagination.pageCount);
+                setTotal(meta.pagination.total);
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        },
+        [documentId]
+    );
 
     useEffect(() => {
         loadComments(1);
     }, [loadComments]);
-    
+
     const handleAddComment = async (content: string, parentId?: number): Promise<void> => {
         if (!token) throw new Error('Debes iniciar sesión para comentar.');
 
@@ -230,19 +314,25 @@ export function useComments(articleId: number, documentId: string) {
             parent: parentId,
         });
 
+        const currentUserAvatar =
+            (user as any)?.avatar?.data?.attributes?.url || (user as any)?.avatar?.url;
+        const authorNameSource = (user as any)?.name ?? user!.username;
         const newCommentWithAuthor: Comment = {
             ...newCommentData,
             author: {
                 id: user!.id,
                 username: user!.username,
-                name: user!.username,
-                avatar: undefined,
+                name:
+                    typeof authorNameSource === 'string' && authorNameSource.trim().length > 0
+                        ? authorNameSource.trim()
+                        : user!.username,
+                ...(currentUserAvatar ? { avatar: { url: currentUserAvatar } } : {}),
             },
             children: [],
         };
-        
+
         if (parentId) {
-            setComments(prev => 
+            setComments(prev =>
                 prev.map(c => {
                     if (c.id === parentId) {
                         return { ...c, children: [...c.children, newCommentWithAuthor] };
@@ -255,8 +345,8 @@ export function useComments(articleId: number, documentId: string) {
             setTotal(prev => prev + 1);
         }
     };
-    
-    const handleUpdateComment = async (commentId: number, content: string, parentId?: number) => {
+
+    const handleUpdateComment = async (commentId: number, content: string) => {
         if (!token) throw new Error('Debes iniciar sesión para editar.');
 
         const updatedCommentData = await updateComment(token, commentId, content);
@@ -264,7 +354,11 @@ export function useComments(articleId: number, documentId: string) {
         const updateState = (commentsList: Comment[]): Comment[] => {
             return commentsList.map(c => {
                 if (c.id === commentId) {
-                    return { ...c, content: updatedCommentData.content, updatedAt: updatedCommentData.updatedAt };
+                    return {
+                        ...c,
+                        content: updatedCommentData.content,
+                        updatedAt: updatedCommentData.updatedAt,
+                    };
                 }
                 if (c.children && c.children.length > 0) {
                     return { ...c, children: updateState(c.children) };
@@ -282,12 +376,14 @@ export function useComments(articleId: number, documentId: string) {
         await deleteComment(token, commentId);
 
         const filterState = (commentsList: Comment[]): Comment[] => {
-            return commentsList.filter(c => c.id !== commentId).map(c => {
-                if (c.children && c.children.length > 0) {
-                    return { ...c, children: filterState(c.children) };
-                }
-                return c;
-            });
+            return commentsList
+                .filter(c => c.id !== commentId)
+                .map(c => {
+                    if (c.children && c.children.length > 0) {
+                        return { ...c, children: filterState(c.children) };
+                    }
+                    return c;
+                });
         };
 
         setComments(filterState);
