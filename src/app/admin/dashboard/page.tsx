@@ -301,6 +301,35 @@ export default async function AdminDashboardPage() {
     </>
   );
 
+  const TrafficChartSkeleton = () => (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-4 w-64 mt-2" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-[350px] w-full" />
+      </CardContent>
+    </Card>
+  );
+
+  const TopPagesChartSkeleton = () => (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-56" />
+        <Skeleton className="h-4 w-72 mt-2" />
+      </CardHeader>
+      <CardContent className="space-y-8">
+        <Skeleton className="h-[250px] w-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -325,6 +354,10 @@ export default async function AdminDashboardPage() {
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 space-y-8">
+            <React.Suspense fallback={<TrafficChartSkeleton />}>
+              <TrafficChart />
+            </React.Suspense>
+
             {/* 2. Estado de Artículos */}
             <section>
                 <Card>
@@ -423,6 +456,9 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="space-y-8">
+            <React.Suspense fallback={<TopPagesChartSkeleton />}>
+              <TopPagesChart />
+            </React.Suspense>
             {/* 3. Cobertura de Contenido */}
             <section>
                 <ContentHealthCard metrics={healthMetrics} />
