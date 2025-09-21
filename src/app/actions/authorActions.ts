@@ -108,3 +108,33 @@ export async function saveAuthorAction(
     };
   }
 }
+
+export async function deleteAuthorAction(documentId: string): Promise<{ success: boolean; message: string }> {
+  console.log(`[DELETE_AUTHOR_ACTION] Attempting to delete author with document ID: ${documentId}`);
+
+  try {
+    await deleteAuthor(documentId);
+
+    revalidatePath('/admin/authors');
+    revalidatePath(`/admin/authors/edit/${documentId}`);
+
+    console.log(`[DELETE_AUTHOR_ACTION] Successfully deleted author ${documentId}.`);
+
+    return {
+      success: true,
+      message: 'Autor eliminado con éxito.',
+    };
+  } catch (error) {
+    console.error(`[DELETE_AUTHOR_ACTION] Failed to delete author ${documentId}:`, error);
+
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : 'Error desconocido al eliminar el autor.';
+
+    return {
+      success: false,
+      message: `Error al eliminar el autor: ${message}`,
+    };
+  }
+}

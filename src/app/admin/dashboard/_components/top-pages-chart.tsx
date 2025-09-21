@@ -1,89 +1,107 @@
+'use client';
 
 import * as React from 'react';
-import { BarChart as ChartIcon, ExternalLink } from 'lucide-react';
+import { BarChart as ChartIcon, ExternalLink, AlertCircle } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AnalyticsData {
   topPages: { path: string; count: number }[];
 }
 
-function resolveBaseUrl(): string {
-  const envUrl =
-    process.env.FRONT_ORIGIN_PROD ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.NEXT_PUBLIC_VERCEL_URL ??
-    process.env.VERCEL_URL;
+async function fetchTopPages(): Promise<AnalyticsData> {
+  const res = await fetch('/api/ga/summary', { cache: 'no-store' });
 
-  if (envUrl) {
-    if (envUrl.startsWith('http')) {
-      return envUrl;
-    }
-    return `https://${envUrl}`;
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => ({}));
+    throw new Error(errorBody.error ?? 'No se pudieron cargar los datos de páginas populares.');
   }
 
-  const port = process.env.PORT ?? '3000';
-  return `http://127.0.0.1:${port}`;
+  const data = await res.json();
+  return { topPages: data.topPages ?? [] };
 }
 
-async function getAnalyticsSummary(): Promise<AnalyticsData | null> {
-  try {
-    const baseUrl = resolveBaseUrl();
-    const res = await fetch(`${baseUrl}/api/ga/summary`, {
-      next: { revalidate: 300 },
-    });
+export const TopPagesChart = () => {
+  const [data, setData] = React.useState<AnalyticsData | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-    if (!res.ok) {
-      console.error('[TopPagesChart] Failed to fetch summary data:', {
-        status: res.status,
-        statusText: res.statusText,
-      });
-      return null;
+  React.useEffect(() => {
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const result = await fetchTopPages();
+        if (!active) {
+          return;
+        }
+        setData(result);
+      } catch (err) {
+        if (!active) {
+          return;
+        }
+        setData(null);
+        setError(err instanceof Error ? err.message : 'Error desconocido.');
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const chartData = data?.topPages?.slice(0, 5).reverse() ?? [];
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="space-y-6">
+          <Skeleton className="h-[250px] w-full" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+        </div>
+      );
     }
 
-    const data = await res.json();
-    return { topPages: data.topPages || [] };
-  } catch (error) {
-    console.error('[TopPagesChart] Error during fetch:', error);
-    return null;
-  }
-}
+    if (error) {
+      return (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error al cargar las páginas populares</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      );
+    }
 
-export const TopPagesChart = async () => {
-  const data = await getAnalyticsSummary();
+    if (!data || chartData.length === 0) {
+      return (
+        <Alert>
+          <AlertTitle>No hay datos disponibles</AlertTitle>
+          <AlertDescription>
+            Aún no hay suficientes datos de páginas vistas para mostrar en este gráfico.
+          </AlertDescription>
+        </Alert>
+      );
+    }
 
-  if (!data || !data.topPages || data.topPages.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ChartIcon />Páginas Populares (7 días)</CardTitle>
-          <CardDescription>Las 5 páginas más vistas de la última semana.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Alert>
-                <AlertTitle>No hay datos disponibles</AlertTitle>
-                <AlertDescription>
-                Aún no hay suficientes datos de páginas vistas para mostrar en este gráfico.
-                </AlertDescription>
-            </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const chartData = data.topPages.slice(0, 5).reverse(); // reverse for horizontal bar chart
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><ChartIcon />Páginas Populares (7 días)</CardTitle>
-        <CardDescription>Las 5 páginas más vistas de la última semana.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-8">
+      <>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart
             data={chartData}
@@ -102,41 +120,51 @@ export const TopPagesChart = async () => {
               tickFormatter={(value) => (value.length > 15 ? `${value.substring(0, 15)}...` : value)}
             />
             <Tooltip
-                contentStyle={{
-                    background: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: 'var(--radius)',
-                }}
-                cursor={{ fill: 'hsl(var(--accent) / 0.3)' }}
+              contentStyle={{
+                background: 'hsl(var(--background))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: 'var(--radius)',
+              }}
+              cursor={{ fill: 'hsl(var(--accent) / 0.3)' }}
             />
             <Bar dataKey="count" name="Vistas" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
 
         <div>
-            <h4 className="text-sm font-medium text-muted-foreground mb-2">Detalles</h4>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Ruta</TableHead>
-                        <TableHead className="text-right">Vistas</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {data.topPages.map((page) => (
-                        <TableRow key={page.path}>
-                            <TableCell className="font-medium truncate max-w-xs">
-                                <Link href={page.path} target="_blank" className="flex items-center gap-2 hover:underline">
-                                    {page.path} <ExternalLink className="h-3 w-3" />
-                                </Link>
-                            </TableCell>
-                            <TableCell className="text-right font-mono">{page.count}</TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2">Detalles</h4>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ruta</TableHead>
+                <TableHead className="text-right">Vistas</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.topPages.map((page) => (
+                <TableRow key={page.path}>
+                  <TableCell className="font-medium truncate max-w-xs">
+                    <Link href={page.path} target="_blank" className="flex items-center gap-2 hover:underline">
+                      {page.path} <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">{page.count}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
-      </CardContent>
+      </>
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><ChartIcon />Páginas Populares (7 días)</CardTitle>
+        <CardDescription>Las 5 páginas más vistas de la última semana.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-8">{renderContent()}</CardContent>
     </Card>
   );
 };
