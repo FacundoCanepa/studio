@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
-
+// src/app/api/strapi/articles/document/[documentId]/comments/route.ts
+import { NextResponse, type NextRequest } from 'next/server';
+import { performStrapiRequest } from '@/lib/strapi-api';
 import { qs } from '@/lib/qs';
-import { proxyStrapiRequest } from '../../../../strapi-proxy';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,158 +9,39 @@ interface DocumentCommentsContext {
   params: { documentId: string };
 }
 
-function buildPath(documentId: string) {
-  return `articles/document/${encodeURIComponent(documentId)}/comments`;
-}
+// Esta ruta actúa como un proxy limpio y directo al endpoint personalizado de Strapi.
+export async function GET(request: NextRequest, { params }: DocumentCommentsContext) {
+  const { documentId } = params;
+  const searchParams = request.nextUrl.searchParams;
+  const page = searchParams.get('page') || '1';
+  const pageSize = searchParams.get('pageSize') || '10';
 
-export async function GET(request: Request, { params }: DocumentCommentsContext) {
-  const primaryResponse = await proxyStrapiRequest(
-    request,
-    buildPath(params.documentId),
-    {
-      context: 'STRAPI_DOCUMENT_COMMENTS',
-    }
-  );
-
-  if (primaryResponse.status !== 404) {
-    return primaryResponse;
+  if (!documentId) {
+    return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
   }
 
-  const fallbackRequest = buildFallbackRequest(request, params.documentId);
-
-  const fallbackResponse = await proxyStrapiRequest(fallbackRequest, 'comments', {
-    context: 'STRAPI_DOCUMENT_COMMENTS_FALLBACK',
-  });
-
-  if (!fallbackResponse.ok) {
-    return fallbackResponse;
-  }
-
-  const fallbackClone = fallbackResponse.clone();
-
-  try {
-    const fallbackBody = await fallbackClone.json();
-    renameUsersPermissionsUserToAuthor(fallbackBody);
-
-    return NextResponse.json(fallbackBody, { status: fallbackResponse.status });
-  } catch (error) {
-    console.error('[STRAPI_DOCUMENT_COMMENTS_FALLBACK_TRANSFORM_ERROR]', error);
-  }
-
-  return fallbackResponse;
-}
-
-export async function POST(request: Request, { params }: DocumentCommentsContext) {
-  return proxyStrapiRequest(request, buildPath(params.documentId), {
-    context: 'STRAPI_DOCUMENT_COMMENTS',
-  });
-}
-
-function parsePositiveInteger(value: string | null) {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return undefined;
-  }
-
-  return parsed;
-}
-
-export function buildFallbackQuery(documentId: string, url: URL) {
-  const page = parsePositiveInteger(url.searchParams.get('page')) ?? 1;
-  const pageSize = parsePositiveInteger(url.searchParams.get('pageSize')) ?? 10;
-
-  const populateAuthor = {
-    fields: ['username', 'name'],
-    populate: {
-      avatar: {
-        fields: ['url'],
-      },
-    },
-  };
-
-  const nestedChildrenPopulate = {
-    populate: {
-      users_permissions_user: populateAuthor,
-      children: {
-        populate: {
-          users_permissions_user: populateAuthor,
-          children: {
-            populate: {
-              users_permissions_user: populateAuthor,
-            },
-          },
-        },
-      },
-    },
-  };
+  // Construimos la ruta tal como la espera el controlador personalizado de Strapi
+  const strapiPath = `/api/articles/document/${documentId}/comments`;
 
   const query = {
-    filters: {
-      article: {
-        documentId: {
-          $eq: documentId,
-        },
-      },
-      parent: {
-        id: {
-            $null: true,
-          },
-      },
-    },
-    populate: {
-      users_permissions_user: populateAuthor,
-      children: nestedChildrenPopulate,
-    },
-    sort: ['createdAt:desc'],
-    pagination: {
-      page,
-      pageSize,
-    },
+    page,
+    pageSize,
   };
+  const queryString = qs(query);
 
-  return qs(query);
-}
+  try {
+    // Usamos performStrapiRequest que maneja la autenticación y el fetch
+    const response = await performStrapiRequest(`${strapiPath}${queryString}`, {
+        method: 'GET',
+        cache: 'no-store',
+    });
 
-export function renameUsersPermissionsUserToAuthor(value: unknown) {
-  if (Array.isArray(value)) {
-    value.forEach(renameUsersPermissionsUserToAuthor);
-    return;
+    return NextResponse.json(response, { status: 200 });
+  } catch (error: any) {
+    console.error(`[PROXY_ERROR] /comments: Failed to fetch from Strapi for documentId ${documentId}`, error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch comments from Strapi' },
+      { status: error.status || 500 }
+    );
   }
-
-  if (!value || typeof value !== 'object') {
-    return;
-  }
-
-  const record = value as Record<string, unknown>;
-
-  if ('users_permissions_user' in record && !('author' in record)) {
-    record.author = record.users_permissions_user;
-    delete record.users_permissions_user;
-  }
-
-  for (const key of Object.keys(record)) {
-    renameUsersPermissionsUserToAuthor(record[key]);
-  }
-}
-
-function buildFallbackRequest(originalRequest: Request, documentId: string) {
-  const originalUrl = new URL(originalRequest.url);
-  const fallbackUrl = new URL(originalUrl.toString());
-
-  fallbackUrl.pathname = '/api/strapi/comments';
-  fallbackUrl.search = buildFallbackQuery(documentId, originalUrl);
-
-  const headers = new Headers();
-  originalRequest.headers.forEach((value, key) => {
-    headers.set(key, value);
-  });
-
-  return new Request(fallbackUrl.toString(), {
-    method: 'GET',
-    headers,
-  });
 }

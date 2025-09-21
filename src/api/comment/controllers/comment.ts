@@ -241,7 +241,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
 
     const populateQuery = {
         users_permissions_user: {
-          fields: ['id', 'username'], // Corrected: using 'username'
+          fields: ['id', 'username'],
           populate: {
             avatar: { fields: ['url', 'formats'] },
           },
@@ -250,7 +250,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
           sort: { createdAt: 'asc' },
           populate: {
             users_permissions_user: {
-              fields: ['id', 'username'], // Corrected: using 'username'
+              fields: ['id', 'username'],
               populate: {
                 avatar: { fields: ['url', 'formats'] },
               },
@@ -258,7 +258,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
             children: {
               populate: {
                 users_permissions_user: {
-                  fields: ['id', 'username'], // Corrected: using 'username'
+                  fields: ['id', 'username'],
                   populate: {
                     avatar: { fields: ['url', 'formats'] },
                   },
