@@ -11,6 +11,7 @@ import { AuthProvider } from '@/context/auth-context';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import Script from 'next/script';
 import { AnalyticsTracker } from '@/lib/gtag/AnalyticsTracker';
+import { CookieConsent } from '@/components/shared/cookie-consent';
 
 const fontBody = Poppins({
   subsets: ['latin'],
@@ -104,6 +105,7 @@ export default async function RootLayout({
                 <AppFooter />
               </div>
               <Toaster />
+              <CookieConsent />
             </AuthProvider>
         </ThemeProvider>
       </body>
