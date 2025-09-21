@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       favoriteTags: strapiData.favorite_tags?.map(t => t.id) || [],
     };
 
-    return NextResponse.json({ok: true, data: sanitizedUser});
+    return NextResponse.json({ok: true, data: sanitizedUser, token});
   } catch (error) {
     if (
       error instanceof Error &&
