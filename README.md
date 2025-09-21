@@ -1,4 +1,4 @@
-# Vestigio Magazine
+git # Vestigio Magazine
 
 This is a NextJS starter in Firebase Studio.
 
