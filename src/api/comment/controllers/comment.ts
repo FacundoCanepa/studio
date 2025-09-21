@@ -19,19 +19,121 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
     }
 
     const body = ctx.request.body;
+    if (!body || !body.data) {
+      return ctx.badRequest('Request data is required.');
+    }
+
     const { content, article, parent } = body.data;
 
     if (!content) {
       return ctx.badRequest('Comment content is required.');
     }
-    
-    const entityData = {
+
+    if (article === undefined || article === null) {
+      return ctx.badRequest('Article is required.');
+    }
+
+    const extractRelationId = (value: unknown): string | number | null => {
+      if (value === null || value === undefined) {
+        return null;
+      }
+
+      if (typeof value === 'number' || typeof value === 'string') {
+        return value;
+      }
+
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const id = extractRelationId(item);
+          if (id !== null) {
+            return id;
+          }
+        }
+        return null;
+      }
+
+      if (typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        const directId = record.id;
+
+        if (typeof directId === 'number' || typeof directId === 'string') {
+          return directId;
+        }
+
+        if ('connect' in record) {
+          return extractRelationId(record.connect);
+        }
+
+        if ('data' in record) {
+          return extractRelationId(record.data);
+        }
+      }
+
+      return null;
+    };
+
+    const articleId = extractRelationId(article);
+
+    if (articleId === null) {
+      return ctx.badRequest('A valid article must be provided.');
+    }
+
+    let articleEntry;
+
+    try {
+      articleEntry = await strapi.entityService.findOne(
+        'api::article.article',
+        articleId as never
+      );
+    } catch (error) {
+      articleEntry = null;
+    }
+
+    if (!articleEntry) {
+      return ctx.badRequest('Article not found.');
+    }
+
+    if (parent !== undefined && parent !== null) {
+      const parentId = extractRelationId(parent);
+
+      if (parentId === null) {
+        return ctx.badRequest('A valid parent comment must be provided.');
+      }
+
+      let parentComment;
+
+      try {
+        parentComment = await strapi.entityService.findOne(
+          'api::comment.comment',
+          parentId as never,
+          { populate: ['article'] }
+        );
+      } catch (error) {
+        parentComment = null;
+      }
+
+      if (!parentComment) {
+        return ctx.badRequest('Parent comment not found.');
+      }
+
+      const parentArticleId = extractRelationId(parentComment.article);
+
+      if (parentArticleId === null || String(parentArticleId) !== String(articleId)) {
+        return ctx.badRequest('Parent comment must belong to the same article.');
+      }
+    }
+
+    const entityData: Record<string, unknown> = {
       content,
       author: user.id, // Asigna el ID del usuario de `users-permissions`
       estado: 'approved',
-      article,
-      parent,
     };
+
+    entityData.article = article;
+
+    if (parent !== undefined && parent !== null) {
+      entityData.parent = parent;
+    }
 
     const entity = await strapi.service('api::comment.comment').create({
       data: entityData,
