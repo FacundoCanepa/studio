@@ -31,6 +31,82 @@ interface CommentsApiResponse {
         };
     };
 }
+interface ParsedJsonResponse<T> {
+    body: T | null;
+    rawText?: string;
+}
+
+async function parseJsonResponse<T>(response: Response, context: string): Promise<ParsedJsonResponse<T>> {
+    if (response.status === 204 || response.status === 205) {
+        return { body: null };
+    }
+
+    let body: T | undefined;
+    let rawText: string | undefined;
+    const clonedResponse = response.clone();
+
+    try {
+        body = (await response.json()) as T;
+    } catch (error) {
+        rawText = await clonedResponse.text().catch(() => undefined);
+        console.error(`[${context}_PARSE_ERROR]`, {
+            message: (error as Error)?.message,
+            rawBody: rawText,
+        });
+    }
+
+    if (body === undefined && rawText && rawText.trim().length > 0) {
+        try {
+            body = JSON.parse(rawText) as T;
+        } catch {
+            // Ignored: we already logged the parsing issue above.
+        }
+    }
+
+    return { body: (body ?? null), rawText };
+}
+
+function resolveErrorMessage(body: unknown, rawText: string | undefined, fallback: string) {
+    if (body && typeof body === 'object') {
+        const payload = body as Record<string, unknown>;
+        const errorField = payload.error;
+
+        if (typeof errorField === 'string' && errorField.trim().length > 0) {
+            return errorField;
+        }
+
+        if (errorField && typeof errorField === 'object' && 'message' in errorField) {
+            const nestedMessage = (errorField as Record<string, unknown>).message;
+            if (typeof nestedMessage === 'string' && nestedMessage.trim().length > 0) {
+                return nestedMessage;
+            }
+        }
+
+        const message = payload.message;
+        if (typeof message === 'string' && message.trim().length > 0) {
+            return message;
+        }
+    }
+
+    if (typeof body === 'string' && body.trim().length > 0) {
+        return body;
+    }
+
+    if (rawText && rawText.trim().length > 0) {
+        return rawText;
+    }
+
+    return fallback;
+}
+
+function extractDataField<T>(payload: unknown): T | null {
+    if (payload && typeof payload === 'object' && 'data' in payload) {
+        const data = (payload as { data: T }).data;
+        return data ?? null;
+    }
+
+    return null;
+}
 
 async function fetchComments(
     documentId: string,
@@ -40,10 +116,16 @@ async function fetchComments(
     const res = await fetch(
         `/api/strapi/articles/document/${documentId}/comments?page=${page}&pageSize=${pageSize}`
     );
+    const { body, rawText } = await parseJsonResponse<CommentsApiResponse>(res, 'COMMENTS_FETCH');
     if (!res.ok) {
-        throw new Error('No se pudieron cargar los comentarios.');
+        throw new Error(resolveErrorMessage(body, rawText, 'No se pudieron cargar los comentarios.'));
     }
-    return res.json();
+
+    if (!body || !Array.isArray(body.data)) {
+        throw new Error('La respuesta de comentarios es inválida.');
+    }
+
+    return body;
 }
 
 async function postComment(
@@ -58,12 +140,16 @@ async function postComment(
         },
         body: JSON.stringify({ data: payload }),
     });
+    const { body, rawText } = await parseJsonResponse<{ data: Comment }>(res, 'COMMENTS_CREATE');
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error?.message || 'No se pudo publicar el comentario.');
+        throw new Error(resolveErrorMessage(body, rawText, 'No se pudo publicar el comentario.'))
     }
-    const result = await res.json();
-    return result.data;
+    const data = extractDataField<Comment>(body);
+    if (!data) {
+        throw new Error('La respuesta al publicar el comentario es inválida.');
+    }
+
+    return data;
 }
 
 async function updateComment(token: string, commentId: number, content: string): Promise<Comment> {
@@ -75,13 +161,18 @@ async function updateComment(token: string, commentId: number, content: string):
         },
         body: JSON.stringify({ data: { content } }),
     });
+    const { body, rawText } = await parseJsonResponse<{ data: Comment }>(res, 'COMMENTS_UPDATE');
 
     if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error?.message || 'No se pudo actualizar el comentario.');
+        throw new Error(resolveErrorMessage(body, rawText, 'No se pudo actualizar el comentario.'));
     }
-    const result = await res.json();
-    return result.data;
+
+    const data = extractDataField<Comment>(body);
+    if (!data) {
+        throw new Error('La respuesta al actualizar el comentario es inválida.');
+    }
+
+    return data;
 }
 
 async function deleteComment(token: string, commentId: number): Promise<void> {
@@ -201,7 +292,7 @@ export function useComments(articleId: number, documentId: string) {
 
         setComments(filterState);
         if (!parentId) {
-            setTotal(prev => prev -1);
+            setTotal(prev => prev - 1);
         }
     };
 

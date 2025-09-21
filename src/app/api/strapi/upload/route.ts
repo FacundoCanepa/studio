@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
 
-const STRAPI_URL = process.env.NEXT_PUBLIC_STRAPI_URL;
+import { STRAPI_URL, missingStrapiUrlResponse, parseStrapiResponse } from '../strapi-proxy';
 const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 export async function POST(request: Request) {
   if (!STRAPI_URL) {
-    return NextResponse.json(
-      {
-        error: 'La variable de entorno NEXT_PUBLIC_STRAPI_URL no está configurada.',
-      },
-      { status: 500 }
-    );
+    return missingStrapiUrlResponse();
   }
 
   if (!STRAPI_API_TOKEN) {
@@ -44,18 +39,8 @@ export async function POST(request: Request) {
       // Strapi maneja internamente el contenido multipart/form-data.
     });
 
-    let parsedBody: unknown;
-    let rawBody: string | undefined;
 
-    try {
-      parsedBody = await strapiResponse.json();
-    } catch (error) {
-      rawBody = await strapiResponse.text().catch(() => undefined);
-      console.error('[STRAPI_UPLOAD_PARSE_ERROR]', {
-        message: (error as Error)?.message,
-        rawBody,
-      });
-    }
+    const { parsedBody, rawBody } = await parseStrapiResponse(strapiResponse, 'STRAPI_UPLOAD');
 
     if (!strapiResponse.ok) {
       return NextResponse.json(
