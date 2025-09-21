@@ -218,15 +218,11 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
    * Paginado y ordenado.
    */
   async findByArticle(ctx: any) {
-    console.log('[findByArticle] Received request.');
     const { id, documentId } = ctx.params;
     const page = parseInt(String(ctx.query?.page ?? '1'), 10) || 1;
     const pageSize = parseInt(String(ctx.query?.pageSize ?? '10'), 10) || 10;
 
-    console.log('[findByArticle] Params:', { id, documentId, page, pageSize });
-
     if (!id && !documentId) {
-      console.log('[findByArticle] Bad request: Article ID or Document ID must be provided.');
       return ctx.badRequest('Article ID or Document ID must be provided.');
     }
 
@@ -234,8 +230,6 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
       ? { article: { id: { $eq: id } } }
       : { article: { documentId: { $eq: documentId } } };
     
-    console.log('[findByArticle] Constructed article filter:', JSON.stringify(articleFilter));
-
     // En Strapi v5 existe entityService.findPage; en v4 usar findMany con pagination
     const hasFindPage = typeof (strapi.entityService as any).findPage === 'function';
 
@@ -268,12 +262,10 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
           },
         },
     };
-
-    console.log('[findByArticle] Populate query:', JSON.stringify(populateQuery));
-
+    
+    // El método `findPage` es más moderno y recomendado si está disponible
     if (hasFindPage) {
       try {
-        console.log('[findByArticle] Using entityService.findPage.');
         const { results, pagination } = await (strapi.entityService as any).findPage('api::comment.comment', {
           page,
           pageSize,
@@ -285,8 +277,6 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
           sort: { createdAt: 'desc' },
           populate: populateQuery,
         });
-
-        console.log(`[findByArticle] Found ${results.length} results.`);
 
         const sanitizedResults = await this.sanitizeOutput(results, ctx);
         const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
@@ -301,9 +291,8 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
       }
     }
 
-    // Fallback para Strapi v4
+    // Fallback para versiones de Strapi que no tienen findPage
     try {
-        console.log('[findByArticle] Using entityService.findMany (v4 fallback).');
         const results = await strapi.entityService.findMany('api::comment.comment', {
           filters: {
             ...articleFilter,
@@ -315,8 +304,6 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
           pagination: { page, pageSize },
         });
         
-        console.log(`[findByArticle][v4] Found ${results.length} results.`);
-
         const sanitizedResults = await this.sanitizeOutput(results, ctx);
         const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
 
@@ -326,7 +313,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
             pagination: {
               page,
               pageSize,
-              pageCount: Math.ceil(results.length / pageSize), // aproximado en v4
+              pageCount: Math.ceil(results.length / pageSize),
               total: results.length,
             },
           },
