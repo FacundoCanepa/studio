@@ -18,7 +18,7 @@ interface TimeSeriesResponse {
 }
 
 export async function GET(request: NextRequest) {
-  const { client, propertyId } = getGaClient();
+  const { client, propertyId } = await getGaClient();
 
   if (!client || !propertyId) {
     console.error('[GA4_TS] Google Analytics client is not initialized. Check environment variables.');

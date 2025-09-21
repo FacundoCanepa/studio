@@ -50,7 +50,10 @@ function initializeGaClient() {
  * 
  * @returns An object containing the client instance and property ID.
  */
-export function getGaClient(): { client: BetaAnalyticsDataClient | null; propertyId: string | null } {
+export async function getGaClient(): Promise<{
+  client: BetaAnalyticsDataClient | null;
+  propertyId: string | null;
+}> {
   if (!analyticsDataClient) {
     initializeGaClient();
   }

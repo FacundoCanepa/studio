@@ -14,7 +14,7 @@ interface AnalyticsSummary {
 }
 
 export async function GET() {
-  const { client, propertyId } = getGaClient();
+  const { client, propertyId } = await getGaClient();
 
   if (!client || !propertyId) {
     console.error('[GA4_SUMMARY] Google Analytics client is not initialized. Check environment variables.');
