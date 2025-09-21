@@ -1,6 +1,6 @@
 // src/app/api/strapi/articles/document/[documentId]/comments/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
-import { proxyStrapiRequest } from '../../../strapi-proxy';
+import { proxyStrapiRequest } from '../../../../strapi-proxy';
 import { qs } from '@/lib/qs';
 
 export const dynamic = 'force-dynamic';
