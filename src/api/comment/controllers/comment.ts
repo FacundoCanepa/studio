@@ -218,82 +218,30 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
    * Paginado y ordenado.
    */
   async findByArticle(ctx: any) {
+    console.log('[findByArticle] Received request.');
     const { id, documentId } = ctx.params;
     const page = parseInt(String(ctx.query?.page ?? '1'), 10) || 1;
     const pageSize = parseInt(String(ctx.query?.pageSize ?? '10'), 10) || 10;
 
+    console.log('[findByArticle] Params:', { id, documentId, page, pageSize });
+
     if (!id && !documentId) {
+      console.log('[findByArticle] Bad request: Article ID or Document ID must be provided.');
       return ctx.badRequest('Article ID or Document ID must be provided.');
     }
 
     const articleFilter = id
       ? { article: { id: { $eq: id } } }
       : { article: { documentId: { $eq: documentId } } };
+    
+    console.log('[findByArticle] Constructed article filter:', JSON.stringify(articleFilter));
 
     // En Strapi v5 existe entityService.findPage; en v4 usar findMany con pagination
     const hasFindPage = typeof (strapi.entityService as any).findPage === 'function';
 
-    if (hasFindPage) {
-      const { results, pagination } = await (strapi.entityService as any).findPage('api::comment.comment', {
-        page,
-        pageSize,
-        filters: {
-          ...articleFilter,
-          estado: { $eq: 'approved' },
-          parent: { id: { $null: true } },
-        },
-        sort: { createdAt: 'desc' },
-        populate: {
-          users_permissions_user: {
-            fields: ['id', 'username'],
-            populate: {
-              avatar: { fields: ['url', 'formats'] },
-            },
-          },
-          children: {
-            sort: { createdAt: 'asc' },
-            populate: {
-              users_permissions_user: {
-                fields: ['id', 'username'],
-                populate: {
-                  avatar: { fields: ['url', 'formats'] },
-                },
-              },
-              children: {
-                populate: {
-                  users_permissions_user: {
-                    fields: ['id', 'username'],
-                    populate: {
-                      avatar: { fields: ['url', 'formats'] },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      const sanitizedResults = await this.sanitizeOutput(results, ctx);
-      const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
-
-      return this.transformResponse({
-        data: renamedResults,
-        meta: { pagination },
-      });
-    }
-
-    // Fallback para Strapi v4
-    const results = await strapi.entityService.findMany('api::comment.comment', {
-      filters: {
-        ...articleFilter,
-        estado: { $eq: 'approved' },
-        parent: { id: { $null: true } },
-      },
-      sort: { createdAt: 'desc' },
-      populate: {
+    const populateQuery = {
         users_permissions_user: {
-          fields: ['id', 'username'],
+          fields: ['id', 'username'], // Corrected: using 'username'
           populate: {
             avatar: { fields: ['url', 'formats'] },
           },
@@ -302,7 +250,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
           sort: { createdAt: 'asc' },
           populate: {
             users_permissions_user: {
-              fields: ['id', 'username'],
+              fields: ['id', 'username'], // Corrected: using 'username'
               populate: {
                 avatar: { fields: ['url', 'formats'] },
               },
@@ -310,7 +258,7 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
             children: {
               populate: {
                 users_permissions_user: {
-                  fields: ['id', 'username'],
+                  fields: ['id', 'username'], // Corrected: using 'username'
                   populate: {
                     avatar: { fields: ['url', 'formats'] },
                   },
@@ -319,23 +267,73 @@ export default factories.createCoreController('api::comment.comment', ({ strapi 
             },
           },
         },
-      },
-      pagination: { page, pageSize },
-    });
+    };
 
-    const sanitizedResults = await this.sanitizeOutput(results, ctx);
-    const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
+    console.log('[findByArticle] Populate query:', JSON.stringify(populateQuery));
 
-    return this.transformResponse({
-      data: renamedResults,
-      meta: {
-        pagination: {
+    if (hasFindPage) {
+      try {
+        console.log('[findByArticle] Using entityService.findPage.');
+        const { results, pagination } = await (strapi.entityService as any).findPage('api::comment.comment', {
           page,
           pageSize,
-          pageCount: Math.ceil(results.length / pageSize), // aproximado en v4
-          total: results.length,
-        },
-      },
-    });
+          filters: {
+            ...articleFilter,
+            estado: { $eq: 'approved' },
+            parent: { id: { $null: true } },
+          },
+          sort: { createdAt: 'desc' },
+          populate: populateQuery,
+        });
+
+        console.log(`[findByArticle] Found ${results.length} results.`);
+
+        const sanitizedResults = await this.sanitizeOutput(results, ctx);
+        const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
+
+        return this.transformResponse({
+          data: renamedResults,
+          meta: { pagination },
+        });
+      } catch (e: any) {
+        console.error('[findByArticle][ERROR] Error during findPage:', e);
+        return ctx.internalServerError('An error occurred while fetching comments.');
+      }
+    }
+
+    // Fallback para Strapi v4
+    try {
+        console.log('[findByArticle] Using entityService.findMany (v4 fallback).');
+        const results = await strapi.entityService.findMany('api::comment.comment', {
+          filters: {
+            ...articleFilter,
+            estado: { $eq: 'approved' },
+            parent: { id: { $null: true } },
+          },
+          sort: { createdAt: 'desc' },
+          populate: populateQuery,
+          pagination: { page, pageSize },
+        });
+        
+        console.log(`[findByArticle][v4] Found ${results.length} results.`);
+
+        const sanitizedResults = await this.sanitizeOutput(results, ctx);
+        const renamedResults = renameUsersPermissionsUserToAuthor(sanitizedResults);
+
+        return this.transformResponse({
+          data: renamedResults,
+          meta: {
+            pagination: {
+              page,
+              pageSize,
+              pageCount: Math.ceil(results.length / pageSize), // aproximado en v4
+              total: results.length,
+            },
+          },
+        });
+    } catch (e: any) {
+        console.error('[findByArticle][ERROR][v4] Error during findMany:', e);
+        return ctx.internalServerError('An error occurred while fetching comments.');
+    }
   },
 }));

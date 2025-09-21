@@ -117,16 +117,24 @@ export async function proxyStrapiRequest(
   const url = new URL(request.url);
   const targetUrl = `${STRAPI_URL.replace(/\/$/, '')}/api/${path}${url.search}`;
 
+  console.log(`[STRAPI_PROXY] ${context || 'REQUEST'}: Forwarding ${method} to ${targetUrl}`);
+
+
   let body: string | undefined;
   try {
     body = await readRequestBody(request, method);
   } catch (error) {
+    console.error(`[STRAPI_PROXY] ${context || 'ERROR'}: Could not read request body.`);
     return NextResponse.json(
       {
         error: 'No se pudo leer el cuerpo de la solicitud entrante.',
       },
       { status: 400 }
     );
+  }
+  
+  if (body) {
+    console.log(`[STRAPI_PROXY] ${context || 'BODY'}: Request body exists (length: ${body.length}).`);
   }
 
   try {
@@ -136,11 +144,17 @@ export async function proxyStrapiRequest(
       body,
       cache: 'no-store',
     });
+    
+    console.log(`[STRAPI_PROXY] ${context || 'RESPONSE'}: Received status ${strapiResponse.status} from Strapi.`);
+
 
     let { parsedBody, rawBody } = await parseStrapiResponse(strapiResponse, context ?? 'STRAPI_PROXY');
 
     if (!strapiResponse.ok) {
       const errorMessage = extractErrorMessage(parsedBody, rawBody);
+      console.error(`[STRAPI_PROXY] ${context || 'ERROR'}: Strapi returned error status ${strapiResponse.status}. Message: ${errorMessage}`);
+      console.error(`[STRAPI_PROXY] ${context || 'ERROR_DETAILS'}:`, JSON.stringify(parsedBody ?? rawBody, null, 2));
+
       return NextResponse.json(
         {
           error: errorMessage,
@@ -151,10 +165,12 @@ export async function proxyStrapiRequest(
     }
 
     if (parsedBody === undefined) {
+       console.warn(`[STRAPI_PROXY] ${context || 'WARN'}: Parsed body is undefined. Raw body length: ${rawBody?.length ?? 0}`);
       if (rawBody && rawBody.trim().length > 0) {
         try {
           parsedBody = JSON.parse(rawBody);
         } catch {
+            console.error(`[STRAPI_PROXY] ${context || 'ERROR'}: Strapi did not return valid JSON.`, { rawBody });
           return NextResponse.json(
             {
               error: 'Strapi no devolvió una respuesta JSON válida.',
@@ -164,15 +180,12 @@ export async function proxyStrapiRequest(
           );
         }
       } else {
-        return NextResponse.json(
-          {
-            error: 'Strapi no devolvió una respuesta válida.',
-          },
-          { status: 502 }
-        );
+        console.log(`[STRAPI_PROXY] ${context || 'SUCCESS'}: Strapi returned empty body (status ${strapiResponse.status}).`);
+        return new NextResponse(null, { status: strapiResponse.status });
       }
     }
-
+    
+    console.log(`[STRAPI_PROXY] ${context || 'SUCCESS'}: Successfully processed request.`);
     return NextResponse.json(parsedBody, { status: strapiResponse.status });
   } catch (error) {
     console.error(`[${context ?? 'STRAPI_PROXY'}_FORWARD_ERROR]`, error);
