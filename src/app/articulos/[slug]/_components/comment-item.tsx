@@ -4,7 +4,7 @@ import * as React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MoreVertical, CornerDownRight, Loader2 } from 'lucide-react';
-import type { Comment, CommentAuthor } from '@/hooks/use-comments';
+import type { Comment } from '@/hooks/use-comments';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -41,14 +41,17 @@ export function CommentItem({
   const [isEditing, setIsEditing] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   
-  const canEdit = currentUser?.id === comment.author.id;
-  const canDelete = currentUser?.id === comment.author.id;
+  const canEdit =
+  typeof currentUser?.id === 'number' && comment.author.id != null
+    ? currentUser.id === comment.author.id
+    : false;
+const canDelete = canEdit;
 
   const timeAgo = formatDistanceToNow(new Date(comment.createdAt), {
     addSuffix: true,
     locale: es,
   });
-  const userInitial = comment.author.username?.charAt(0)?.toUpperCase() ?? 'U';
+  const userInitial = comment.author.displayName?.charAt(0)?.toUpperCase() ?? 'U';
   const handleReplySubmit = async (content: string) => {
     try {
         await onCommentAdded(content, comment.id);
@@ -91,7 +94,7 @@ export function CommentItem({
       <div className="flex-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-semibold">{comment.author.name || comment.author.username}</span>
+          <span className="font-semibold">{comment.author.displayName}</span>
             <span className="text-xs text-muted-foreground">{timeAgo}</span>
             {comment.createdAt !== comment.updatedAt && (
               <span className="text-xs text-muted-foreground">(editado)</span>
