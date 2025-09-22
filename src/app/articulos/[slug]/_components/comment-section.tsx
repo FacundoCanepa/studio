@@ -19,6 +19,8 @@ export function CommentSection({ articleId, documentId }: CommentSectionProps) {
     comments,
     user,
     loading,
+    loadingMore,
+    refreshing,
     error,
     page,
     pageCount,
@@ -46,13 +48,6 @@ export function CommentSection({ articleId, documentId }: CommentSectionProps) {
           ))}
         </div>
       );
-    }
-    
-    if (error) {
-        return <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-        </Alert>
     }
 
     if (comments.length === 0) {
@@ -82,8 +77,14 @@ export function CommentSection({ articleId, documentId }: CommentSectionProps) {
         ))}
         {hasMore && (
           <div className="text-center">
-            <Button onClick={loadMore} disabled={loading} variant="outline">
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button
+              onClick={() => {
+                void loadMore();
+              }}
+              disabled={loadingMore || refreshing}
+              variant="outline"
+            >
+              {loadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Cargar más comentarios
             </Button>
           </div>
@@ -119,7 +120,13 @@ export function CommentSection({ articleId, documentId }: CommentSectionProps) {
         </Alert>
       )}
 
-      <div className="mt-12">
+      <div className="mt-12 space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         {renderContent()}
       </div>
     </section>
