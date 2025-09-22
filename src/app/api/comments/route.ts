@@ -102,7 +102,33 @@ export async function GET(request: NextRequest) {
   const page = parsed.data.page ?? DEFAULT_PAGE;
   const pageSize = parsed.data.pageSize ?? DEFAULT_PAGE_SIZE;
 
-  const query = buildCommentsQuery(documentId, page, pageSize);
+  // Use a query that does not populate 'author'
+  const query = qs({
+    filters: {
+      article: { documentId: { $eq: documentId } },
+      estado: { $eq: 'approved' },
+    },
+    sort: ['createdAt:desc'],
+    pagination: { page, pageSize },
+    fields: ['content', 'estado', 'createdAt', 'updatedAt', 'author_displayName'],
+    populate: {
+        users_permissions_user: {
+            fields: ['id', 'username']
+        },
+        parent: { fields: ['id'] },
+        children: {
+            fields: ['content', 'estado', 'createdAt', 'updatedAt', 'author_displayName'],
+            sort: ['createdAt:asc'],
+            populate: {
+                users_permissions_user: {
+                    fields: ['id', 'username']
+                },
+                parent: { fields: ['id'] }
+            }
+        }
+    }
+  });
+
 
   try {
     const strapiResponse = await fetchStrapi<StrapiCommentsResponse>(
@@ -154,7 +180,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const response = await forwardToStrapi(
-      `/comments?populate[article][fields][0]=documentId`,
+      `/comments`, // No populate needed on create
       token,
       {
         method: 'POST',

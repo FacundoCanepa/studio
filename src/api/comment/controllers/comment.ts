@@ -35,13 +35,25 @@ export interface CommentControllerLogger {
  * ------------------------------------------------------------ */
 const createDefaultLogger = (): CommentControllerLogger => ({
   info(message, meta) {
-    meta ? console.log(message, meta) : console.log(message);
+    if (meta) {
+      console.log(`[COMMENT_CONTROLLER][INFO] ${message}`, meta);
+    } else {
+      console.log(`[COMMENT_CONTROLLER][INFO] ${message}`);
+    }
   },
   warn(message, meta) {
-    meta ? console.warn(message, meta) : console.warn(message);
+    if (meta) {
+      console.warn(`[COMMENT_CONTROLLER][WARN] ${message}`, meta);
+    } else {
+      console.warn(`[COMMENT_CONTROLLER][WARN] ${message}`);
+    }
   },
   error(message, meta) {
-    meta ? console.error(message, meta) : console.error(message);
+    if (meta) {
+      console.error(`[COMMENT_CONTROLLER][ERROR] ${message}`, meta);
+    } else {
+      console.error(`[COMMENT_CONTROLLER][ERROR] ${message}`);
+    }
   },
 });
 
@@ -94,12 +106,10 @@ const parsePositiveInteger = (value: unknown): number | null => {
 const ensureQueryDefaults = (query: UnknownRecord | undefined | null): void => {
   if (!query || typeof query !== 'object') return;
 
-  // sort
   if (!Object.prototype.hasOwnProperty.call(query, 'sort')) {
     (query as UnknownRecord).sort = { createdAt: 'desc' };
   }
 
-  // pagination
   const page = parsePositiveInteger((query as UnknownRecord)?.page) ?? DEFAULT_PAGE;
   const pageSize =
     parsePositiveInteger((query as UnknownRecord)?.pageSize) ?? DEFAULT_PAGE_SIZE;
@@ -107,60 +117,41 @@ const ensureQueryDefaults = (query: UnknownRecord | undefined | null): void => {
   (query as UnknownRecord).page = page;
   (query as UnknownRecord).pageSize = pageSize;
 
-  // populate author por defecto
   if (!Object.prototype.hasOwnProperty.call(query, 'populate')) {
-    (query as UnknownRecord).populate = { users_permissions_user: true, article: true };
+    (query as UnknownRecord).populate = { users_permissions_user: true };
   }
 };
 
 const extractRelationId = (rel: unknown): string | number | null => {
   if (rel == null) return null;
-
   if (typeof rel === 'number' || typeof rel === 'string') return rel;
-
   if (Array.isArray(rel)) {
     for (const item of rel) {
       const id = extractRelationId(item);
-      if (id !== null && id !== undefined) return id;
+      if (id != null) return id;
     }
     return null;
   }
-
   if (typeof rel === 'object') {
     const record = rel as UnknownRecord;
-
-    if (
-      Object.prototype.hasOwnProperty.call(record, 'id') &&
-      (typeof record.id === 'number' || typeof record.id === 'string')
-    ) {
+    if (Object.prototype.hasOwnProperty.call(record, 'id') && (typeof record.id === 'number' || typeof record.id === 'string')) {
       return record.id;
     }
-
-    if (
-      Object.prototype.hasOwnProperty.call(record, 'documentId') &&
-      typeof record.documentId === 'string'
-    ) {
+    if (Object.prototype.hasOwnProperty.call(record, 'documentId') && typeof record.documentId === 'string') {
       return record.documentId;
     }
-
     if (Object.prototype.hasOwnProperty.call(record, 'connect')) {
       return extractRelationId(record.connect);
     }
-
     if (Object.prototype.hasOwnProperty.call(record, 'data')) {
       return extractRelationId(record.data);
     }
   }
-
   return null;
 };
 
 const extractEntityId = (value: unknown): string | number | null => {
-  if (
-    value &&
-    typeof value === 'object' &&
-    Object.prototype.hasOwnProperty.call(value as UnknownRecord, 'data')
-  ) {
+  if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value as UnknownRecord, 'data')) {
     return extractEntityId((value as UnknownRecord).data);
   }
   return extractRelationId(value);
@@ -174,8 +165,6 @@ const sanitizeDisplayName = (value: unknown): string | null => {
 
 const extractDisplayNameFromUser = (input: unknown): string | null => {
   if (!input || typeof input !== 'object') return null;
-
-  // mirar atributos directos
   const rec = input as UnknownRecord;
   for (const key of ['displayName', 'name', 'username', 'email']) {
     if (Object.prototype.hasOwnProperty.call(rec, key)) {
@@ -183,19 +172,14 @@ const extractDisplayNameFromUser = (input: unknown): string | null => {
       if (val) return val;
     }
   }
-
-  // mirar attributes
   if (Object.prototype.hasOwnProperty.call(rec, 'attributes')) {
     const inner = extractDisplayNameFromUser(rec.attributes);
     if (inner) return inner;
   }
-
-  // mirar data
   if (Object.prototype.hasOwnProperty.call(rec, 'data')) {
     const inner = extractDisplayNameFromUser(rec.data);
     if (inner) return inner;
   }
-
   return null;
 };
 
@@ -211,62 +195,42 @@ const ensureLogger = (logger?: Partial<CommentControllerLogger>): CommentControl
 });
 
 const resolveArticleIdFromComment = (value: unknown): string | number | null => {
-  if (!value || typeof value !== 'object') {
-    return extractRelationId(value);
-  }
+  if (!value || typeof value !== 'object') return extractRelationId(value);
   const record = value as UnknownRecord;
-  if (Object.prototype.hasOwnProperty.call(record, 'article')) {
-    return extractRelationId(record.article);
-  }
-  if (Object.prototype.hasOwnProperty.call(record, 'attributes')) {
-    return resolveArticleIdFromComment(record.attributes);
-  }
+  if (Object.prototype.hasOwnProperty.call(record, 'article')) return extractRelationId(record.article);
+  if (Object.prototype.hasOwnProperty.call(record, 'attributes')) return resolveArticleIdFromComment(record.attributes);
   return extractRelationId(record);
 };
 
 const normalizeEstadoValue = (strapi: any, value: unknown): string | undefined | null => {
   if (value === undefined) return undefined;
   if (value === null || typeof value !== 'string') return null;
-
   const trimmed = value.trim();
   if (trimmed.length === 0) return null;
-
   const schema = strapi.contentType(COMMENT_UID);
-  const enumValues: Maybe<string[]> =
-    schema &&
-    schema.attributes &&
-    schema.attributes.estado &&
-    Array.isArray(schema.attributes.estado.enum)
-      ? schema.attributes.estado.enum
-      : null;
-
-  if (enumValues && !enumValues.includes(trimmed)) {
-    return null;
-  }
+  const enumValues: Maybe<string[]> = schema?.attributes?.estado?.enum ?? null;
+  if (enumValues && !enumValues.includes(trimmed)) return null;
   return trimmed;
 };
 
-/**
- * Mapea la propiedad `users_permissions_user` -> `author`,
- * y normaliza los snapshots de `author_displayName` si aplica.
- */
 const mapAuthorFields = (value: unknown): unknown => {
-  if (Array.isArray(value)) {
-    return value.map((v) => mapAuthorFields(v));
-  }
+  if (Array.isArray(value)) return value.map((v) => mapAuthorFields(v));
   if (!value || typeof value !== 'object') return value;
 
   const record = { ...(value as UnknownRecord) };
+  let authorSnapshot = sanitizeDisplayName(record.author_displayName);
 
-  // mover users_permissions_user -> author
-  if (Object.prototype.hasOwnProperty.call(record, 'users_permissions_user')) {
-    record.author = mapAuthorFields(record.users_permissions_user);
-    delete record.users_permissions_user;
+  if (!authorSnapshot && Object.prototype.hasOwnProperty.call(record, 'users_permissions_user')) {
+    authorSnapshot = extractDisplayNameFromUser(record.users_permissions_user);
   }
 
-  // si hay atributos anidados
+  delete record.users_permissions_user;
+  record.author = { displayName: authorSnapshot || FALLBACK_DISPLAY_NAME };
+
   for (const key of Object.keys(record)) {
-    record[key] = mapAuthorFields(record[key]);
+    if (typeof record[key] === 'object' && record[key] !== null) {
+      record[key] = mapAuthorFields(record[key]);
+    }
   }
 
   return record;
@@ -275,60 +239,46 @@ const mapAuthorFields = (value: unknown): unknown => {
 const transformControllerResponse = <T>(response: T): T => {
   if (!response || typeof response !== 'object') return response;
 
-  if (Array.isArray(response)) {
-    return mapAuthorFields(response) as T;
-  }
-
+  const performTransform = (data: any) => {
+    if (Array.isArray(data)) return data.map(mapAuthorFields);
+    return mapAuthorFields(data);
+  };
+  
   if (Object.prototype.hasOwnProperty.call(response as UnknownRecord, 'data')) {
     const mutable = response as UnknownRecord;
-    const data = mutable.data;
-
-    mutable.data = Array.isArray(data) ? data.map((d: any) => mapAuthorFields(d)) : mapAuthorFields(data);
-    return response;
+    mutable.data = performTransform(mutable.data);
+    return mutable as T;
   }
 
-  return mapAuthorFields(response) as T;
+  return performTransform(response) as T;
 };
 
 const resolveUserId = (value: unknown): string | number | null => {
   if (!value) return null;
-
   if (typeof value === 'number' || typeof value === 'string') return value;
-
   if (Array.isArray(value)) {
     for (const item of value) {
       const resolved = resolveUserId(item);
-      if (resolved !== null && resolved !== undefined) return resolved;
+      if (resolved != null) return resolved;
     }
     return null;
   }
-
   if (typeof value === 'object') {
     const record = value as UnknownRecord;
-
-    if (
-      Object.prototype.hasOwnProperty.call(record, 'id') &&
-      (typeof record.id === 'number' || typeof record.id === 'string')
-    ) {
+    if (Object.prototype.hasOwnProperty.call(record, 'id') && (typeof record.id === 'number' || typeof record.id === 'string')) {
       return record.id;
     }
-
     if (Object.prototype.hasOwnProperty.call(record, 'data')) {
       return resolveUserId(record.data);
     }
   }
-
   return null;
 };
 
-/* ------------------------------------------------------------
- * Backfill de author_displayName (una sola vez)
- * ------------------------------------------------------------ */
 const runAuthorDisplayNameBackfill = async (strapi: any, logger: CommentControllerLogger) => {
   if (!strapi?.entityService?.findMany || !strapi?.entityService?.update) return;
 
   let processed = 0;
-
   while (true) {
     const missingComments = await strapi.entityService.findMany(COMMENT_UID, {
       filters: { author_displayName: { $null: true } },
@@ -340,62 +290,37 @@ const runAuthorDisplayNameBackfill = async (strapi: any, logger: CommentControll
 
     for (const comment of missingComments) {
       const commentId = extractRelationId((comment as any)?.id ?? comment);
-      if (commentId === null || commentId === undefined) {
+      if (commentId == null) {
         logger.warn('[COMMENT_MIGRATION_SKIP]', { reason: 'missing_comment_id' });
         continue;
       }
-
       const userRelation = (comment as UnknownRecord)?.users_permissions_user ?? null;
-      const derivedName =
-        extractDisplayNameFromUser(userRelation) ?? resolveUserDisplayName(userRelation);
-
+      const derivedName = extractDisplayNameFromUser(userRelation) ?? resolveUserDisplayName(userRelation);
       try {
         await strapi.entityService.update(COMMENT_UID, commentId, {
           data: { author_displayName: derivedName || FALLBACK_DISPLAY_NAME },
         });
         processed += 1;
       } catch (error) {
-        logger.error('[COMMENT_MIGRATION_ERROR]', {
-          commentId,
-          error: (error as Error)?.message ?? String(error),
-        });
+        logger.error('[COMMENT_MIGRATION_ERROR]', { commentId, error: (error as Error)?.message ?? String(error) });
       }
     }
   }
-
-  if (processed > 0) {
-    logger.info('[COMMENT_MIGRATION_SUCCESS]', { processed });
-  }
+  if (processed > 0) logger.info('[COMMENT_MIGRATION_SUCCESS]', { processed });
 };
 
 const ensureAuthorSnapshotBackfill = async (strapi: any, logger: CommentControllerLogger) => {
   if (migrationCompleted) return;
-
   if (!migrationPromise) {
     migrationPromise = runAuthorDisplayNameBackfill(strapi, logger)
-      .then(() => {
-        migrationCompleted = true;
-      })
-      .catch((error) => {
-        logger.error('[COMMENT_MIGRATION_FAILURE]', {
-          error: (error as Error)?.message ?? String(error),
-        });
-      })
-      .finally(() => {
-        migrationPromise = null;
-      });
+      .then(() => { migrationCompleted = true; })
+      .catch((error) => { logger.error('[COMMENT_MIGRATION_FAILURE]', { error: (error as Error)?.message ?? String(error) }); })
+      .finally(() => { migrationPromise = null; });
   }
-
   try {
     await migrationPromise;
-  } catch {
-    // ya logueado
-  }
+  } catch { /* ya logueado */ }
 };
-
-/* ------------------------------------------------------------
- * Controlador
- * ------------------------------------------------------------ */
 
 export default factories.createCoreController(COMMENT_UID, ({ strapi }) => {
   const metrics = globalMetricsStore;
@@ -406,207 +331,127 @@ export default factories.createCoreController(COMMENT_UID, ({ strapi }) => {
     async find(ctx: any) {
       metrics.increment('GET');
       await ensureAuthorSnapshotBackfill(strapi, resolvedLogger);
-
       ctx.query = ctx.query || {};
       ensureQueryDefaults(ctx.query);
-
       const response = await (super as any).find(ctx);
-      const transformed = transformControllerResponse(response);
-
-      const resultCount = Array.isArray((transformed as UnknownRecord)?.data)
-        ? (transformed as UnknownRecord).data.length
-        : undefined;
-
-      resolvedLogger.info('[COMMENT_FIND]', {
-        userId: ctx?.state?.user?.id ?? null,
-        count: resultCount ?? 0,
-      });
-
-      return transformed;
+      return transformControllerResponse(response);
     },
 
     async findOne(ctx: any) {
       metrics.increment('GET');
       await ensureAuthorSnapshotBackfill(strapi, resolvedLogger);
-
       const response = await (super as any).findOne(ctx);
-      const transformed = transformControllerResponse(response);
-      const commentId = extractEntityId((transformed as UnknownRecord)?.data ?? transformed);
-
-      resolvedLogger.info('[COMMENT_FIND_ONE]', {
-        userId: ctx?.state?.user?.id ?? null,
-        commentId,
-      });
-
-      return transformed;
+      return transformControllerResponse(response);
     },
 
     async create(ctx: any) {
       metrics.increment('POST');
       await ensureAuthorSnapshotBackfill(strapi, resolvedLogger);
-
       const user = ctx.state.user;
-      if (!user) {
-        return ctx.unauthorized('You must be logged in to create a comment.');
-      }
-
+      if (!user) return ctx.unauthorized('You must be logged in to create a comment.');
       const body = ctx.request.body || {};
       const data = body.data || {};
-
-      const rawContent = data.content;
-      const content = typeof rawContent === 'string' ? rawContent.trim() : '';
-      if (content.length === 0) {
-        return ctx.badRequest('Comment content is required.');
-      }
-
-      if (!Object.prototype.hasOwnProperty.call(data, 'article')) {
-        return ctx.badRequest('Article is required.');
-      }
-
+      const content = typeof data.content === 'string' ? data.content.trim() : '';
+      if (content.length === 0) return ctx.badRequest('Comment content is required.');
+      if (!Object.prototype.hasOwnProperty.call(data, 'article')) return ctx.badRequest('Article is required.');
       const articleId = extractRelationId(data.article);
-      if (articleId === null || articleId === undefined) {
-        return ctx.badRequest('Article is required.');
-      }
-
-      let normalizedEstado: string | undefined | null;
-      if (Object.prototype.hasOwnProperty.call(data, 'estado')) {
-        normalizedEstado = normalizeEstadoValue(strapi, data.estado);
-        if (normalizedEstado === null) {
-          return ctx.badRequest('Invalid estado value.');
-        }
-      }
-
+      if (articleId == null) return ctx.badRequest('Article is required.');
       const sanitizedData: UnknownRecord = { ...data };
       delete sanitizedData.author;
       delete sanitizedData.users_permissions_user;
       delete sanitizedData.author_displayName;
-
       sanitizedData.content = content;
-      sanitizedData.users_permissions_user = (user as any).id;
+      sanitizedData.users_permissions_user = user.id;
       sanitizedData.author_displayName = resolveUserDisplayName(user);
-
-      if (normalizedEstado !== undefined) {
+      if (Object.prototype.hasOwnProperty.call(data, 'estado')) {
+        const normalizedEstado = normalizeEstadoValue(strapi, data.estado);
+        if (normalizedEstado === null) return ctx.badRequest('Invalid estado value.');
         sanitizedData.estado = normalizedEstado;
       }
-
       ctx.request.body = { ...body, data: sanitizedData };
-
       const response = await (super as any).create(ctx);
       const commentId = extractEntityId(response);
-
-      resolvedLogger.info('[COMMENT_CREATE]', {
-        commentId,
-        userId: (user as any).id,
-        articleId,
-      });
-
+      resolvedLogger.info('[COMMENT_CREATE]', { commentId, userId: user.id, articleId });
       return transformControllerResponse(response);
     },
 
     async update(ctx: any) {
       metrics.increment('PUT');
       await ensureAuthorSnapshotBackfill(strapi, resolvedLogger);
-
       const user = ctx.state.user;
-      if (!user) {
-        return ctx.unauthorized('You must be logged in to update a comment.');
-      }
-
+      if (!user) return ctx.unauthorized('You must be logged in to update a comment.');
       const { id } = ctx.params;
-      const existingComment = await strapi.entityService.findOne(COMMENT_UID, id, {
-        populate: { users_permissions_user: true, article: true },
-      });
-
-      if (!existingComment) {
-        return ctx.notFound('Comment not found.');
-      }
-
+      const existingComment = await strapi.entityService.findOne(COMMENT_UID, id, { populate: { users_permissions_user: true } });
+      if (!existingComment) return ctx.notFound('Comment not found.');
       const ownerId = resolveUserId((existingComment as any).users_permissions_user);
-      if (ownerId === null || String(ownerId) !== String((user as any).id)) {
-        return ctx.forbidden('You are not allowed to update this comment.');
-      }
-
+      if (ownerId === null || String(ownerId) !== String(user.id)) return ctx.forbidden('You are not allowed to update this comment.');
       const body = ctx.request.body || {};
       const data = body.data || {};
-      const allowedFields = new Set(['content', 'estado']);
-
-      const unexpectedFields = Object.keys(data).filter((key) => !allowedFields.has(key));
-      if (unexpectedFields.length > 0) {
-        return ctx.badRequest('Only the comment content or status can be updated.');
-      }
-
-      if (!Object.prototype.hasOwnProperty.call(data, 'content')) {
-        return ctx.badRequest('Comment content is required.');
-      }
-
-      const rawContent = data.content;
-      const content = typeof rawContent === 'string' ? rawContent.trim() : '';
-      if (content.length === 0) {
-        return ctx.badRequest('Comment content cannot be empty.');
-      }
-
-      let normalizedEstado: string | undefined | null;
-      if (Object.prototype.hasOwnProperty.call(data, 'estado')) {
-        normalizedEstado = normalizeEstadoValue(strapi, data.estado);
-        if (normalizedEstado === null) {
-          return ctx.badRequest('Invalid estado value.');
-        }
-      }
-
+      const unexpectedFields = Object.keys(data).filter(key => !['content', 'estado'].includes(key));
+      if (unexpectedFields.length > 0) return ctx.badRequest('Only content or status can be updated.');
+      if (!Object.prototype.hasOwnProperty.call(data, 'content')) return ctx.badRequest('Comment content is required.');
+      const content = typeof data.content === 'string' ? data.content.trim() : '';
+      if (content.length === 0) return ctx.badRequest('Comment content cannot be empty.');
       const sanitizedData: UnknownRecord = { content };
-      if (normalizedEstado !== undefined) {
+      if (Object.prototype.hasOwnProperty.call(data, 'estado')) {
+        const normalizedEstado = normalizeEstadoValue(strapi, data.estado);
+        if (normalizedEstado === null) return ctx.badRequest('Invalid estado value.');
         sanitizedData.estado = normalizedEstado;
       }
-
       ctx.request.body = { ...body, data: sanitizedData };
-
       const response = await (super as any).update(ctx);
-      const commentId = extractEntityId(response);
-      const articleId = resolveArticleIdFromComment(existingComment);
-
-      resolvedLogger.info('[COMMENT_UPDATE]', {
-        commentId,
-        userId: (user as any).id,
-        articleId,
-      });
-
       return transformControllerResponse(response);
     },
 
     async delete(ctx: any) {
       metrics.increment('DELETE');
       await ensureAuthorSnapshotBackfill(strapi, resolvedLogger);
-
       const user = ctx.state.user;
-      if (!user) {
-        return ctx.unauthorized('You must be logged in to delete a comment.');
-      }
-
+      if (!user) return ctx.unauthorized('You must be logged in to delete a comment.');
       const { id } = ctx.params;
-      const existingComment = await strapi.entityService.findOne(COMMENT_UID, id, {
-        populate: { users_permissions_user: true, article: true },
-      });
-
-      if (!existingComment) {
-        return ctx.notFound('Comment not found.');
-      }
-
+      const existingComment = await strapi.entityService.findOne(COMMENT_UID, id, { populate: { users_permissions_user: true } });
+      if (!existingComment) return ctx.notFound('Comment not found.');
       const ownerId = resolveUserId((existingComment as any).users_permissions_user);
-      if (ownerId === null || String(ownerId) !== String((user as any).id)) {
-        return ctx.forbidden('You are not allowed to delete this comment.');
-      }
-
+      if (ownerId === null || String(ownerId) !== String(user.id)) return ctx.forbidden('You are not allowed to delete this comment.');
       const response = await (super as any).delete(ctx);
-      const commentId = extractEntityId(response ?? { id });
-      const articleId = resolveArticleIdFromComment(existingComment);
-
-      resolvedLogger.info('[COMMENT_DELETE]', {
-        commentId,
-        userId: (user as any).id,
-        articleId,
-      });
-
       return transformControllerResponse(response);
     },
+    
+    async findByArticle(ctx: any) {
+        metrics.increment('GET');
+        await ensureAuthorSnapshotBackfill(strapi, resolvedLogger);
+
+        const documentId = ctx.params.id || ctx.params.documentId;
+        if (!documentId) return ctx.badRequest('Article ID or Document ID is required.');
+
+        const page = parsePositiveInteger(ctx.query.page) ?? DEFAULT_PAGE;
+        const pageSize = parsePositiveInteger(ctx.query.pageSize) ?? DEFAULT_PAGE_SIZE;
+
+        const results = await strapi.entityService.findPage(COMMENT_UID, {
+            ...ctx.query,
+            page,
+            pageSize,
+            filters: {
+                ...ctx.query.filters,
+                article: { documentId: { $eq: documentId } },
+                estado: { $eq: 'approved' },
+            },
+            populate: {
+                users_permissions_user: {
+                    fields: ['username', 'name', 'displayName']
+                },
+                children: {
+                    populate: {
+                        users_permissions_user: {
+                           fields: ['username', 'name', 'displayName']
+                        }
+                    }
+                }
+            },
+        });
+        
+        return transformControllerResponse(results);
+    },
+
   };
 });

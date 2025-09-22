@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DeleteConfirm } from '@/components/admin/DeleteConfirm';
 import { useToast } from '@/hooks/use-toast';
-
+import { CommentForm } from './comment-form';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { StrapiUser } from '@/lib/strapi-types';
 
 interface CommentItemProps {
@@ -41,12 +42,9 @@ export function CommentItem({
   const [isEditing, setIsEditing] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  // Derivar displayName e inicial en base a tu tipo CommentAuthor (username/name)
-  const displayName =
-    (comment.author.name && comment.author.name.trim()) || comment.author.username || 'Usuario';
+  const displayName = comment.author?.displayName || 'Usuario';
   const userInitial = displayName.charAt(0).toUpperCase();
 
-  // Permisos (si no viene canManage desde la API, permite al autor editar/borrar)
   const canManage =
     (comment as any).canManage ??
     (currentUser ? currentUser.id === comment.author.id : false);
@@ -91,12 +89,11 @@ export function CommentItem({
 
   return (
     <div className="flex gap-4">
-      {/* Avatar circular con inicial */}
-      <div className="flex-shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6B8E23] text-white font-semibold uppercase">
-          {userInitial}
-        </div>
-      </div>
+      <Avatar className="h-10 w-10 flex-shrink-0">
+          <AvatarFallback className="bg-[#6B8E23] text-white font-semibold uppercase">
+              {userInitial}
+          </AvatarFallback>
+      </Avatar>
 
       <div className="flex-1">
         <div className="flex items-center justify-between">
@@ -129,9 +126,7 @@ export function CommentItem({
                     onSelect={(e) => e.preventDefault()}
                     className="text-destructive focus:text-destructive"
                   >
-                    {isDeleting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Eliminar
                   </DropdownMenuItem>
                 </DeleteConfirm>
