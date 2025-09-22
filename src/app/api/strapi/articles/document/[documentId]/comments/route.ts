@@ -15,9 +15,10 @@ interface DocumentCommentsContext {
   params: { documentId: string };
 }
 
-// Simplified user fields to only what's needed, removing 'avatar'
+
+// Sólo pedimos el id del usuario para ownership; el nombre viene del snapshot.
 const USER_FIELDS_POPULATE = {
-  fields: ['id', 'username', 'name', 'displayName'],
+  fields: ['id'],
 };
 
 const COMMENT_FIELDS = ['content', 'estado', 'createdAt', 'updatedAt', 'author_displayName'];

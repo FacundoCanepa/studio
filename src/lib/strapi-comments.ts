@@ -8,7 +8,7 @@ export function buildCommentsTag(documentId: string): string {
 }
 
 const COMMENT_FIELDS = ['content', 'estado', 'createdAt', 'updatedAt', 'author_displayName'];
-const USER_FIELDS = ['id', 'username', 'name', 'displayName'];
+const USER_FIELDS = ['id']; // Sólo necesitamos el id para ownership; el nombre proviene del snapshot.
 const ARTICLE_FIELDS = ['documentId'];
 
 export function buildCommentsQuery(documentId: string, page: number, pageSize: number): string {
@@ -139,24 +139,14 @@ function resolveAuthor(attributes: StrapiCommentAttributes): CommentAuthorDto {
   const fallbackName = 'Usuario';
   const authorRelation = attributes.users_permissions_user;
   
-  // 1. Prioritize the displayName snapshot
-  if (isNonEmptyString(attributes.author_displayName)) {
-    const relationId = authorRelation?.data?.id ?? authorRelation?.id;
-    return { id: toNumberId(relationId), displayName: attributes.author_displayName };
-  }
-  
-  // 2. Fallback to extracting from the user relation
-  if (authorRelation && typeof authorRelation === 'object') {
-    const userEntity = authorRelation.data || authorRelation;
-    if (userEntity && typeof userEntity === 'object') {
-      const userAttrs = (userEntity as any).attributes || userEntity;
-      const candidates = [userAttrs.displayName, userAttrs.name, userAttrs.username];
-      const displayName = candidates.find(isNonEmptyString) ?? fallbackName;
-      return { id: toNumberId(userEntity.id), displayName };
-    }
-  }
+  const relationId = authorRelation?.data?.id ?? authorRelation?.id;
 
-  return { id: null, displayName: fallbackName };
+  // El nombre visible siempre proviene del snapshot plano; si falta usamos el fallback.
+  const displayName = isNonEmptyString(attributes.author_displayName)
+    ? attributes.author_displayName
+    : fallbackName;
+
+  return { id: toNumberId(relationId), displayName };
 }
 
 function normalizeStrapiComment(entity: Nullable<StrapiCommentEntity>): CommentDto | null {

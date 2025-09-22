@@ -103,30 +103,13 @@ export async function GET(request: NextRequest) {
   const pageSize = parsed.data.pageSize ?? DEFAULT_PAGE_SIZE;
 
   // Use a query that does not populate 'author'
-  const query = qs({
-    filters: {
-      article: { documentId: { $eq: documentId } },
-      estado: { $eq: 'approved' },
-    },
-    sort: ['createdAt:desc'],
-    pagination: { page, pageSize },
-    fields: ['content', 'estado', 'createdAt', 'updatedAt', 'author_displayName'],
-    populate: {
-        users_permissions_user: {
-            fields: ['id', 'username']
-        },
-        parent: { fields: ['id'] },
-        children: {
-            fields: ['content', 'estado', 'createdAt', 'updatedAt', 'author_displayName'],
-            sort: ['createdAt:asc'],
-            populate: {
-                users_permissions_user: {
-                    fields: ['id', 'username']
-                },
-                parent: { fields: ['id'] }
-            }
-        }
-    }
+ // Reutilizamos el builder centralizado que ya no incluye populate[author].
+ const query = buildCommentsQuery(documentId, page, pageSize);
+ console.info('[COMMENTS_ROUTE_GET]', {
+   documentId,
+   page,
+   pageSize,
+   query,
   });
 
 
@@ -145,7 +128,14 @@ export async function GET(request: NextRequest) {
       page,
       pageSize,
     });
-
+    
+    console.info('[COMMENTS_ROUTE_GET_SUCCESS]', {
+      documentId,
+      page,
+      pageSize,
+      strapiStatus: 'ok',
+      returned: comments.length,
+    });
     return successResponse(comments, { pagination });
   } catch (error) {
     console.error('[COMMENTS_GET_ERROR]', error);
