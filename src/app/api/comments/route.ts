@@ -3,7 +3,6 @@ import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { fetchStrapi } from '@/lib/strapi-api';
 import {
-  COMMENTS_REVALIDATE_SECONDS,
   COMMENTS_TAG,
   buildCommentsQuery,
   buildCommentsTag,
@@ -22,7 +21,8 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
 
-export const revalidate = COMMENTS_REVALIDATE_SECONDS;
+export const revalidate = 60;
+
 
 const querySchema = z.object({
   documentId: z
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       `/api/comments${query}`,
       {
         next: {
-          revalidate: COMMENTS_REVALIDATE_SECONDS,
+          revalidate,
           tags: [COMMENTS_TAG, buildCommentsTag(documentId)],
         },
       },
