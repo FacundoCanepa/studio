@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MoreVertical, CornerDownRight, Loader2 } from 'lucide-react';
@@ -49,7 +48,7 @@ export function CommentItem({
     addSuffix: true,
     locale: es,
   });
-  
+  const userInitial = comment.author.username?.charAt(0)?.toUpperCase() ?? 'U';
   const handleReplySubmit = async (content: string) => {
     try {
         await onCommentAdded(content, comment.id);
@@ -85,13 +84,9 @@ export function CommentItem({
   return (
     <div className="flex gap-4">
       <div className="flex-shrink-0">
-        <Image
-          src={comment.author.avatar?.url || `https://i.pravatar.cc/150?u=${comment.author.id}`}
-          alt={comment.author.name || comment.author.username}
-          width={40}
-          height={40}
-          className="rounded-full"
-        />
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#6B8E23] text-white font-semibold uppercase">
+          {userInitial}
+        </div>
       </div>
       <div className="flex-1">
         <div className="flex items-center justify-between">
