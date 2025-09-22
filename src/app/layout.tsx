@@ -11,7 +11,7 @@ import { AuthProvider } from '@/context/auth-context';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 import Script from 'next/script';
 import { AnalyticsTracker } from '@/lib/gtag/AnalyticsTracker';
-import { CookieConsent } from '@/components/shared/cookie-consent';
+import { CookieConsent } from '@/components/privacy/CookieBanner';
 
 const fontBody = Poppins({
   subsets: ['latin'],
@@ -55,6 +55,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/',
   },
+  other: {
+    "google-adsense-account": "ca-pub-5118101506692087",
+  }
 };
 export const viewport: Viewport = {
   themeColor: [
@@ -74,23 +77,53 @@ export default async function RootLayout({
   const categories = await getCategories();
   return (
     <html lang="es" suppressHydrationWarning>
-       {GA_ID && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${GA_ID}');
-            `}
-          </Script>
-        </>
-      )}
+      <head>
+        <Script
+          id="adsense-base"
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5118101506692087"
+          crossOrigin="anonymous"
+        />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (adsbygoogle = window.adsbygoogle || []).push({
+                google_ad_client: "ca-pub-5118101506692087",
+                enable_page_level_ads: true
+              });
+            `,
+          }}
+        />
+        <Script id="consent-defaults" strategy="beforeInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('consent', 'default', {
+              'ad_storage': 'denied',
+              'analytics_storage': 'denied',
+              'wait_for_update': 500
+            });
+          `}
+        </Script>
+      </head>
       <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
+        {GA_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
          <ThemeProvider
             attribute="class"
             defaultTheme="system"

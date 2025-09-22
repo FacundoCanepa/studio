@@ -11,7 +11,7 @@ import { ArticleTags } from './_components/article-tags';
 import { ShareButtons } from './_components/share-buttons';
 import { ArticleList } from '@/components/articles/article-list';
 import { SectionTitle } from '@/components/shared/section-title';
-import { AdSlot } from '@/components/marketing/ad-slot';
+import { AdSlot } from '@/components/ads/AdSlot';
 import { ArticleCarousel } from './_components/article-carousel';
 import { YouTubeEmbed } from './_components/youtube-embed';
 import { FavoriteButton } from './_components/favorite-button';
@@ -104,7 +104,7 @@ export default async function ArticlePage({ params }: Props) {
                  <div className="sticky top-24 space-y-8">
                     <FavoriteButton articleId={article.id} />
                     <ShareButtons article={article} />
-                    <AdSlot className="w-full h-64" />
+                    <AdSlot slot="SLOT_ID_ARTICLE_SIDEBAR" className="w-full h-64" />
                  </div>
               </aside>
 
@@ -122,6 +122,8 @@ export default async function ArticlePage({ params }: Props) {
                     <ArticleCarousel images={article.carousel} title={article.title} />
                   </div>
                 )}
+                
+                <AdSlot slot="SLOT_ID_ARTICLE_IN-ARTICLE" layout="in-article" minHeight={300} className="my-6" />
 
                 {article.contentMore && (
                     <div className="mt-12 border-t pt-8">
@@ -135,6 +137,9 @@ export default async function ArticlePage({ params }: Props) {
                     <ArticleTags tags={article.tags} />
                   </div>
                 )}
+
+                <AdSlot slot="SLOT_ID_ARTICLE_FLUID" layout="fluid" minHeight={280} className="mt-10" />
+
               </div>
 
             </div>

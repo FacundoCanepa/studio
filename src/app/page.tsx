@@ -10,7 +10,7 @@ import { SectionTitle } from '@/components/shared/section-title';
 import { ImageGallery } from '@/components/shared/image-gallery';
 import { ColorPaletteSection } from '@/components/shared/color-palette-section';
 import { SocialFollow } from '@/components/shared/social-follow';
-import { AdSlot } from '@/components/marketing/ad-slot';
+import { AdSlot } from '@/components/ads/AdSlot';
 import { fetchCachedArticles } from '@/lib/cached-articles';
 
 export default async function HomePage() {
@@ -27,6 +27,8 @@ export default async function HomePage() {
       <section className="relative h-96 flex items-center justify-center text-center mb-8 overflow-hidden">
         <FloatingIconsHero />
       </section>
+
+      <AdSlot slot="SLOT_ID_HOME_DISPLAY" layout="display" minHeight={300} className="my-8 container mx-auto" />
 
       {/* a. Sección "Lo Último" */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -51,7 +53,7 @@ export default async function HomePage() {
       </section>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 my-16">
-        <AdSlot className="w-full h-24 max-w-5xl mx-auto" />
+        <AdSlot slot="SLOT_ID_HOME_LEADERBOARD" className="w-full h-24 max-w-5xl mx-auto" />
       </div>
 
       {/* Recomendados */}
